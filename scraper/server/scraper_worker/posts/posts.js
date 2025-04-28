@@ -2,12 +2,24 @@ import { CONSTANTS } from '../utils/constants.js'
 import { getCurrentUserAgent } from '../utils/user-agents.js'
 import { getAveragePostsBatchCount } from '../utils/request_stats.js'
 import { getSkippedPosts } from './queue.js'
+import * as dotenv from 'dotenv'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+// These lines help resolve __dirname in ES modules
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+// Load .env from parent directory
+dotenv.config({ path: path.resolve(__dirname, '../../.env') })
 
 export const redditAPIs = {
     all: 'https://www.reddit.com/r/all/new/.json',
     allComments: 'https://www.reddit.com/r/all/comments/.json',
     post: 'https://api.reddit.com/api/info.json',
 }
+
+const REDDIT_API_KEY = process.env.REDDIT_API_KEY
 
 export async function fetchRedditPostByID(ids) {
     /*
@@ -26,6 +38,7 @@ export async function fetchRedditPostByID(ids) {
         const response = await fetch(url, {
             headers: {
                 'User-Agent': getCurrentUserAgent(),
+                'Authorization': `bearer ${REDDIT_API_KEY}`,
             },
         })
 
@@ -52,9 +65,13 @@ export async function fetchInitialPostID() {
     const initialPost = await fetch(`${redditAPIs.all}?limit=2`, {
         headers: {
             'User-Agent': getCurrentUserAgent(),
+            'Authorization': `bearer ${REDDIT_API_KEY}`,
         },
     })
+
     const initialPostJSON = await initialPost.json()
+
+    console.log('json: ', initialPostJSON)
 
     let initialPostID = initialPostJSON.data.children[0].data.id
 
@@ -65,10 +82,9 @@ export function getNextPostsBatchIDs(initialID) {
     const IDs = ['t3_' + initialID]
 
     const averagePostsPerBatch = Math.floor(getAveragePostsBatchCount())
-    const isPostsPerBatchLessThanMin =
-        averagePostsPerBatch < 90 && averagePostsPerBatch > 0
+    const isPostsPerBatchLessThanMin = averagePostsPerBatch < 90 && averagePostsPerBatch > 0
 
-    let queuePosts = [];
+    let queuePosts = []
     if (isPostsPerBatchLessThanMin) {
         const averagePostsPerBatch = getAveragePostsBatchCount()
 
@@ -89,5 +105,5 @@ export function getNextPostsBatchIDs(initialID) {
         IDs.push(`t3_${nextPostIDBase36}`)
     }
 
-    return {IDs, queuePosts: queuePosts.length}
+    return { IDs, queuePosts: queuePosts.length }
 }
