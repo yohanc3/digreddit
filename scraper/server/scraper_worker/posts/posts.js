@@ -14,9 +14,9 @@ const __dirname = path.dirname(__filename)
 dotenv.config({ path: path.resolve(__dirname, '../../.env') })
 
 export const redditAPIs = {
-    all: 'https://www.reddit.com/r/all/new/.json',
-    allComments: 'https://www.reddit.com/r/all/comments/.json',
-    post: 'https://api.reddit.com/api/info.json',
+    all: 'https://oauth.reddit.com/r/all/new/.json',
+    allComments: 'https://oauth.reddit.com/r/all/comments/.json',
+    post: 'https://oauth.reddit.com/api/info.json',
 }
 
 const REDDIT_API_KEY = process.env.REDDIT_API_KEY
