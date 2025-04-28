@@ -19,7 +19,7 @@ export default class UserController {
       })
     }
 
-    console.log("scores were a success")
+    console.log("scores: ", processedScores)
 
     return response.status(200).send({body: "success"})
   }
