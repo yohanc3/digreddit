@@ -9,15 +9,15 @@ export default class UserController {
 
     const posts = body.posts;
 
-    const processedScores = []
-    for(const post of posts){
-
-      const embeddingsComparison = await compareEmbeddings(post.body)
-      processedScores.push({
-        id: post.id,
-        score: embeddingsComparison
+    const processedScores = await Promise.all(
+      posts.map(async (post: any) => {
+        const embeddingsComparison = await compareEmbeddings(post.body)
+        return {
+          id: post.id,
+          score: embeddingsComparison
+        }
       })
-    }
+    )
 
     console.log("scores: ", processedScores)
 

@@ -6,6 +6,7 @@ import { CONSTANTS } from './utils/constants.js'
 import { addPostsBatchCount, addTime } from './utils/request_stats.js'
 import { addSkippedOverPosts } from './posts/queue.js'
 import { sendToServer } from './utils/sendToServer.js'
+import fs from 'fs'
 
 async function main() {
     try {
@@ -81,6 +82,8 @@ async function main() {
             }
 
             const sanitizedChildren = sanitizePosts(posts)
+
+            fs.appendFileSync('results.json', JSON.stringify(sanitizedChildren, null, 2))
 
             const { ok: requestSuccessful } = await sendToServer(sanitizedChildren, {}, true)
 
