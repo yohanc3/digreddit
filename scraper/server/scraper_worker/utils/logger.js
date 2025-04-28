@@ -1,12 +1,22 @@
-export function logInfo(postsCounter, headers, lastReceivedPostTime, start, mean) {
+import { getAllSkippedOverPosts } from '../posts/queue.js'
+import { getAveragePostsBatchCount } from './request_stats.js'
 
+export function logInfo(postsCounter, headers, lastReceivedPostTime, start, mean, lastPostID) {
     const differenceSeconds = (Date.now() - lastReceivedPostTime * 1000) / 1000
 
     const difference = (Date.now() - start) / 1000
 
+    const averagePosts = getAveragePostsBatchCount()
+
     console.log(
         'count: ',
         postsCounter,
+        '   average posts: ',
+        averagePosts,
+        "   posts in queue: ",
+        getAllSkippedOverPosts().length,
+        '   last received post id: ',
+        lastPostID,
         '   remaining (out of 100): ',
         headers.get('x-ratelimit-remaining'),
         '   reset: ',

@@ -8,7 +8,7 @@
 
 const skippedPostsIDs = []
 
-function addPosts(startID, endID) {
+export function addSkippedOverPosts(startID, endID) {
     const startIDBase10 = parseInt(startID, 36)
     const endIDBase10 = parseInt(endID, 36)
 
@@ -16,15 +16,27 @@ function addPosts(startID, endID) {
         const currentIDBase36 = (startIDBase10 + i).toString(36)
         skippedPostsIDs.push(currentIDBase36)
     }
+
+    console.log('skipped over posts start is  "', startID, '" and end is "', endID, '"')
 }
 
-function getPosts(count) {
-    let accumulator = ''
+export function getSkippedPosts(count) {
+    const skippedPostsLength = skippedPostsIDs.length
 
-    for (let i = 0; i < count; i++) {
+    if (skippedPostsLength === 0) return []
+
+    let accumulator = []
+
+    const postsToRetrieve = count > skippedPostsLength ? skippedPostsLength : count
+
+    for (let i = 0; i < postsToRetrieve; i++) {
         const currentID = skippedPostsIDs.shift()
-        accumulator += currentID + ','
+        accumulator.push(currentID)
     }
 
     return accumulator
+}
+
+export function getAllSkippedOverPosts() {
+    return [...skippedPostsIDs]
 }

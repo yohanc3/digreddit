@@ -4,6 +4,8 @@ import { logInfo } from './utils/logger.js'
 import { delay } from './utils/logger.js'
 import { CONSTANTS } from './utils/constants.js'
 import { addPostsBatchCount, addTime } from './utils/request_stats.js'
+import { addSkippedOverPosts } from './posts/queue.js'
+import { sendToServer } from './utils/sendToServer.js'
 
 async function main() {
     try {
@@ -14,7 +16,7 @@ async function main() {
         while (true) {
             const start = Date.now()
 
-            const nextPostsIDsBatch = getNextPostsBatchIDs(lastPostID)
+            const { IDs: nextPostsIDsBatch, queuePosts } = getNextPostsBatchIDs(lastPostID)
 
             const {
                 data: request,
@@ -63,9 +65,16 @@ async function main() {
             const lastReceivedPostID = lastReceivedPostData.id
             const lastReceivedPostTime = lastReceivedPostData.created
 
+            const differenceSeconds = (Date.now() - lastReceivedPostTime * 1000) / 1000
+
+            // If the difference in seconds between the last posts of the last batch and now is greater than
+            if (differenceSeconds > CONSTANTS.MAX_DELAY_NOW_VS_LAST_POST) {
+                lastPostID = await fetchInitialPostID()
+                addSkippedOverPosts(lastReceivedPostID, lastPostID)
+            }
             // I could be wrong but I remember sometimes the post id would contain "t3_"
             // but later on it didn't. unsure so we handle both cases just in case
-            if (lastReceivedPostID.includes('_')) {
+            else if (lastReceivedPostID.includes('_')) {
                 lastPostID = lastReceivedPostID.split('_')[1]
             } else {
                 lastPostID = lastReceivedPostID
@@ -73,10 +82,19 @@ async function main() {
 
             const sanitizedChildren = sanitizePosts(posts)
 
-            const meanRequestTime = addTime(start)
-            addPostsBatchCount(postsBatchCount)
+            const { ok: requestSuccessful } = await sendToServer(sanitizedChildren, {}, true)
 
-            logInfo(postsBatchCount, headers, lastReceivedPostTime, start, meanRequestTime)
+            const meanRequestTime = addTime(start)
+            addPostsBatchCount(postsBatchCount - queuePosts)
+
+            logInfo(
+                postsBatchCount,
+                headers,
+                lastReceivedPostTime,
+                start,
+                meanRequestTime,
+                lastPostID
+            )
 
             // Delay the next api request by the default delay between requests and the average time it takes a request to be fulfilled
             await delay(CONSTANTS.DELAY_BETWEEN_REQUESTS - meanRequestTime)

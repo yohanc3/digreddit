@@ -2,8 +2,10 @@ export const CONSTANTS = {
     POSTS_PER_BATCH: 100,
     DELAY_BETWEEN_REQUESTS: 1000 * 1 * 6,
     REQUESTS_ERROR_DELAY: 1000 * 1 * 60,
-    MAX_POST_BATCH_COUNT_ARRAY: 30,
+    MAX_POST_BATCH_COUNT_ARRAY: 5,
     MIN_POSTS_PER_BATCH: 80,
+    // seconds delay between last fetched posts and now
+    MAX_DELAY_NOW_VS_LAST_POST: 30
 }
 
 export const USER_AGENTS = [

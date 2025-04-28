@@ -11,16 +11,24 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') })
 
 const port = process.env.PORT
 
-export async function sendToServer(posts, comments) {
-  const result = await fetch(`http://localhost:${port || 3000}/webhook/intake`, {
-    method: 'POST',
-    body: {
-      posts,
-      comments,
-    },
-  })
+export async function sendToServer(posts, comments, isPosts) {
+    try {
+        const result = await fetch(`http://localhost:${port || 3000}/webhook/intake`, {
+            method: 'POST',
+            body: JSON.stringify({ posts, comments, isPosts }),
+            headers: {
+                'content-type': 'application/json',
+            },
+        })
 
-  return {
-    ok: result.ok,
-  }
+        const body = await result.json()
+
+        return {
+            ok: result.ok,
+            body,
+        }
+    } catch (e) {
+        console.error('Error when sending posts to the server: ', e)
+        return { ok: false, body: {} }
+    }
 }

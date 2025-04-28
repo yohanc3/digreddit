@@ -1,7 +1,7 @@
-import { ok } from 'assert'
 import { CONSTANTS } from '../utils/constants.js'
 import { getCurrentUserAgent } from '../utils/user-agents.js'
 import { getAveragePostsBatchCount } from '../utils/request_stats.js'
+import { getSkippedPosts } from './queue.js'
 
 export const redditAPIs = {
     all: 'https://www.reddit.com/r/all/new/.json',
@@ -64,12 +64,24 @@ export async function fetchInitialPostID() {
 export function getNextPostsBatchIDs(initialID) {
     const IDs = ['t3_' + initialID]
 
-    let postsPerBatch =
-        getAveragePostsBatchCount() <= CONSTANTS.MIN_POSTS_PER_BATCH
-            ? CONSTANTS.MIN_POSTS_PER_BATCH
-            : CONSTANTS.POSTS_PER_BATCH
+    const averagePostsPerBatch = Math.floor(getAveragePostsBatchCount())
+    const isPostsPerBatchLessThanMin =
+        averagePostsPerBatch < 90 && averagePostsPerBatch > 0
 
-    for (let i = 1; i < postsPerBatch; i++) {
+    let queuePosts = [];
+    if (isPostsPerBatchLessThanMin) {
+        const averagePostsPerBatch = getAveragePostsBatchCount()
+
+        queuePosts = getSkippedPosts(100 - averagePostsPerBatch)
+
+        for (const queuePost of queuePosts) {
+            IDs.push(`t3_${queuePost}`)
+        }
+    }
+
+    const IDsLength = IDs.length
+
+    for (let i = 1; i <= 100 - IDsLength; i++) {
         const nextPostIDBase10 = parseInt(initialID, 36) + i
 
         const nextPostIDBase36 = nextPostIDBase10.toString(36)
@@ -77,5 +89,5 @@ export function getNextPostsBatchIDs(initialID) {
         IDs.push(`t3_${nextPostIDBase36}`)
     }
 
-    return IDs
+    return {IDs, queuePosts: queuePosts.length}
 }
