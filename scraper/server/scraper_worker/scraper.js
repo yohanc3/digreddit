@@ -83,8 +83,6 @@ async function main() {
 
             const sanitizedChildren = sanitizePosts(posts)
 
-            fs.appendFileSync('results.json', JSON.stringify(sanitizedChildren, null, 2))
-
             const { ok: requestSuccessful } = await sendToServer(sanitizedChildren, {}, true)
 
             const meanRequestTime = addTime(start)
@@ -100,7 +98,7 @@ async function main() {
             )
 
             // Delay the next api request by the default delay between requests and the average time it takes a request to be fulfilled
-            await delay(CONSTANTS.DELAY_BETWEEN_REQUESTS - meanRequestTime)
+            await delay(2500)
         }
     } catch (error) {
         console.error('Error fetching data: ', error)
