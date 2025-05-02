@@ -1,7 +1,7 @@
 import { getAllSkippedOverPosts } from '../posts/queue.js'
 import { getAveragePostsBatchCount } from './request_stats.js'
 
-export function logInfo(postsCounter, headers, lastReceivedPostTime, start, mean, lastPostID) {
+export function logInfo(postsCount, sanitizedPostsCount, headers, lastReceivedPostTime, start, mean, lastPostID) {
     const differenceSeconds = (Date.now() - lastReceivedPostTime * 1000) / 1000
 
     const difference = (Date.now() - start) / 1000
@@ -9,8 +9,10 @@ export function logInfo(postsCounter, headers, lastReceivedPostTime, start, mean
     const averagePosts = getAveragePostsBatchCount()
 
     console.log(
-        'count: ',
-        postsCounter,
+        'non-sanitized posts count: ',
+        postsCount,
+        'sanitized posts count: ',
+        sanitizedPostsCount,
         '   average posts: ',
         averagePosts,
         "   posts in queue: ",

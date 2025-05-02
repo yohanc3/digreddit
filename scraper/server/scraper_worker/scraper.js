@@ -90,6 +90,7 @@ async function main() {
 
             logInfo(
                 postsBatchCount,
+                sanitizedChildren.length,
                 headers,
                 lastReceivedPostTime,
                 start,
@@ -98,7 +99,7 @@ async function main() {
             )
 
             // Delay the next api request by the default delay between requests and the average time it takes a request to be fulfilled
-            await delay(2500)
+            await delay(3500)
         }
     } catch (error) {
         console.error('Error fetching data: ', error)

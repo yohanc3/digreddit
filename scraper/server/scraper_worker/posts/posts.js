@@ -1,4 +1,4 @@
-import { CONSTANTS } from '../utils/constants.js'
+import { CONSTANTS, redditAPIs } from '../utils/constants.js'
 import { getCurrentUserAgent } from '../utils/user-agents.js'
 import { getAveragePostsBatchCount } from '../utils/request_stats.js'
 import { getSkippedPosts } from './queue.js'
@@ -13,12 +13,6 @@ const __dirname = path.dirname(__filename)
 // Load .env from parent directory
 dotenv.config({ path: path.resolve(__dirname, '../../.env') })
 
-export const redditAPIs = {
-    all: 'https://oauth.reddit.com/r/all/new/.json',
-    allComments: 'https://oauth.reddit.com/r/all/comments/.json',
-    post: 'https://oauth.reddit.com/api/info.json',
-}
-
 const REDDIT_API_KEY = process.env.REDDIT_API_KEY
 
 export async function fetchRedditPostByID(ids) {
@@ -30,7 +24,7 @@ export async function fetchRedditPostByID(ids) {
     */
 
     // Use the url from reddit to request posts based on a set of ids
-    const url = new URL(`${redditAPIs.post}`)
+    const url = new URL(`${redditAPIs.info}`)
     url.search = new URLSearchParams({ id: ids }).toString()
 
     try {
@@ -62,7 +56,8 @@ export async function fetchRedditPostByID(ids) {
 
 export async function fetchInitialPostID() {
     // Pulling the initial posts to get the id from
-    const initialPost = await fetch(`${redditAPIs.all}?limit=2`, {
+
+    const initialPost = await fetch(`${redditAPIs.allPosts}?limit=2`, {
         headers: {
             'User-Agent': getCurrentUserAgent(),
             'Authorization': `bearer ${REDDIT_API_KEY}`,

@@ -1,7 +1,7 @@
 import { USER_AGENTS } from './constants.js'
 
 let requestsCount = 0
-let currentUserAgent = getRandomUserAgent()
+let currentUserAgent = USER_AGENTS[0]
 
 function getRandomUserAgent() {
     return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)]

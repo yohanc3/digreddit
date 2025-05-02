@@ -1,6 +1,11 @@
 export function sanitizePosts(rawPosts) {
     return rawPosts
-        .filter((rawPost) => rawPost.data.is_video === false && rawPost.data.selftext.length != '')
+        .filter(
+            (rawPost) =>
+                rawPost.data.is_video === false &&
+                rawPost.data.selftext.length != '' &&
+                rawPost.data.selftext !== '[removed]'
+        )
         .map((rawPost, index) => {
             const rawPostData = rawPost.data
 

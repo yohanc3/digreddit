@@ -1,5 +1,5 @@
 import { HttpContext } from "@adonisjs/core/http";
-import { compareEmbeddings } from "../../utils/vector_embedding_test.js";
+import { compareEmbeddings } from "./vector_embedding_test.js";
 
 export default class UserController {
 
@@ -19,8 +19,8 @@ export default class UserController {
       })
     )
 
-    console.log("scores: ", processedScores)
+    console.log("success")
 
-    return response.status(200).send({body: "success"})
+    return response.status(200).send({body: "success", processedScores})
   }
 }

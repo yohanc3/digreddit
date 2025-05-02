@@ -29,3 +29,9 @@ export const USER_AGENTS = [
     'Mozilla/5.0 (Linux; Android 10.1; dolphin Build/NRD91N; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/52.0.2743.100 Safari/537.36',
     'Dalvik/2.1.0 (Linux; U; Android 5.1.1; AQT80 Build/NKS.00.33.02.04)',
 ]
+
+export const redditAPIs = {
+    allPosts: 'https://oauth.reddit.com/r/all/new/.json',
+    allComments: 'https://oauth.reddit.com/r/all/comments/.json',
+    info: 'https://oauth.reddit.com/api/info.json',
+}
