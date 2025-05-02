@@ -1,5 +1,6 @@
 import { HttpContext } from "@adonisjs/core/http";
-import { compareEmbeddings } from "./vector_embedding_test.js";
+"--ignore-ts-errors"
+import { compareEmbeddings } from "../utils/vector_embedding_test.js";
 
 export default class UserController {
 

@@ -7,14 +7,14 @@ const ProductDescription =
 const embedder = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2')
 
 
-async function getEmbedding(text) {
+async function getEmbedding(text: string) {
     const output = await embedder(text, { pooling: 'mean', normalize: true })
     return output.data // returns a Float32Array
 }
 
 const productEmbedded = await getEmbedding(ProductDescription);
 
-export async function compareEmbeddings(text) {
+export async function compareEmbeddings(text: string) {
     const textEmbedding = await getEmbedding(text)
 
     // Similarity is from 0-1. Example: 0.6657523532242. So we multiply by 10 to get it in the range 0-10, and we fix it to 1 decimal only.
