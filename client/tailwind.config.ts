@@ -29,8 +29,8 @@ const config: Config = {
         }
       },
       fontSize: {
-        primarySize: ['1rem', { lineHeight: '1.5rem', fontWeight: '400' }],  
-        mediumSize: ['1.6875rem', { lineHeight: '2.25rem', fontWeight: '500' }],
+        primarySize: ['.8rem', { lineHeight: '1.5rem', fontWeight: '400' }],  
+        mediumSize: ['1.2875rem', { lineHeight: '1.75rem', fontWeight: '400' }],
         secondarySize: ['0.75rem', { lineHeight: '1.125rem', fontWeight: '400' }], 
         tertiarySize: ['0.625rem', { lineHeight: '0.875rem', fontWeight: '400' }],
       },

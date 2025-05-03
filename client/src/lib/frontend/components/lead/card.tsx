@@ -15,7 +15,7 @@ export default function RedditLeadCard({
 }: RedditLeadCardProps) {
     return (
         <div className={clsx(
-            "w-full flex flex-col bg-white text-black p-3 rounded-lg gap-y-1 border border-light m-3",
+            "w-auto flex flex-col bg-white text-black p-3 rounded-lg gap-y-1 border border-light",
             className
         )}>
             {/* Card Header */}
@@ -29,7 +29,7 @@ export default function RedditLeadCard({
                     </div>
                 </div>
                 <div>
-                    <LightButton title="Open" RightIcon={<BiLinkExternal size={24} />} />
+                    <LightButton title="Open" className="text-xs !px-2" RightIcon={<BiLinkExternal size={18} />} />
                 </div>
             </div>
 
@@ -44,24 +44,22 @@ export default function RedditLeadCard({
             </div>
 
             {/* Reddit Post/Comment Details */}
-            <div className="flex flex-row h-10 gap-x-3">
+            <div className="flex flex-row h-10 gap-x-3 items-center">
                 <div className="flex flex-row items-center justify-center gap-x-0.5">
-                    <BiUpvote color="#D93900" size={21} /> <p className="text-tertiarySize text-tertiaryColor"> 2 </p>
+                    <BiUpvote color="#D93900" size={18} /> <p className="text-tertiarySize text-tertiaryColor"> 2 </p>
                 </div>
+
                 <div className="flex flex-row items-center justify-center gap-x-0.5">
-                    <BiDownvote color="#6A5CFF" size={21} /> <p className="text-tertiarySize text-tertiaryColor"> 2 </p>
+                    <BiCommentDetail color="#344054" size={18} /> <p className="text-tertiarySize text-tertiaryColor"> 2 </p>
                 </div>
-                <div className="flex flex-row items-center justify-center gap-x-0.5">
-                    <BiCommentDetail color="#344054" size={21} /> <p className="text-tertiarySize text-tertiaryColor"> 2 </p>
-                </div>
-                <div className="flex flex-row items-center justify-center gap-x-0.5">
-                    <BiTimeFive color="#344054" size={21} /> <p className="text-tertiarySize text-tertiaryColor"> 3 Weeks Ago </p>
+                <div className="flex flex-row items-center justify-center gap-x-1">
+                    <BiTimeFive color="#344054" size={18} /> <p className="text-tertiarySize text-tertiaryColor"> 3 Weeks Ago </p>
                 </div>
             </div>
 
             {/* Card Rating */}
             <div className="flex flex-row items-center text-tertiarySize text-tertiaryColor gap-x-1">
-                <p>Lead Rating:</p> <BiStar size={21} color="#EAC937" /> <p> 7/10 </p>
+                <p>Lead Rating:</p>  <p> 7/10 </p>
             </div>
 
             <DarkButton title="Open Details" className="w-full"/>

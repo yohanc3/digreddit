@@ -35,11 +35,11 @@ export function RightSideBarLeadResult({
 }: RightSideBarLeadResultProps) {
     return (
         <div className={clsx(
-            "h-screen w-1/6 flex flex-col bg-white text-secondarySize font-normal px-3 mt-6 gap-y-1",
+            "h-screen w-1/6 flex flex-col bg-white border border-light border-t-0 text-secondarySize font-normal px-3 pt-6 gap-y-1",
             className
         )}>
-            <DarkButton title="Create New Request" RightIcon={<BiPlus size={24}/>} className="w-full !justify-between" />
-            <LightButton title="Delete Results" RightIcon={<BiTrash size={24}/>}className="w-full justify-between text-red-400 hover:bg-red-400 hover:text-white" />
+            <DarkButton title="Create New Request" RightIcon={<BiPlus size={20}/>} className="w-full !justify-between text-sm" />
+            <LightButton title="Delete Results" RightIcon={<BiTrash size={20}/>}className="w-full justify-between text-red-400 hover:bg-red-400 hover:text-white text-sm" />
         </div>
     );
 }

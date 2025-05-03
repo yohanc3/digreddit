@@ -12,9 +12,9 @@ export default function DashboardNavItems({
     className
 }: DashboardNavItemsProps) {
     return (
-        <div className={clsx("flex flex-row gap-x-2", className)}>
-            <LightButton title="Dashboard" className="border-0 text-secondaryColor" />
-            <LightButton title="Your Products" className="border-0 text-secondaryColor" />
+        <div className={clsx("flex flex-row gap-x-2 items-center justify-center", className)}>
+            <LightButton title="Dashboard" className="border-0 text-secondaryColor text-sm" />
+            <LightButton title="Your Products" className="border-0 text-secondaryColor text-sm" />
         </div>
     )
 }
