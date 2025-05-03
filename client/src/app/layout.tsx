@@ -1,6 +1,15 @@
 import type { Metadata } from "next";
+import { Poppins } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
+
+
+const poppins = Poppins({
+  subsets: ["latin"], // You can add more subsets if you want
+  weight: ["300", "400", "500", "600", "700"], // Which weights you want to use
+  variable: "--font-poppins", // 👈 This sets it as a CSS variable
+  display: "swap", // Better performance
+});
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -26,7 +35,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${poppins.variable} antialiased font-poppins bg-white`}
       >
         {children}
       </body>

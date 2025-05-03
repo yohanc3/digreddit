@@ -1,0 +1,20 @@
+import { Lead } from "@/types/backend/db";
+import { BiUpvote, BiDownvote, BiCommentDetail, BiTimeFive, BiStar, BiLinkExternal } from "react-icons/bi";
+import clsx from "clsx";
+import LightButton from "../button/light";
+import DarkButton from "../button/dark";
+
+interface DashboardNavItemsProps {
+    className?: string;
+}
+
+export default function DashboardNavItems({
+    className
+}: DashboardNavItemsProps) {
+    return (
+        <div className={clsx("flex flex-row gap-x-2", className)}>
+            <LightButton title="Dashboard" className="border-0 text-secondaryColor" />
+            <LightButton title="Your Products" className="border-0 text-secondaryColor" />
+        </div>
+    )
+}
