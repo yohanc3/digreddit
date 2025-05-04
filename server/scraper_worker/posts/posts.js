@@ -44,8 +44,9 @@ export async function fetchRedditPostByID(ids) {
         ) {
             console.warn('Token was invalid, resetting it and running fetchRedditPostID again...')
             await setOauthToken()
-            const initialPostID = await fetchInitialPostID()
-            return initialPostID
+            const postsByID = await fetchRedditPostByID()
+
+            return postsByID
         }
 
         if (!response.ok)
