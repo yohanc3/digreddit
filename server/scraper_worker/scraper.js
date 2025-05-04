@@ -5,11 +5,13 @@ import { delay } from './utils/logger.js'
 import { CONSTANTS } from './utils/constants.js'
 import { addPostsBatchCount, addTime } from './utils/request_stats.js'
 import { addSkippedOverPosts } from './posts/queue.js'
-import { sendToServer } from './utils/sendToServer.js'
+import { sendToServer } from './utils/send_to_server.js'
+import { registerExitHandler, setOauthToken } from './utils/oauth_token_helper.js'
+
+registerExitHandler()
 
 async function main() {
     try {
-
         // Represents the last post fetched, which is usually the most recent post. We use this one
         // to know which id to start on when getting the following 100 post ids
         let lastPostID = await fetchInitialPostID()
@@ -106,4 +108,5 @@ async function main() {
     }
 }
 
-main()
+await setOauthToken()
+await main()

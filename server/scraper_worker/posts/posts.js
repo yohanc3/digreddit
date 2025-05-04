@@ -5,6 +5,7 @@ import { getSkippedPosts } from './queue.js'
 import * as dotenv from 'dotenv'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { setOauthToken } from '../utils/oauth_token_helper.js'
 
 // These lines help resolve __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url)
@@ -13,8 +14,6 @@ const __dirname = path.dirname(__filename)
 // Load .env from parent directory
 dotenv.config({ path: path.resolve(__dirname, '../../.env') })
 
-const REDDIT_API_KEY = process.env.REDDIT_API_KEY
-
 export async function fetchRedditPostByID(ids) {
     /*
         Fetch posts from reddit's api given their id
@@ -22,6 +21,8 @@ export async function fetchRedditPostByID(ids) {
         
         ids: string representing the ids to fetch, separated by a comma
     */
+
+    const REDDIT_API_KEY = process.env.REDDIT_API_KEY
 
     // Use the url from reddit to request posts based on a set of ids
     const url = new URL(`${redditAPIs.info}`)
@@ -35,6 +36,17 @@ export async function fetchRedditPostByID(ids) {
                 'Authorization': `bearer ${REDDIT_API_KEY}`,
             },
         })
+
+        if (
+            Object.hasOwn(response, 'message') &&
+            Object.hasOwn(response, 'error') &&
+            response.error === 401
+        ) {
+            console.warn('Token was invalid, resetting it and running fetchRedditPostID again...')
+            await setOauthToken()
+            const initialPostID = await fetchInitialPostID()
+            return initialPostID
+        }
 
         if (!response.ok)
             return { data: {}, ok: response.ok, headers: response.headers, status: response.status }
@@ -57,31 +69,37 @@ export async function fetchRedditPostByID(ids) {
 export async function fetchInitialPostID() {
     // Pulling the initial posts to get the id from
 
-    try {
+    const REDDIT_API_KEY = process.env.REDDIT_API_KEY
 
+    try {
         const initialPost = await fetch(`${redditAPIs.allPosts}?limit=3`, {
             headers: {
                 'User-Agent': getCurrentUserAgent(),
                 'Authorization': `bearer ${REDDIT_API_KEY}`,
             },
         })
-    
+
         const initialPostJSON = await initialPost.json()
 
-        const postsLength = initialPostJSON.data.children.length;
-    
-        let initialPostID = initialPostJSON.data.children[postsLength - 1].data.id
-    
-        return initialPostID
-    } catch(e){
-        console.error("Error when obtaining initial posts by id: ", e);
-        if(e.contains("reading 'data'") && !e.contains(401) && !e.contains("401")){
-            console.warn("Delaying for 1s and refetching...")
-            await delay(1000);
-            return fetchInitialPostID()
+        if (
+            Object.hasOwn(initialPostJSON, 'message') &&
+            Object.hasOwn(initialPostJSON, 'error') &&
+            initialPostJSON.error === 401
+        ) {
+            console.warn('Token was invalid, resetting it and running fetchInitialPostID again...')
+            await setOauthToken()
+            const initialPostID = await fetchInitialPostID()
+            return initialPostID
         }
-    }
 
+        const postsLength = initialPostJSON.data.children.length
+
+        let initialPostID = initialPostJSON.data.children[postsLength - 1].data.id
+
+        return initialPostID
+    } catch (e) {
+        console.error('Error when obtaining initial posts by id: ', e)
+    }
 }
 
 export function getNextPostsBatchIDs(initialID) {
