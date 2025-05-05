@@ -1,10 +1,10 @@
-import { fetchInitialPostID, fetchRedditPostByID, getNextPostsBatchIDs } from './posts/posts.js'
+import { fetchInitialPostID, fetchRedditPostByID, getNextPostsBatchIDs } from './fetch/helpers.js'
 import { sanitizePosts } from './utils/raw_data_sanitizer.js'
 import { logInfo } from './utils/logger.js'
 import { delay } from './utils/logger.js'
 import { CONSTANTS } from './utils/constants.js'
 import { addPostsBatchCount, addTime } from './utils/request_stats.js'
-import { addSkippedOverPosts } from './posts/queue.js'
+import { addSkippedOverPosts } from './fetch/queue.js'
 import { sendToServer } from './utils/send_to_server.js'
 import { registerExitHandler, setOauthToken } from './utils/oauth_token_helper.js'
 
@@ -83,9 +83,15 @@ async function main() {
                 lastPostID = lastReceivedPostID
             }
 
-            const sanitizedChildren = sanitizePosts(posts)
+            const sanitizedChildren =
+                process.env.REDDIT_WORKER_THING_TYPE === 'posts'
+                    ? sanitizePosts(posts)
+                    : sanitizedChildren(posts)
 
-            const { ok: requestSuccessful } = await sendToServer(sanitizedChildren, {}, true)
+            const { ok: requestSuccessful } =
+                process.env.REDDIT_WORKER_THING_TYPE === 'posts'
+                    ? await sendToServer(sanitizedChildren, {}, true)
+                    : await sendToServer({}, sanitizedChildren, false)
 
             const meanRequestTime = addTime(start)
             addPostsBatchCount(postsBatchCount - queuePosts)
@@ -109,4 +115,4 @@ async function main() {
 }
 
 await setOauthToken()
-await main()
+// await main()

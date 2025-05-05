@@ -6,37 +6,37 @@
     skipped over during peak times per request.
 */
 
-const skippedPostsIDs = []
+const skippedThingsIDs = []
 
-export function addSkippedOverPosts(startID, endID) {
+export function addSkippedOverThings(startID, endID) {
     const startIDBase10 = parseInt(startID, 36)
     const endIDBase10 = parseInt(endID, 36)
 
     for (let i = 0; i <= endIDBase10 - startIDBase10; i++) {
         const currentIDBase36 = (startIDBase10 + i).toString(36)
-        skippedPostsIDs.push(currentIDBase36)
+        skippedThingsIDs.push(currentIDBase36)
     }
 
-    console.log('skipped over posts start is  "', startID, '" and end is "', endID, '"')
+    console.log('skipped over things start is  "', startID, '" and end is "', endID, '"')
 }
 
-export function getSkippedPosts(count) {
-    const skippedPostsLength = skippedPostsIDs.length
+export function getSkippedThings(count) {
+    const skippedThingsLength = skippedThingsIDs.length
 
-    if (skippedPostsLength === 0) return []
+    if (skippedThingsLength === 0) return []
 
     let accumulator = []
 
-    const postsToRetrieve = count > skippedPostsLength ? skippedPostsLength : count
+    const thingsToRetrieve = count > skippedThingsLength ? skippedThingsLength : count
 
-    for (let i = 0; i < postsToRetrieve; i++) {
-        const currentID = skippedPostsIDs.shift()
+    for (let i = 0; i < thingsToRetrieve; i++) {
+        const currentID = skippedThingsIDs.shift()
         accumulator.push(currentID)
     }
 
     return accumulator
 }
 
-export function getAllSkippedOverPosts() {
-    return [...skippedPostsIDs]
+export function getAllSkippedOverThings() {
+    return [...skippedThingsIDs]
 }
