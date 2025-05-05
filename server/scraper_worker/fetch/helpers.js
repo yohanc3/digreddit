@@ -1,7 +1,7 @@
 import { CONSTANTS, redditAPIs } from '../utils/constants.js'
 import { getCurrentUserAgent } from '../utils/user-agents.js'
-import { getAveragePostsBatchCount } from '../utils/request_stats.js'
-import { getSkippedPosts } from './queue.js'
+import { getAverageThingsBatchCount } from '../utils/request_stats.js'
+import { getSkippedThings } from './queue.js'
 import * as dotenv from 'dotenv'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -14,7 +14,7 @@ const __dirname = path.dirname(__filename)
 // Load .env from parent directory
 dotenv.config({ path: path.resolve(__dirname, '../../.env') })
 
-export async function fetchRedditPostByID(ids) {
+export async function fetchRedditThingByID(ids) {
     /*
         Fetch posts from reddit's api given their id
 
@@ -44,9 +44,9 @@ export async function fetchRedditPostByID(ids) {
         ) {
             console.warn('Token was invalid, resetting it and running fetchRedditPostID again...')
             await setOauthToken()
-            const postsByID = await fetchRedditPostByID()
+            const { data, ok, headers, status } = await fetchRedditThingByID(ids)
 
-            return postsByID
+            return { data, ok, headers, status }
         }
 
         if (!response.ok)
@@ -59,7 +59,7 @@ export async function fetchRedditPostByID(ids) {
         return { data, headers, ok: response.ok, status: response.status }
     } catch (e) {
         console.error(
-            'Error when fetching reddit post by id: ',
+            'Error when fetching reddit thing by id: ',
             e,
             '\n continuing fetch requests, server is not killed'
         )
@@ -67,68 +67,83 @@ export async function fetchRedditPostByID(ids) {
     }
 }
 
-export async function fetchInitialPostID() {
+export async function fetchInitialThingID(errorsNum = 0) {
     // Pulling the initial posts to get the id from
 
     const REDDIT_API_KEY = process.env.REDDIT_API_KEY
 
+    const url = `${
+        process.env.REDDIT_WORKER_THING_TYPE === 'posts'
+            ? `${redditAPIs.allPosts}?limit=3`
+            : `${redditAPIs.allComments}?limit=20`
+    }`
+
     try {
-        const initialPost = await fetch(`${redditAPIs.allPosts}?limit=3`, {
+        const initialThing = await fetch(url, {
             headers: {
                 'User-Agent': getCurrentUserAgent(),
                 'Authorization': `bearer ${REDDIT_API_KEY}`,
             },
         })
 
-        const initialPostJSON = await initialPost.json()
+        const initialThingJSON = await initialThing.json()
 
         if (
-            Object.hasOwn(initialPostJSON, 'message') &&
-            Object.hasOwn(initialPostJSON, 'error') &&
-            initialPostJSON.error === 401
+            Object.hasOwn(initialThingJSON, 'message') &&
+            Object.hasOwn(initialThingJSON, 'error') &&
+            initialThingJSON.error === 401
         ) {
-            console.warn('Token was invalid, resetting it and running fetchInitialPostID again...')
+            if (errorsNum === 2) {
+                throw new Error(
+                    'Error when setting a new oauth token. Function was recursively called 2 times. It failed both times'
+                )
+            }
+
+            console.warn('Token was invalid, resetting it and running fetchinitialThingID again...')
             await setOauthToken()
-            const initialPostID = await fetchInitialPostID()
-            return initialPostID
+            const initialThingID = await fetchInitialThingID(errorsNum++)
+
+            return initialThingID
         }
 
-        const postsLength = initialPostJSON.data.children.length
+        const thingsLength = initialThingJSON.data.children.length
 
-        let initialPostID = initialPostJSON.data.children[postsLength - 1].data.id
+        let initialThingID = initialThingJSON.data.children[thingsLength - 1].data.id
 
-        return initialPostID
+        return initialThingID
     } catch (e) {
-        console.error('Error when obtaining initial posts by id: ', e)
+        console.error('Error when obtaining initial things by id: ', e)
     }
 }
 
-export function getNextPostsBatchIDs(initialID) {
-    const IDs = ['t3_' + initialID]
+export function getNextThingBatchIDs(initialID) {
+    const prefix = process.env.REDDIT_WORKER_THING_TYPE === 'posts' ? 't3_' : 't1_'
 
-    const averagePostsPerBatch = Math.floor(getAveragePostsBatchCount())
-    const isPostsPerBatchLessThanMin = averagePostsPerBatch < 90 && averagePostsPerBatch > 0
+    const IDs = [prefix + initialID]
 
-    let queuePosts = []
+    const averageThingsPerBatch = Math.floor(getAverageThingsBatchCount())
+    const isPostsPerBatchLessThanMin = averageThingsPerBatch < 90 && averageThingsPerBatch > 0
+
+    let queueThings = []
     if (isPostsPerBatchLessThanMin) {
-        const averagePostsPerBatch = getAveragePostsBatchCount()
+        const averageThingsPerBatch = getAverageThingsBatchCount()
 
-        queuePosts = getSkippedPosts(100 - averagePostsPerBatch)
+        queueThings = getSkippedThings(100 - averageThingsPerBatch)
 
-        for (const queuePost of queuePosts) {
-            IDs.push(`t3_${queuePost}`)
+        for (const queueThing of queueThings) {
+            IDs.push(`t3_${queueThing}`)
         }
     }
 
     const IDsLength = IDs.length
 
     for (let i = 1; i <= 100 - IDsLength; i++) {
-        const nextPostIDBase10 = parseInt(initialID, 36) + i
+        const nextThingIDBase10 = parseInt(initialID, 36) + i
 
-        const nextPostIDBase36 = nextPostIDBase10.toString(36)
+        const nextThingIDBase36 = nextThingIDBase10.toString(36)
 
-        IDs.push(`t3_${nextPostIDBase36}`)
+        IDs.push(`t3_${nextThingIDBase36}`)
     }
 
-    return { IDs, queuePosts: queuePosts.length }
+    return { IDs, queueThings: queueThings.length }
 }

@@ -5,7 +5,8 @@ export const CONSTANTS = {
     MAX_POST_BATCH_COUNT_ARRAY: 5,
     MIN_POSTS_PER_BATCH: 80,
     // seconds delay between last fetched posts and now
-    MAX_DELAY_NOW_VS_LAST_POST: 20
+    MAX_DELAY_NOW_VS_LAST_POST: 20,
+    MAX_DELAY_NOW_VS_LAST_COMMENT: 20
 }
 
 export const USER_AGENTS = [

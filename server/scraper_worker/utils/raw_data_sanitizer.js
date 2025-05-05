@@ -26,3 +26,29 @@ export function sanitizePosts(rawPosts) {
             }
         })
 }
+
+export function sanitizeComments(rawComments) {
+    return rawComments
+        .filter(
+            (rawComment) =>
+                rawComment.data.body.length > 0 &&
+                rawComment.data.body.length < 1000 &&
+                // deleted comments in reddit say [deleted]
+                rawComment.data.body !== '[deleted]'
+        )
+        .map((rawComment, index) => {
+            const rawCommentData = rawComment.data
+
+            return {
+                id: rawCommentData.id,
+                subreddit: rawCommentData.subreddit_name_prefixed,
+                author: rawCommentData.author,
+                body: rawCommentData.body,
+                createdAt: rawCommentData.created,
+                ups: rawCommentData.ups,
+                downs: rawCommentData.downs,
+                url: rawCommentData.url,
+                subredditSubscribers: rawCommentData.subreddit_subscribers,
+            }
+        })
+}

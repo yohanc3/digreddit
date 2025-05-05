@@ -1,24 +1,32 @@
-import { getAllSkippedOverPosts } from '../posts/queue.js'
-import { getAveragePostsBatchCount } from './request_stats.js'
+import { getAllSkippedOverThings } from '../fetch/queue.js'
+import { getAverageThingsBatchCount } from './request_stats.js'
 
-export function logInfo(postsCount, sanitizedPostsCount, headers, lastReceivedPostTime, start, mean, lastPostID) {
-    const differenceSeconds = (Date.now() - lastReceivedPostTime * 1000) / 1000
+export function logInfo(
+    thingsCount,
+    sanitizedThingsCount,
+    headers,
+    lastReceivedThingTime,
+    start,
+    mean,
+    lastThingID
+) {
+    const differenceSeconds = (Date.now() - lastReceivedThingTime * 1000) / 1000
 
     const difference = (Date.now() - start) / 1000
 
-    const averagePosts = getAveragePostsBatchCount()
+    const averageThings = getAverageThingsBatchCount()
 
     console.log(
-        'non-sanitized posts count: ',
-        postsCount,
-        'sanitized posts count: ',
-        sanitizedPostsCount,
-        '   average posts: ',
-        averagePosts,
-        "   posts in queue: ",
-        getAllSkippedOverPosts().length,
-        '   last received post id: ',
-        lastPostID,
+        'non-sanitized things count: ',
+        thingsCount,
+        'sanitized things count: ',
+        sanitizedThingsCount,
+        '   average things: ',
+        averageThings,
+        '   things in queue: ',
+        getAllSkippedOverThings().length,
+        '   last received thing id: ',
+        lastThingID,
         '   remaining (out of 100): ',
         headers.get('x-ratelimit-remaining'),
         '   reset: ',

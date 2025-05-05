@@ -27,7 +27,7 @@ export function addTime(start) {
 // Keeps track of the count of posts in every batch
 let postsBatchCount = []
 
-export function addPostsBatchCount(newCount) {
+export function addThingsBatchCount(newCount) {
     /*
         Helps keep track of how many posts in average are actually being retrieved in the last 30 requests.
         If such average is less than 80, we limit how many posts are being fetched to the current average,
@@ -42,8 +42,8 @@ export function addPostsBatchCount(newCount) {
     postsBatchCount.push(newCount)
 }
 
-export function getAveragePostsBatchCount() {
-    if (postsBatchCount.length === 0) return 0;
+export function getAverageThingsBatchCount() {
+    if (postsBatchCount.length === 0) return 0
 
     return postsBatchCount.reduce((sum, value) => sum + value, 0) / postsBatchCount.length
 }
