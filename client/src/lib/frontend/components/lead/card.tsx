@@ -1,5 +1,5 @@
 import { Lead } from "@/types/backend/db";
-import { BiUpvote, BiDownvote, BiCommentDetail, BiTimeFive, BiStar, BiLinkExternal } from "react-icons/bi";
+import { BiUpvote, BiCommentDetail, BiTimeFive, BiLinkExternal } from "react-icons/bi";
 import clsx from "clsx";
 import LightButton from "../button/light";
 import DarkButton from "../button/dark";
