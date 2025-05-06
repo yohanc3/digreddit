@@ -1,6 +1,8 @@
-import NavBar from "@/lib/frontend/components/header/NavBar";
-import RedditLeadList from "@/lib/frontend/components/lead/list";
-import { LeftSideBarLeadResult, RightSideBarLeadResult } from "@/lib/frontend/components/lead/sidebar";
+import NavBar from '@/lib/components/header/NavBar';
+import {
+    LeftSideBarLeadResult,
+    RightSideBarLeadResult,
+} from '@/lib/components/lead/sidebar';
 
 export default function RootLayout({
     children,

@@ -1,17 +1,22 @@
 export type Lead = {
     id: string;
     subreddit: string;
-    title: string;
     author: string;
     body: string;
-    createdAt: Number;
-    ups: Number;
-    downs: Number;
-    numComments: Number;
+    createdAt: number;
+    ups: number;
+    downs: number;
     url: string;
-    subreddditSubscribers: Number;
+};
+
+export type PostLead = Lead & {
+    title: string;
+    numComments: number;
+    subreddditSubscribers: number;
     over18: boolean;
     requestId: string;
-    rating: Number;
+    rating: number;
     aiResponse: string;
-}
+};
+
+export type CommentLead = Lead & {};
