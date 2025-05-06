@@ -36,7 +36,7 @@ export function sanitizeComments(rawComments) {
                 // deleted comments in reddit say [deleted]
                 rawComment.data.body !== '[deleted]'
         )
-        .map((rawComment, index) => {
+        .map((rawComment) => {
             const rawCommentData = rawComment.data
 
             return {
@@ -48,7 +48,6 @@ export function sanitizeComments(rawComments) {
                 ups: rawCommentData.ups,
                 downs: rawCommentData.downs,
                 url: rawCommentData.url,
-                subredditSubscribers: rawCommentData.subreddit_subscribers,
             }
         })
 }
