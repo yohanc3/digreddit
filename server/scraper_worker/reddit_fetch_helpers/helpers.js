@@ -1,18 +1,8 @@
-import { CONSTANTS, redditAPIs } from '../utils/constants.js'
+import { redditAPIs } from '../utils/constants.js'
 import { getCurrentUserAgent } from '../utils/user-agents.js'
 import { getAverageThingsBatchCount } from '../utils/request_stats.js'
 import { getSkippedThings } from './queue.js'
-import * as dotenv from 'dotenv'
-import path from 'path'
-import { fileURLToPath } from 'url'
 import { setOauthToken } from '../utils/oauth_token_helper.js'
-
-// These lines help resolve __dirname in ES modules
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
-// Load .env from parent directory
-dotenv.config({ path: path.resolve(__dirname, '../../.env') })
 
 export async function fetchRedditThingByID(ids) {
     /*
@@ -124,6 +114,7 @@ export function getNextThingBatchIDs(initialID) {
     const averageThingsPerBatch = Math.floor(getAverageThingsBatchCount())
     const isPostsPerBatchLessThanMin = averageThingsPerBatch < 90 && averageThingsPerBatch > 0
 
+    // queue is to be deleted for now
     let queueThings = []
     if (isPostsPerBatchLessThanMin) {
         const averageThingsPerBatch = getAverageThingsBatchCount()
@@ -131,7 +122,7 @@ export function getNextThingBatchIDs(initialID) {
         queueThings = getSkippedThings(100 - averageThingsPerBatch)
 
         for (const queueThing of queueThings) {
-            IDs.push(`t3_${queueThing}`)
+            IDs.push(prefix + queueThing)
         }
     }
 
@@ -142,7 +133,7 @@ export function getNextThingBatchIDs(initialID) {
 
         const nextThingIDBase36 = nextThingIDBase10.toString(36)
 
-        IDs.push(`t3_${nextThingIDBase36}`)
+        IDs.push(prefix + nextThingIDBase36)
     }
 
     return { IDs, queueThings: queueThings.length }

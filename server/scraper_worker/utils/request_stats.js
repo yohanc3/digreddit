@@ -3,7 +3,8 @@ import { CONSTANTS } from './constants.js'
 ///--- Average request time tracker ---///
 
 // Array that holds the time it takes for an iteration to take place in the main function
-let fetchingTimes = []
+let fetchingTimes = 0
+let fetchingTimesCount = 0
 
 // 30 * 60 = 1,800 seconds. 1,800 / delay in seconds between requests = number of requests that take place every 30 minutes)
 const REQUESTS_IN_30_MINUTES_NUM = Math.floor(1800 / (CONSTANTS.DELAY_BETWEEN_REQUESTS / 1000))
@@ -14,12 +15,16 @@ export function addTime(start) {
     */
 
     // Restart the fetching time tracker every 30 minutes
-    if (fetchingTimes.length > REQUESTS_IN_30_MINUTES_NUM) fetchingTimes = []
+    if (fetchingTimes.length > REQUESTS_IN_30_MINUTES_NUM) {
+        fetchingTimes = 0
+        fetchingTimesCount = 0
+    }
 
-    fetchingTimes.push((Date.now() - start) / 1000)
+    fetchingTimes += (Date.now() - start) / 1000
+    fetchingTimesCount++
 
     // Return the current average in seconds of a fetch request to reddit's api
-    return fetchingTimes.reduce((sum, value) => sum + value, 0) / fetchingTimes.length
+    return fetchingTimes / fetchingTimesCount
 }
 
 ///--- Average posts count tracker ---///

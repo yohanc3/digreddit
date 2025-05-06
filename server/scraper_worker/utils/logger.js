@@ -1,4 +1,4 @@
-import { getAllSkippedOverThings } from '../fetch/queue.js'
+import { getAllSkippedOverThings } from '../reddit_fetch_helpers/queue.js'
 import { getAverageThingsBatchCount } from './request_stats.js'
 
 export function logInfo(
@@ -10,21 +10,16 @@ export function logInfo(
     mean,
     lastThingID
 ) {
-    const differenceSeconds = (Date.now() - lastReceivedThingTime * 1000) / 1000
+    //
+    const lastThingCreatedVsNow = (Date.now() - lastReceivedThingTime * 1000) / 1000
 
-    const difference = (Date.now() - start) / 1000
-
-    const averageThings = getAverageThingsBatchCount()
+    const cycleTime = (Date.now() - start) / 1000
 
     console.log(
         'non-sanitized things count: ',
         thingsCount,
         'sanitized things count: ',
         sanitizedThingsCount,
-        '   average things: ',
-        averageThings,
-        '   things in queue: ',
-        getAllSkippedOverThings().length,
         '   last received thing id: ',
         lastThingID,
         '   remaining (out of 100): ',
@@ -32,11 +27,9 @@ export function logInfo(
         '   reset: ',
         headers.get('x-ratelimit-reset'),
         '   difference in seconds from last vs now: ',
-        differenceSeconds,
+        lastThingCreatedVsNow,
         '   fetching time (s): ',
-        difference,
-        '   mean: ',
-        mean
+        cycleTime
     )
 }
 

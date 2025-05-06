@@ -1,3 +1,28 @@
+import * as dotenv from 'dotenv'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+// These lines help resolve __dirname in ES modules
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+// Load .env from parent directory
+dotenv.config({ path: path.resolve(__dirname, '../../.env') })
+
+
+// --------- ENV variables
+export const WORKER_THING_TYPE = process.env.REDDIT_WORKER_THING_TYPE
+export const port = process.env.PORT
+
+
+// --------- Reddit APIs
+export const redditAPIs = {
+    allPosts: 'https://oauth.reddit.com/r/all/new/.json',
+    allComments: 'https://oauth.reddit.com/r/all/comments/.json',
+    info: 'https://oauth.reddit.com/api/info.json',
+}
+
+// --------- Constant values
 export const CONSTANTS = {
     POSTS_PER_BATCH: 100,
     DELAY_BETWEEN_REQUESTS: 1000 * 1 * 6,
@@ -6,9 +31,10 @@ export const CONSTANTS = {
     MIN_POSTS_PER_BATCH: 80,
     // seconds delay between last fetched posts and now
     MAX_DELAY_NOW_VS_LAST_POST: 20,
-    MAX_DELAY_NOW_VS_LAST_COMMENT: 20
+    MAX_DELAY_NOW_VS_LAST_COMMENT: 20,
 }
 
+// --------- User agents. Ideally we should switch among them every now and then, we do so every 1000 requests right now
 export const USER_AGENTS = [
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
     'Mozilla/5.0 (iPhone; CPU iPhone OS 10_0_0; like Mac OS X) AppleWebKit/536.50 (KHTML, like Gecko)  Chrome/49.0.3802.298 Mobile Safari/602.9',
@@ -30,9 +56,3 @@ export const USER_AGENTS = [
     'Mozilla/5.0 (Linux; Android 10.1; dolphin Build/NRD91N; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/52.0.2743.100 Safari/537.36',
     'Dalvik/2.1.0 (Linux; U; Android 5.1.1; AQT80 Build/NKS.00.33.02.04)',
 ]
-
-export const redditAPIs = {
-    allPosts: 'https://oauth.reddit.com/r/all/new/.json',
-    allComments: 'https://oauth.reddit.com/r/all/comments/.json',
-    info: 'https://oauth.reddit.com/api/info.json',
-}
