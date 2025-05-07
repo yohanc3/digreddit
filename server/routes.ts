@@ -8,9 +8,8 @@
 */
 
 import router from '@adonisjs/core/services/router'
+const WebhookIntake = () => import("#controllers/webhook");
 
-router.get('/', async () => {
-  return {
-    hello: 'world',
-  }
-})
+router.post('/webhook/intake', [WebhookIntake, "intake"]);
+
+
