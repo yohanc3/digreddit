@@ -7,6 +7,7 @@ interface LightButtonProps {
     LeftIcon?: ReactNode;
     RightIcon?: ReactNode;
     className?: string;
+    children?: JSX.Element | string
 }
 
 export default function LightButton({
@@ -14,6 +15,7 @@ export default function LightButton({
     LeftIcon,
     RightIcon,
     className,
+    children
 }: LightButtonProps) {
     return (
         <button
@@ -25,6 +27,7 @@ export default function LightButton({
             {LeftIcon}
             {title}
             {RightIcon}
+            {children}
         </button>
     );
 }
