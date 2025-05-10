@@ -1,13 +1,13 @@
 import { db } from '@/db';
 import { users } from '@/db/schema';
-import RedditLeadCard from '@/lib/components/lead/card';
+import RedditLeadCard from '@/components/ui/lead/card';
 
-export default async function Students() {
-    const usersData = await db.select().from(users);
+export default async function Dashboard() {
+    // const usersData = await db.select().from(users);
 
-    const firstUser = usersData.at(0);
+    // const firstUser = usersData.at(0);
 
-    console.log('first user: ', firstUser);
+    // console.log('first user: ', firstUser);
 
     return (
         <div className="w-2/3">
