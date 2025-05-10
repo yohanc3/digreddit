@@ -6,32 +6,32 @@ import SignIn from '../signin';
 
 export default async function Header({ session }: { session: Session | null }) {
     return (
-        <header className="container mx-auto py-6 px-4 flex justify-between items-center">
+        <header className="container mx-auto py-6 px-4 flex justify-around items-center">
             <div className="flex items-center gap-2">
                 <FullLogo />
             </div>
-            <nav className="hidden md:flex justify-center items-center gap-9">
+            <nav className="hidden md:flex justify-center items-center gap-x-16">
                 <Link
                     href="#how-it-works"
-                    className="text-sm font-semibold hover:text-[#576F72] transition-colors"
+                    className="text-md font-semibold hover:text-[#576F72] transition-colors"
                 >
                     How It Works
                 </Link>
                 <Link
-                    href="#pricing"
-                    className="text-sm font-semibold hover:text-[#576F72] transition-colors"
+                    href="#who-its-for"
+                    className="text-md font-semibold hover:text-[#576F72] transition-colors"
                 >
-                    Pricing
+                    Who It's For
                 </Link>
                 <Link
                     href="#faq"
-                    className="text-sm font-semibold hover:text-[#576F72] transition-colors"
+                    className="text-md font-semibold hover:text-[#576F72] transition-colors"
                 >
                     FAQ
                 </Link>
                 <Link
                     href="#contact"
-                    className="text-sm font-semibold hover:text-[#576F72] transition-colors"
+                    className="text-md font-semibold hover:text-[#576F72] transition-colors"
                 >
                     Contact
                 </Link>

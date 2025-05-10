@@ -28,7 +28,9 @@ export default function Hero({ session }: { session: Session | null }) {
                             className="bg-[#576F72] hover:bg-[#475a5c]"
                             onClick={() => {
                                 if (!session) {
-                                    signIn('google', {redirectTo: "/dashboard"});
+                                    signIn('google', {
+                                        redirectTo: '/dashboard',
+                                    });
                                 } else {
                                     router.push('/dashboard');
                                 }
@@ -37,15 +39,16 @@ export default function Hero({ session }: { session: Session | null }) {
                             <ArrowRight className="ml-2 h-4 w-4" />
                         </LightButton>
 
-                        <Link href="#demo">
+                        {/* <Link href="#demo">
                             <LightButton title="See It In Action" />
-                        </Link>
+                        </Link> */}
                     </div>
                 </div>
                 <div className="relative h-[400px] rounded-lg overflow-hidden shadow-xl">
                     <Image
-                        src="/placeholder.svg?height=800&width=600"
+                        src="/demo-image.png"
                         alt="DigReddit in action"
+                        objectFit="contain"
                         fill
                         className="object-cover"
                     />

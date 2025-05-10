@@ -21,9 +21,9 @@ export default async function Home() {
             <Hero session={session} />
             <HowItWorks />
             <WhoItsFor />
-            <RealTimeDemo />
-            <Testimonials />
-            <Pricing />
+            {/* <RealTimeDemo /> */}
+            {/* <Testimonials /> */}
+            {/* <Pricing /> */}
             <Faq />
             <Cta />
             <Footer />
