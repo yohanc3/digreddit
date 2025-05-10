@@ -1,3 +1,5 @@
+'use client';
+
 import {
     Avatar,
     AvatarFallback,
@@ -12,7 +14,7 @@ import {
 } from '@/lib/components/ui/dropdown-menu';
 import { ChevronRight } from 'lucide-react';
 import type { User } from 'next-auth';
-import { signOut } from '../../../auth';
+import { signOut } from 'next-auth/react';
 
 export function UserDropdown({ user }: { user: User }) {
     return (
@@ -53,16 +55,11 @@ export function UserDropdown({ user }: { user: User }) {
                     <span>Theme: System</span>
                     <ChevronRight className="h-4 w-4 text-gray-500" />
                 </DropdownMenuItem>
-                <DropdownMenuItem className="py-3 text-gray-800 hover:bg-gray-100 focus:bg-gray-100 cursor-pointer">
-                    <form
-                        action={async () => {
-                            'use server';
-
-                            await signOut({ redirectTo: '/' });
-                        }}
-                    >
-                        <button type="submit">Sign Out</button>
-                    </form>
+                <DropdownMenuItem
+                    className="py-3 text-gray-800 hover:bg-gray-100 focus:bg-gray-100 cursor-pointer"
+                    onClick={() => signOut({ redirectTo: '/' })}
+                >
+                    <button type="submit">Sign Out</button>
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>

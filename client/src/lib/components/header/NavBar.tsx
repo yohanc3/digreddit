@@ -3,8 +3,7 @@ import DashboardNavItems from './DashboardNavItems';
 import { auth } from '../../../../auth';
 import { redirect } from 'next/navigation';
 import { UserDropdown } from '@/lib/components/avatar-dropdown';
-import Image from 'next/image';
-import Link from 'next/link';
+import { FullLogo } from '../logo';
 
 interface NavBarProps {
     className?: string;
@@ -25,14 +24,7 @@ export default async function NavBar({ className }: NavBarProps) {
             <div className="w-2/3 flex justify-between">
                 <div className="flex flex-row justify-center items-center gap-x-7">
                     <p className="font-bold text-2xl text-primaryColor">
-                        <Link href="/">
-                            <Image
-                                alt="DigReddit"
-                                src="/digreddit-logo.png"
-                                width={180}
-                                height={40}
-                            />
-                        </Link>
+                        <FullLogo />
                     </p>
                     <DashboardNavItems />
                 </div>

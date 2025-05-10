@@ -1,3 +1,5 @@
+'use client';
+
 import clsx from 'clsx';
 import { ReactNode } from 'react';
 
@@ -7,7 +9,7 @@ interface LightButtonProps {
     LeftIcon?: ReactNode;
     RightIcon?: ReactNode;
     className?: string;
-    children?: JSX.Element | string
+    children?: JSX.Element | string;
 }
 
 export default function LightButton({
@@ -15,7 +17,8 @@ export default function LightButton({
     LeftIcon,
     RightIcon,
     className,
-    children
+    children,
+    onClick,
 }: LightButtonProps) {
     return (
         <button
@@ -23,6 +26,7 @@ export default function LightButton({
                 'flex flex-row items-center justify-between font-semibold bg-white text-primarySize text-primaryColor border rounded-md border-light hover:bg-primaryColor/20 py-2 px-5 gap-x-2 transition-all duration-200 ease-in-out',
                 className
             )}
+            onClick={onClick}
         >
             {LeftIcon}
             {title}
