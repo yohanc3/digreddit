@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import { Lead } from '@/types/backend/db';
 import {
     BiUpvote,
@@ -10,8 +10,11 @@ import {
 } from 'react-icons/bi';
 import clsx from 'clsx';
 import { Button } from '../button';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/lib/components/ui/dialog';
-import { DialogFooter, DialogHeader } from '../dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogTrigger,
+} from '@/lib/components/ui/dialog';
 import { Badge } from '../badge';
 import { useState } from 'react';
 
@@ -21,7 +24,8 @@ interface RedditLeadCardProps {
 }
 
 export default function RedditLeadCard({ className }: RedditLeadCardProps) {
-    const [showRedditDescription, setShowRedditDescription] = useState<boolean>(false)
+    const [showRedditDescription, setShowRedditDescription] =
+        useState<boolean>(false);
     return (
         <div
             className={clsx(
@@ -40,7 +44,7 @@ export default function RedditLeadCard({ className }: RedditLeadCardProps) {
                     </div>
                 </div>
                 <div>
-                    <Button variant={"light"}>
+                    <Button variant={'light'}>
                         Open <BiLinkExternal size={18} />
                     </Button>
                 </div>
@@ -92,162 +96,175 @@ export default function RedditLeadCard({ className }: RedditLeadCardProps) {
             <div className="flex flex-row items-center text-tertiarySize text-tertiaryColor gap-x-1">
                 <p>Lead Rating:</p> <p> 7/10 </p>
             </div>
-
             <Dialog>
                 <DialogTrigger asChild>
-                    <Button variant={"dark"}>Open Details</Button>
+                    <Button variant="dark" className="w-full py-2 text-sm">
+                        Open Details
+                    </Button>
                 </DialogTrigger>
-                <DialogContent className="w-3/6 h-[90%] overflow-y-auto scrollbar-thin">
-                    <div className="flex flex-row justify-between h-min">
-                        <div className="flex flex-col">
-
-                            {/* Subreddit */}
-                            <div className='font-semibold text-mediumSize text-secondaryColor'>r/Philippines</div>
-
-                            {/* Reddit Post Owner */}
-                            <div className='text-primarySize text-tertiaryColor'>u/randomguy</div>
+                <DialogContent className="max-w-4xl p-14 h-[85vh] overflow-y-auto">
+                    {/* Header - Subreddit info and rating */}
+                    <div className="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 className="font-medium text-sm text-secondaryColor">
+                                r/Philippines
+                            </h3>
+                            <p className="text-xs text-tertiaryColor">
+                                u/randomguy
+                            </p>
                         </div>
-
-                        {/* Lead Rating */}
-                        <Badge variant={"dark"}>Rating: 7/10 </Badge>
+                        <Badge
+                            variant="dark"
+                            className="rounded-xl px-4 py-2 !text-base !font-semibold"
+                        >
+                            Rating: 7/10
+                        </Badge>
                     </div>
-                    <div className="flex flex-col gap-y-3 h-full justify-between">
 
-                        {/* SubReddit Post Title */}
-                        <div className="text-bigSize text-secondaryColor font-semibold text-justify">
-                            Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                        </div>
-                        <div className={clsx('w-full relative transition-all duration-500 ease-in-out', showRedditDescription ? "max-h-full" : "max-h-60")}>
-                            {
-                                !showRedditDescription && <div className='absolute flex h-full w-full items-end justify-center bg-gradient-to-t from-white'>
-                                    <div className='flex items-center text-tertiaryColor cursor-pointer' onMouseDown={() => { setShowRedditDescription(true) }}>
+                    <div className="flex flex-col gap-y-4">
+                        {/* Post Title */}
+                        <h2 className="text-lg font-semibold text-secondaryColor">
+                            Lorem ipsum dolor sit amet, consectetur adipscing
+                            elit.
+                        </h2>
+
+                        {/* Post Description with expand/collapse */}
+                        <div
+                            className={clsx(
+                                'w-full relative transition-all duration-300 ease-in-out',
+                                showRedditDescription
+                                    ? 'max-h-full'
+                                    : 'max-h-40'
+                            )}
+                        >
+                            {/* Gradient overlay and "See More" button */}
+                            {!showRedditDescription && (
+                                <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent flex items-end justify-center">
+                                    <button
+                                        className="flex items-center text-sm text-tertiaryColor hover:text-secondaryColor transition-colors"
+                                        onClick={() =>
+                                            setShowRedditDescription(true)
+                                        }
+                                    >
                                         <BiChevronDown size={25} /> See More
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Post content */}
+                            <div className="text-sm text-tertiaryColor">
+                                Lorem ipsum dolor sit amet, consectetur
+                                adipiscing elit. Sed dictum scelerisque rutrum.
+                                Mauris consequat cursus sem, eget sodales lorem
+                                mollis auctor. Integer commodo lacus risus,
+                                vitae porttitor augue viverra quis. Aenean
+                                blandit fermentum lorem, id interdum mauris
+                                semper quis. Donec consectetur maximus orci, sed
+                                facilisis nibh varius in. Vivamus at dui id nibh
+                                dignissim sodales. Duis condimentum eu mauris id
+                                porta. In dapibus suscipit neque in blandit.
+                                Fusce arcu sapien, sagittis ac convallis
+                                viverra, faucibus sed justo. Vestibulum eu
+                                tincidunt velit, sed vehicula dolor. Sed sed
+                                vestibulum lacus. Phasellus ut turpis malesuada
+                                lectus laoreet pulvinar at non lacus. Sed
+                                volutpat ac purus facilisis malesuada.
+                                {/* Repeated lorem ipsum text omitted for brevity */}
+                                {/* "See Less" button */}
+                                {showRedditDescription && (
+                                    <button
+                                        className="flex items-center text-sm text-tertiaryColor hover:text-secondaryColor transition-colors mt-4 mx-auto"
+                                        onClick={() =>
+                                            setShowRedditDescription(false)
+                                        }
+                                    >
+                                        <BiChevronUp size={25} /> See More
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Post Stats */}
+                        <div className="grid grid-cols-3 gap-3 my-2">
+                            {/* Upvotes */}
+                            <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50">
+                                <div className="items-center justify-center h-min">
+                                    <BiUpvote color="#D93900" size={25} />
+                                </div>
+                                <div className="items-center justify-center h-min">
+                                    <div className="text-sm text-secondaryColor">
+                                        Upvotes
+                                    </div>
+                                    <div className="text-xl text-secondaryColor font-semibold">
+                                        1.4k
                                     </div>
                                 </div>
-                            }
-
-                            {/* Subreddit Post Description */}
-                            <div
-                                className={"text-primarySize text-tertiaryColor text-justify overflow-y-hidden h-full"}
+                            </div>
+                            {/* <Badge
+                                variant={'leadDetails'}
+                                className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50"
                             >
-                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
-                                dictum scelerisque rutrum. Mauris consequat cursus sem, eget
-                                sodales lorem mollis auctor. Integer commodo lacus risus,
-                                vitae porttitor augue viverra quis. Aenean blandit fermentum
-                                lorem, id interdum mauris semper quis. Donec consectetur
-                                maximus orci, sed facilisis nibh varius in. Vivamus at dui
-                                id nibh dignissim sodales. Duis condimentum eu mauris id
-                                porta. In dapibus suscipit neque in blandit. Fusce arcu
-                                sapien, sagittis ac convallis viverra, faucibus sed justo.
-                                Vestibulum eu tincidunt velit, sed vehicula dolor. Sed sed
-                                vestibulum lacus. Phasellus ut turpis malesuada lectus
-                                laoreet pulvinar at non lacus. Sed volutpat ac purus
-                                facilisis malesuada.
+                                
+                            </Badge> */}
 
-                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
-                                dictum scelerisque rutrum. Mauris consequat cursus sem, eget
-                                sodales lorem mollis auctor. Integer commodo lacus risus,
-                                vitae porttitor augue viverra quis. Aenean blandit fermentum
-                                lorem, id interdum mauris semper quis. Donec consectetur
-                                maximus orci, sed facilisis nibh varius in. Vivamus at dui
-                                id nibh dignissim sodales. Duis condimentum eu mauris id
-                                porta. In dapibus suscipit neque in blandit. Fusce arcu
-                                sapien, sagittis ac convallis viverra, faucibus sed justo.
-                                Vestibulum eu tincidunt velit, sed vehicula dolor. Sed sed
-                                vestibulum lacus. Phasellus ut turpis malesuada lectus
-                                laoreet pulvinar at non lacus. Sed volutpat ac purus
-                                facilisis malesuada.
-
-                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
-                                dictum scelerisque rutrum. Mauris consequat cursus sem, eget
-                                sodales lorem mollis auctor. Integer commodo lacus risus,
-                                vitae porttitor augue viverra quis. Aenean blandit fermentum
-                                lorem, id interdum mauris semper quis. Donec consectetur
-                                maximus orci, sed facilisis nibh varius in. Vivamus at dui
-                                id nibh dignissim sodales. Duis condimentum eu mauris id
-                                porta. In dapibus suscipit neque in blandit. Fusce arcu
-                                sapien, sagittis ac convallis viverra, faucibus sed justo.
-                                Vestibulum eu tincidunt velit, sed vehicula dolor. Sed sed
-                                vestibulum lacus. Phasellus ut turpis malesuada lectus
-                                laoreet pulvinar at non lacus. Sed volutpat ac purus
-                                facilisis malesuada.
-
-                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
-                                dictum scelerisque rutrum. Mauris consequat cursus sem, eget
-                                sodales lorem mollis auctor. Integer commodo lacus risus,
-                                vitae porttitor augue viverra quis. Aenean blandit fermentum
-                                lorem, id interdum mauris semper quis. Donec consectetur
-                                maximus orci, sed facilisis nibh varius in. Vivamus at dui
-                                id nibh dignissim sodales. Duis condimentum eu mauris id
-                                porta. In dapibus suscipit neque in blandit. Fusce arcu
-                                sapien, sagittis ac convallis viverra, faucibus sed justo.
-                                Vestibulum eu tincidunt velit, sed vehicula dolor. Sed sed
-                                vestibulum lacus. Phasellus ut turpis malesuada lectus
-                                laoreet pulvinar at non lacus. Sed volutpat ac purus
-                                facilisis malesuada.
-                                {
-                                    showRedditDescription && <div className='flex w-full items-center justify-center cursor-pointer' onMouseDown={() => { setShowRedditDescription(false) }}>
-                                        <BiChevronUp size={25} /> See Less
-                                    </div>
-                                }
+                            {/* Comments */}
+                            <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50">
+                                <BiCommentDetail color="#344054" size={25} />
+                                <div>
+                                    <p className="text-sm text-secondaryColor">
+                                        Comments
+                                    </p>
+                                    <p className="text-xl font-semibold text-secondaryColor">
+                                        16
+                                    </p>
+                                </div>
                             </div>
 
+                            {/* Posted Date */}
+                            <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50">
+                                <BiTimeFive color="#344054" size={25} />
+                                <div>
+                                    <p className="text-xs text-secondaryColor">
+                                        Posted
+                                    </p>
+                                    <p className="text-xl font-semibold text-secondaryColor">
+                                        16 Days
+                                    </p>
+                                </div>
+                            </div>
                         </div>
-                        <div className='flex flex-row justify-evenly w-ful gap-x-5'>
 
-                            {/* Subreddit Post Upvotes */}
-                            <Badge variant={"leadDetails"}>
-                                <div className='items-center justify-center h-min'>
-                                    <BiUpvote color="#D93900" size={50} />
-                                </div>
-                                <div className='items-center justify-center h-min'>
-                                    <div className='text-mediumSize text-secondaryColor'>Upvotes</div>
-                                    <div className='text-bigSize text-secondaryColor font-semibold'>1.4k</div>
-                                </div>
-                            </Badge>
-
-                            {/* Subreddit Post Comments */}
-                            <Badge variant={"leadDetails"}>
-                                <div className='items-center justify-center h-min'>
-                                    <BiCommentDetail color="#344054" size={50} />
-                                </div>
-                                <div className='items-center justify-center h-min'>
-                                    <div className='text-mediumSize text-secondaryColor'>Comments</div>
-                                    <div className='text-bigSize text-secondaryColor font-semibold'>16</div>
-                                </div>
-                            </Badge>
-
-                            {/* Subreddit Posted Date */}
-                            <Badge variant={"leadDetails"}>
-                                <div className='items-center justify-center h-min'>
-                                    <BiTimeFive color="#344054" size={50} />
-                                </div>
-                                <div className='items-center justify-center h-min'>
-                                    <div className='text-mediumSize text-secondaryColor'>Posted</div>
-                                    <div className='text-bigSize text-secondaryColor font-semibold'>16 Days</div>
-                                </div>
-                            </Badge>
-                        </div>
-                        <div className='flex flex-col'>
-
-                             {/* AI Response*/}
-                            <label className='text-mediumSize font-semibold text-secondaryColor'>
+                        {/* AI Response */}
+                        <div className="mt-2">
+                            <label className="text-sm font-medium text-secondaryColor block mb-2">
                                 AI Generated Response:
                             </label>
-                            <textarea value="Thanks for sharing your thoughts! I really appreciate you bringing this up. It actually ties perfectly into something I wanted to mention — if you're looking for a solution that could help with this, you might want to check out what we're offering.
-
-We've been working hard on a product that's specifically designed to make things easier, faster, and a lot more efficient. It's built around the exact kinds of challenges you're highlighting, and the feedback from early users has been incredibly positive.
-
-I won't go into a full pitch here, but if you're curious, feel free to take a quick look! It could save you a ton of time and effort compared to trying to patch things together manually. Plus, we're always open to feedback — so your input could directly help shape the next improvements we roll out.
-
-No pressure at all — just wanted to share because it feels super relevant to what you're talking about. Let me know if you have any questions or want more details!" placeholder='AI Generated Response . . .' className='border border-light p-2 h-48 text-tertiaryColor text-primarySize' readOnly disabled />
+                            <div className="border border-gray-100 rounded-md p-3 text-sm text-tertiaryColor bg-gray-50">
+                                Thanks for sharing your thoughts! I really
+                                appreciate you bringing this up. It actually
+                                ties perfectly into something I wanted to
+                                mention — if you're looking for a solution that
+                                could help with this, you might want to check
+                                out what we're offering. We've been working hard
+                                on a product that's specifically designed to
+                                make things easier, faster, and a lot more
+                                efficient. It's built around the exact kinds of
+                                challenges you're highlighting, and the feedback
+                                from early users has been incredibly positive. I
+                                won't go into a full pitch here, but if you're
+                                curious, feel free to take a quick look! It
+                                could save you a ton of time and effort compared
+                                to trying to patch things together manually.
+                            </div>
                         </div>
-                        <div className='flex justify-end' >
-                            <Button variant={"dark"} className='!w-48'>View Comment</Button>
+
+                        {/* Action Button */}
+                        <div className="flex justify-end mt-2">
+                            <Button variant="dark" className="w-36 h-9 text-sm">
+                                View Comment
+                            </Button>
                         </div>
                     </div>
-                    {/* <DialogFooter className="sm:justify-start">
-                    </DialogFooter> */}
                 </DialogContent>
             </Dialog>
         </div>
