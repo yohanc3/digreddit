@@ -93,7 +93,7 @@ export default function RedditLeadCard({ className }: RedditLeadCardProps) {
             </div>
 
             {/* Card Rating */}
-            <div className="flex flex-row items-center text-tertiarySize text-tertiaryColor gap-x-1">
+            <div className="flex flex-row items-center text-xs font-semibold text-tertiaryColor gap-x-1">
                 <p>Lead Rating:</p> <p> 7/10 </p>
             </div>
             <Dialog>
