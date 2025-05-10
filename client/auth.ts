@@ -11,4 +11,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         usersTable: users as never,
     }),
     providers: [Google],
+    pages: {
+        signIn: '/',
+    },
+    callbacks: {
+        authorized: async ({ auth }) => {
+            return !!auth;
+        },
+    },
 });
