@@ -10,7 +10,7 @@ import {
 } from 'react-icons/bi';
 import clsx from 'clsx';
 import { Button } from '../button';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/lib/components/ui/dialog';
 import { DialogFooter, DialogHeader } from '../dialog';
 import { Badge } from '../badge';
 import { useState } from 'react';
