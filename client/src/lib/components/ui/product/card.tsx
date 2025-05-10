@@ -1,124 +1,91 @@
-"use client";
-import { Lead } from '@/types/backend/db';
-import {
-    BiUpvote,
-    BiCommentDetail,
-    BiTimeFive,
-    BiLinkExternal,
-    BiChevronDown,
-    BiChevronUp,
-} from 'react-icons/bi';
+'use client';
 import clsx from 'clsx';
 import { Button } from '../button';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { DialogFooter, DialogHeader } from '../dialog';
 import { Badge } from '../badge';
-import { useState } from 'react';
+import type { Lead } from '@/types/backend/db';
 
 interface ProductCardProps {
     leadDetails?: Lead;
     className?: string;
 }
 
-
-
 const industries = [
-    "Technology",
-    "Healthcare",
-    "Finance",
-    "Education",
-    "Retail",
-    "Manufacturing",
-    "Energy",
-    "Transportation",
-    "Real Estate",
-    "Hospitality",
-    "Entertainment",
-    "Agriculture",
-    "Telecommunications",
-    "Construction",
-    "Legal Services",
-    "Food and Beverage",
-    "Automotive",
-    "Aerospace",
-    "Pharmaceuticals",
-    "Insurance",
-    "Consulting",
-    "Media and Publishing",
-    "Marketing and Advertising",
-    "Fashion and Apparel",
-    "Biotechnology",
-    "Cybersecurity",
-    "Environmental Services",
-    "Nonprofit Organizations",
-    "Government",
-    "Mining and Metals",
-    "Logistics and Supply Chain",
-    "Sports and Recreation",
-    "Tourism and Travel",
-    "Architecture and Design",
-    "Human Resources",
-    "Petroleum and Gas",
-    "Home and Garden",
-    "Arts and Crafts",
-    "Event Management",
-    "Marine and Shipping",
-    "Electronics",
-    "Venture Capital and Private Equity",
-    "Luxury Goods and Jewelry",
-    "Fitness and Wellness",
-    "Public Relations",
-    "Waste Management",
-    "Data and Analytics",
-    "Blockchain and Cryptocurrency",
-    "E-commerce",
-    "Education Technology (EdTech)"
+    'Estate Planning',
+    'Attorney',
+    'Estate',
+    'Law',
+    'NLBM',
+    'New Law Business Model',
+    'Clio',
+    'WealthCounsel',
+    'KeepSake',
+    'Lorem',
+    'ipsum dolor',
+    'sit',
+    'amet',
+    'consectetur',
+    'adipiscing',
+    'elit',
+    'Sed',
+    'dictum',
+    'amet',
+    'lorem',
+    'elit',
+    'locus',
 ];
 
 export default function ProductCard({ className }: ProductCardProps) {
-    const [showRedditDescription, setShowRedditDescription] = useState<boolean>(false)
     return (
         <div
             className={clsx(
-                'w-auto flex flex-col bg-white text-black p-5 rounded-lg gap-y-4 border border-light',
+                'flex flex-col bg-white text-black p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow',
                 className
             )}
         >
             {/* Product Header */}
-            <div className='text-bigSize font-semibold text-secondaryColor'>
+            <h2 className="text-lg font-semibold text-secondaryColor mb-2">
                 KeepSake
-            </div>
+            </h2>
 
-            {/* Product Description */}
-            <div className='text-primarySize text-tertiaryColor text-justify'>
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed dictum scelerisque rutrum. Mauris consequat cursus sem, eget sodales lorem mollis auctor. Integer commodo lacus risus, vitae porttitor augue viverra quis. Aenean blandit fermentum lorem, id interdum mauris semper quis. Donec consectetur maximus orci, sed facilisis nibh varius in. Vivamus at dui id nibh dignissim sodales. Duis condimentum eu mauris id porta. In dapibus suscipit neque in blandit. Fusce arcu sapien, sagittis ac convallis viverra, faucibus sed justo. Vestibulum eu tincidunt velit, sed vehicula dolor. Sed sed vestibulum lacus. Phasellus ut turpis malesuada lectus laoreet pulvinar at non lacus. Sed volutpat ac purus facilisis malesuada.
-            </div>
+            {/* Product Description - Truncated */}
+            <p className="text-sm text-gray-600 mb-4 line-clamp-4">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
+                dictum scelerisque rutrum. Mauris consequat cursus sem, eget
+                sodales lorem mollis auctor. Integer commodo lacus risus, vitae
+                porttitor augue viverra quis. Aenean blandit fermentum lorem, id
+                interdum mauris semper quis.
+            </p>
 
-            {/* Keywords Input */}
-            <div className='flex flex-col gap-y-2'>
-                <label className='text-secondaryColor text-mediumSize font-semibold'>Keywords:</label>
-                {/* Keywords List */}
-                <div className='flex flex-wrap gap-2 w-full'>
-                    {
-                        <>
-                            {
-                                industries.slice(0, 7).map((item: string) => {
-                                    return <Badge variant={"leadKeyword"} className='text-xs rounded-lg'>{item}</Badge>
-                                })
-                            }
-                            {
-                                industries.length > 7 && <Badge variant={"leadKeyword"} className='text-xs rounded-lg'>+ {industries.length - 7} More</Badge>
-                            }
-
-                        </>
-                    }
+            {/* Keywords */}
+            <div className="mt-auto">
+                <p className="text-sm font-medium text-secondaryColor mb-2">
+                    Keywords Selected:
+                </p>
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                    {industries.slice(0, 12).map((item, index) => (
+                        <Badge
+                            key={index}
+                            variant="outline"
+                            className="text-xs py-0.5 px-2 bg-gray-50 border-gray-200 rounded-full"
+                        >
+                            {item}
+                        </Badge>
+                    ))}
+                    {industries.length > 12 && (
+                        <Badge
+                            variant="outline"
+                            className="text-xs py-0.5 px-2 bg-gray-50 border-gray-200 rounded-full"
+                        >
+                            + {industries.length - 12} More
+                        </Badge>
+                    )}
                 </div>
             </div>
 
-            {/* Open */}
-            <div>
-                <Button variant={"dark"}>Open Details</Button>
-            </div>
+            {/* Open Details Button */}
+            <Button variant="dark" className="w-full py-2 text-sm">
+                Open Details
+            </Button>
         </div>
     );
 }
