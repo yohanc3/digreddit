@@ -1,10 +1,12 @@
 import 'dotenv/config';
 import * as schema from './schema';
-import { drizzle } from 'drizzle-orm/node-postgres';
+import { drizzle } from 'drizzle-orm/neon-http';
 import { eq, inArray, sql } from 'drizzle-orm';
 import { commentLeads, postLeads, products } from './schema';
+import { neon } from "@neondatabase/serverless"
 
-export const db = drizzle(process.env.DATABASE_URL!, { schema });
+const neonConnection = neon(process.env.DATABASE_URL!);
+export const db = drizzle(neonConnection, { schema });
 
 export const productsQueries = {
     getAllProductsByUserID: async (userID: string) => {
