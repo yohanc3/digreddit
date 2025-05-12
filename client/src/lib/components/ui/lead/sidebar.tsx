@@ -5,6 +5,7 @@ import clsx from 'clsx';
 import { Button } from '../button';
 import RedditLeadList from './list';
 import { Products } from '@/types/backend/db';
+import { useRouter } from 'next/navigation';
 
 interface LeftSideBarLeadResultProps {
     products: Products[];
@@ -61,6 +62,7 @@ export function LeftSideBarLeadResult({
 export function RightSideBarLeadResult({
     className,
 }: RightSideBarLeadResultProps) {
+    const router = useRouter();
     return (
         <div
             className={clsx(
@@ -68,7 +70,7 @@ export function RightSideBarLeadResult({
                 className
             )}
         >
-            <Button variant={'dark'} className="!justify-between w-full">
+            <Button variant={'dark'} className="!justify-between w-full" onClick={()=>router.push("/create-product")}>
                 Create New Request <BiPlus size={20} />
             </Button>
             <Button variant={'lightDelete'}>

@@ -9,6 +9,7 @@ import {
 import RedditLeadCard from '../ui/lead/card';
 import { useQuery } from '@tanstack/react-query';
 import { leadsQueries } from '@/db';
+import ProductConfig from '../ui/lead/productConfig';
 
 export default function DashboardHandler({
     fetchedProducts,
@@ -66,8 +67,11 @@ export default function DashboardHandler({
                 products={fetchedProducts}
                 onSelectedProductChange={onSelectedProductChange}
             />
+
             <div className="w-2/3">
-                <div className="w-full p-4 justify-center grid grid-cols-3 gap-2">
+                <ProductConfig />
+                <div className='px-4 font-semibold text-primarySize text-secondaryColor'>Lead List:</div>
+                <div className="w-full p-4 pt-1 justify-center grid grid-cols-3 gap-2">
                     <RedditLeadCard />
                 </div>
             </div>
