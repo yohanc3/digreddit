@@ -10,6 +10,7 @@
 
 import router from '@adonisjs/core/services/router'
 import server from '@adonisjs/core/services/server'
+import startWorker from './ahoCorasickWorker.js'
 
 /**
  * The error handler is used to convert an exception
@@ -39,3 +40,10 @@ router.use([() => import('@adonisjs/core/bodyparser_middleware')])
  * the routes or the routes group.
  */
 export const middleware = router.named({})
+
+
+/**
+ * The Aho Corasick worker that will keep updating our algo with new keywords
+ * inserted in the DB from the client
+ */
+startWorker()
