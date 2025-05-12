@@ -2,7 +2,7 @@
 
 import { Badge } from '@/lib/components/ui/badge';
 import { Button } from '@/lib/components/ui/button';
-import { DeleteIcon, X } from 'lucide-react';
+import { X } from 'lucide-react';
 
 const industries = [
     'Technology',
