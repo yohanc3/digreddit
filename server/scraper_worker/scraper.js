@@ -103,7 +103,7 @@ async function main() {
     }
 }
 
-// Set the session's oauth token before starting the main rutine
+// Set the session's oauth token before starting the main routine
 await setOauthToken()
 
 // await is not 100% needed here btw.
