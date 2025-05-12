@@ -1,12 +1,19 @@
 import clsx from 'clsx';
 import DashboardNavItems from './DashboardNavItems';
-import Image from 'next/image';
+import { auth } from '../../../../auth';
+import { redirect } from 'next/navigation';
+import { UserDropdown } from '@/lib/components/avatar-dropdown';
+import { FullLogo } from '../logo';
 
 interface NavBarProps {
     className?: string;
 }
 
-export default function NavBar({ className }: NavBarProps) {
+export default async function NavBar({ className }: NavBarProps) {
+    const session = await auth();
+
+    if (!session || !session.user) return redirect('/');
+
     return (
         <div
             className={clsx(
@@ -17,22 +24,16 @@ export default function NavBar({ className }: NavBarProps) {
             <div className="w-2/3 flex justify-between">
                 <div className="flex flex-row justify-center items-center gap-x-7">
                     <p className="font-bold text-2xl text-primaryColor">
-                        DigReddit
+                        <FullLogo />
                     </p>
                     <DashboardNavItems />
                 </div>
 
                 {/* Temporary Profile */}
                 <div className="flex flex-row items-center gap-x-2">
-                    <Image
-                        height={10}
-                        width={8}
-                        className="rounded-full w-8 h-8"
-                        src="https://picsum.photos/200"
-                        alt="Profile Image"
-                    />
+                    <UserDropdown user={session.user} />
                     <p className="text-primarySize text-secondaryColor font-semibold">
-                        Bob Alen Smith
+                        {session.user?.name || ''}
                     </p>
                 </div>
             </div>
