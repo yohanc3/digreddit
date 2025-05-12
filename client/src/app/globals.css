@@ -66,6 +66,26 @@
     }
 }
 
+/* Firefox */
+.scrollbar-thin {
+  scrollbar-width:thin;
+  scrollbar-color: auto transparent;
+}
+
+/* Chrome, Safari */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px; /* You can set it even to 0px if you want it invisible */
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 20px;
+}
+
 
 
 @layer base {

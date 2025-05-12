@@ -12,10 +12,8 @@ export default function DashboardLayout({
     return (
         <div className="flex flex-col w-full">
             <NavBar />
-            <div className="h-full flex flex-row">
-                <LeftSideBarLeadResult />
+            <div className="h-full w-full flex justify-center">
                 {children}
-                <RightSideBarLeadResult />
             </div>
         </div>
     );

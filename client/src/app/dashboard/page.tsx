@@ -1,4 +1,4 @@
-import RedditLeadCard from '@/lib/components/lead/card';
+import RedditLeadCard from '@/lib/components/ui/lead/card';
 
 export default async function Dashboard() {
 

@@ -1,7 +1,6 @@
 import { BiChevronsLeft, BiPlus, BiTrash } from 'react-icons/bi';
 import clsx from 'clsx';
-import LightButton from '../button/light';
-import DarkButton from '../button/dark';
+import { Button } from '../button';
 import RedditLeadList from './list';
 
 interface LeftSideBarLeadResultProps {
@@ -41,16 +40,12 @@ export function RightSideBarLeadResult({
                 className
             )}
         >
-            <DarkButton
-                title="Create New Request"
-                RightIcon={<BiPlus size={20} />}
-                className="w-full !justify-between text-sm"
-            />
-            <LightButton
-                title="Delete Results"
-                RightIcon={<BiTrash size={20} />}
-                className="w-full justify-between text-red-400 hover:bg-red-400 hover:text-white text-sm"
-            />
+            <Button variant={"dark"} className='!justify-between w-full'>
+                Create New Request <BiPlus size={20} />
+            </Button>
+            <Button variant={"lightDelete"}>
+                Delete Results <BiTrash size={20} />
+            </Button>
         </div>
     );
 }
