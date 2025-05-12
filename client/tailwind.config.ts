@@ -84,6 +84,13 @@ const config: Config = {
     					fontWeight: '400'
     				}
     			],
+				bigSize: [
+    				'1.9rem',
+    				{
+    					lineHeight: '1.75rem',
+    					fontWeight: '400'
+    				}
+    			],
     			secondarySize: [
     				'0.75rem',
     				{
