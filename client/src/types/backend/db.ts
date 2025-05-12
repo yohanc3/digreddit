@@ -1,3 +1,6 @@
+import { products } from "@/db/schema";
+import { InferSelectModel } from "drizzle-orm";
+
 export type Lead = {
     id: string;
     subreddit: string;
@@ -20,3 +23,5 @@ export type PostLead = Lead & {
 };
 
 export type CommentLead = Lead & {};
+
+export type Products = InferSelectModel<typeof products>

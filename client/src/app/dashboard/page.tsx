@@ -1,21 +1,16 @@
-import RedditLeadCard from '@/lib/components/ui/lead/card';
+import { auth } from '../../../auth';
+import { redirect } from 'next/navigation';
+import { productsQueries } from '@/db';
+import DashboardHandler from '@/lib/components/dashboard/DashboardHandler';
 
 export default async function Dashboard() {
+    const session = await auth();
 
-    return (
-        <div className="w-2/3">
-            <div className="w-full p-4 justify-center grid grid-cols-3 gap-2">
-                <RedditLeadCard />
-                <RedditLeadCard />
-                <RedditLeadCard />
-                <RedditLeadCard />
-                <RedditLeadCard />
-                <RedditLeadCard />
-                <RedditLeadCard />
-                <RedditLeadCard />
-                <RedditLeadCard />
-                <RedditLeadCard />
-            </div>
-        </div>
+    if (!session || !session.user || !session.user.id) redirect('/');
+
+    const fetchedProducts = await productsQueries.getAllProductsByUserID(
+        session.user.id
     );
+
+    return <DashboardHandler fetchedProducts={fetchedProducts} />;
 }

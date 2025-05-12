@@ -2,10 +2,14 @@ import clsx from 'clsx';
 
 interface RedditLeadListItemProps {
     className?: string;
+    title: string;
+    date: string;
 }
 
 export default function RedditLeadListItem({
     className,
+    title,
+    date
 }: RedditLeadListItemProps) {
     return (
         <div
@@ -15,10 +19,10 @@ export default function RedditLeadListItem({
             )}
         >
             <p className="text-primarySize text-secondaryColor font-semibold">
-                Keepsake Leads Result
+                {title}
             </p>
             <p className="text-tertiarySize text-tertiaryColor">
-                December 01, 2025
+                {date}
             </p>
         </div>
     );

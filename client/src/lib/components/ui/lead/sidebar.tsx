@@ -1,9 +1,14 @@
+"use client"
+
 import { BiChevronsLeft, BiPlus, BiTrash } from 'react-icons/bi';
 import clsx from 'clsx';
 import { Button } from '../button';
 import RedditLeadList from './list';
+import { Products } from '@/types/backend/db';
 
 interface LeftSideBarLeadResultProps {
+    products: Products[];
+    onSelectedProductChange: (index: number) => void;
     className?: string;
 }
 
@@ -12,8 +17,28 @@ interface RightSideBarLeadResultProps {
 }
 
 export function LeftSideBarLeadResult({
+    products,
     className,
+    onSelectedProductChange,
 }: LeftSideBarLeadResultProps) {
+    const redditLeadListData: { title: string; date: string }[] = products.map(
+        (product) => {
+            const newDate = new Date(product.createdAt);
+
+            // Get month name
+            const month = newDate.toLocaleString('en-US', { month: 'long' });
+            const day = newDate.getDate().toString().padStart(2, '0');
+            const year = newDate.getFullYear();
+
+            const formattedDate = `${month} ${day}, ${year}`;
+
+            return {
+                title: product.title,
+                date: formattedDate,
+            };
+        }
+    );
+
     return (
         <div
             className={clsx(
@@ -25,7 +50,10 @@ export function LeftSideBarLeadResult({
                 <BiChevronsLeft color="#576F72" size={24} />
             </div>
             <p className="text-secondarySize text-secondaryColor">Results:</p>
-            <RedditLeadList />
+            <RedditLeadList
+                productsList={redditLeadListData}
+                onSelectedProductChange={onSelectedProductChange}
+            />
         </div>
     );
 }
@@ -40,10 +68,10 @@ export function RightSideBarLeadResult({
                 className
             )}
         >
-            <Button variant={"dark"} className='!justify-between w-full'>
+            <Button variant={'dark'} className="!justify-between w-full">
                 Create New Request <BiPlus size={20} />
             </Button>
-            <Button variant={"lightDelete"}>
+            <Button variant={'lightDelete'}>
                 Delete Results <BiTrash size={20} />
             </Button>
         </div>
