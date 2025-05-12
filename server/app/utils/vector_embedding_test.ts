@@ -6,13 +6,12 @@ const ProductDescription =
 
 const embedder = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2')
 
-
 async function getEmbedding(text: string) {
     const output = await embedder(text, { pooling: 'mean', normalize: true })
     return output.data // returns a Float32Array
 }
 
-const productEmbedded = await getEmbedding(ProductDescription);
+const productEmbedded = await getEmbedding(ProductDescription)
 
 export async function compareEmbeddings(text: string) {
     const textEmbedding = await getEmbedding(text)
@@ -24,10 +23,9 @@ export async function compareEmbeddings(text: string) {
     // After thorough testing, I found that comparisons between embeddings don't really get beyond 6. If they do,
     // it's an extremely good lead. I ran some tests with deepseek. I had 4 dummy tests and 1 dummy product description. The first dummy post was 100% similar
     // to a dummy product description, second was ~75% similar, 3rd 50%, and 4th 0-10%. Deepseek accurately rated them in the following order : 10, 8, 5, 0.
-    // Keep in mind I ran the same query multiple times. Xenova/all-MiniLM-L6-v2 however, rated them in the following order: 5.7, 3.3, 2.5, 0. So pretty similar
-    // when making 6 the greatest achievable score.
+    // Keep in mind I ran the same query multiple times. Xenova/all-MiniLM-L6-v2 however, rated them in the following order: 5.7, 3.3, 2.5, 0. So pretty similar when making 6 the greatest achievable score.
     //  - Yohance
-    const similarityResultOutOf6 = similarityResult / 7
+    const similarityResultOutOf6 = similarityResult / 6
 
     return similarityResultOutOf6
 }
