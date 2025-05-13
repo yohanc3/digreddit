@@ -1,12 +1,13 @@
 import 'dotenv/config';
 import * as schema from './schema';
-import { drizzle } from 'drizzle-orm/neon-http';
-import { eq, inArray, sql } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { eq } from 'drizzle-orm';
 import { commentLeads, postLeads, products } from './schema';
-import { neon } from "@neondatabase/serverless"
+import { Lead } from '@/types/backend/db';
+// import { neon } from "@neondatabase/serverless"
 
-const neonConnection = neon(process.env.DATABASE_URL!);
-export const db = drizzle(neonConnection, { schema });
+// const neonConnection = neon(process.env.DATABASE_URL!);
+export const db = drizzle(process.env.DATABASE_URL!, { schema });
 
 export const productsQueries = {
     getAllProductsByUserID: async (userID: string) => {
@@ -29,13 +30,12 @@ export const productsQueries = {
             .from(products)
             .where(eq(products.id, productID));
 
-        return results[0]
+        return results[0];
     },
 };
 
 export const leadsQueries = {
     getAllLeadsByProductID: async (productID: string) => {
-
         const allPostLeads = await db.query.postLeads.findMany({
             where: eq(postLeads.productId, productID),
         });
@@ -44,12 +44,14 @@ export const leadsQueries = {
             where: eq(commentLeads.productId, productID),
         });
 
-        const allSortedLeads = [...allPostLeads, ...allCommentLeads].sort((a, b) => {
-            const firstDate = new Date(a.createdAt)
-            const secondDate = new Date(b.createdAt)
+        const allSortedLeads = [...allPostLeads, ...allCommentLeads].sort(
+            (a, b) => {
+                const firstDate = new Date(a.createdAt);
+                const secondDate = new Date(b.createdAt);
 
-            return firstDate.getTime() - secondDate.getTime()
-        })
+                return firstDate.getTime() - secondDate.getTime();
+            }
+        );
 
         return allSortedLeads;
     },
