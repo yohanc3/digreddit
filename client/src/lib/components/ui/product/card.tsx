@@ -72,7 +72,7 @@ export default function ProductCard({ leadDetails, className }: ProductCardProps
                             variant="outline"
                             className="text-xs py-0.5 px-2 bg-gray-50 border-gray-200 rounded-full"
                         >
-                            + {industries.length - 12} More
+                            + {(leadDetails.keywords as string[]).length - 12} More
                         </Badge>
                     )}
                 </div>
