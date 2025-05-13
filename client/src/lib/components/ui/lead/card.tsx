@@ -1,5 +1,5 @@
 'use client';
-import { Lead } from '@/types/backend/db';
+import { CommentLead, Lead } from '@/types/backend/db';
 import {
     BiUpvote,
     BiCommentDetail,
@@ -18,12 +18,15 @@ import {
 import { Badge } from '../badge';
 import { useState } from 'react';
 
-interface RedditLeadCardProps {
-    leadDetails?: Lead;
+interface RedditCommentLeadCardProps {
+    leadDetails: CommentLead;
     className?: string;
 }
 
-export default function RedditLeadCard({ className }: RedditLeadCardProps) {
+export default function RedditCommentLeadCard({ className, leadDetails }: RedditCommentLeadCardProps) {
+
+    const date = ''
+
     return (
         <div
             className={clsx(
@@ -35,10 +38,10 @@ export default function RedditLeadCard({ className }: RedditLeadCardProps) {
             <div className="flex flex-row justify-between">
                 <div className="flex flex-col">
                     <div className="text-secondaryColor text-primarySize font-semibold">
-                        r/Philippines
+                        {leadDetails.subreddit}
                     </div>
                     <div className="text-tertiaryColor text-tertiarySize">
-                        by: u/jilinjames
+                        by: {leadDetails.author}
                     </div>
                 </div>
                 <div>
@@ -50,23 +53,8 @@ export default function RedditLeadCard({ className }: RedditLeadCardProps) {
 
             {/* Card Body */}
             <div className="flex flex-col">
-                <div className="text-mediumSize font-semibold">
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                </div>
                 <div className="text-tertiarySize text-tertiaryColor text-justify">
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
-                    dictum scelerisque rutrum. Mauris consequat cursus sem, eget
-                    sodales lorem mollis auctor. Integer commodo lacus risus,
-                    vitae porttitor augue viverra quis. Aenean blandit fermentum
-                    lorem, id interdum mauris semper quis. Donec consectetur
-                    maximus orci, sed facilisis nibh varius in. Vivamus at dui
-                    id nibh dignissim sodales. Duis condimentum eu mauris id
-                    porta. In dapibus suscipit neque in blandit. Fusce arcu
-                    sapien, sagittis ac convallis viverra, faucibus sed justo.
-                    Vestibulum eu tincidunt velit, sed vehicula dolor. Sed sed
-                    vestibulum lacus. Phasellus ut turpis malesuada lectus
-                    laoreet pulvinar at non lacus. Sed volutpat ac purus
-                    facilisis malesuada.
+                    {leadDetails.body}
                 </div>
             </div>
 
@@ -85,7 +73,7 @@ export default function RedditLeadCard({ className }: RedditLeadCardProps) {
                     <BiTimeFive color="#344054" size={18} />{' '}
                     <p className="text-tertiarySize text-tertiaryColor">
                         {' '}
-                        3 Weeks Ago{' '}
+                        {}{' '}
                     </p>
                 </div>
             </div>

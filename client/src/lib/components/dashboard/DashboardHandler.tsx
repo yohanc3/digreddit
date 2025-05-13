@@ -1,6 +1,6 @@
 'use client';
 
-import { Products } from '@/types/backend/db';
+import { CommentLead, PostLead, Products } from '@/types/backend/db';
 import { useState } from 'react';
 import {
     LeftSideBarLeadResult,
@@ -8,7 +8,6 @@ import {
 } from '../ui/lead/sidebar';
 import RedditLeadCard from '../ui/lead/card';
 import { useQuery } from '@tanstack/react-query';
-import { leadsQueries } from '@/db';
 import ProductConfig from '../ui/lead/productConfig';
 
 export default function DashboardHandler({
@@ -53,13 +52,11 @@ export default function DashboardHandler({
         },
     });
 
-    if (result?.allLeads) {
-        console.log('result: ', result.allLeads);
-    }
-
     function onSelectedProductChange(index: number) {
         setSelectedProduct(fetchedProducts[index]);
     }
+
+    console.log('all leads: ', result?.allLeads);
 
     return (
         <>
@@ -70,9 +67,17 @@ export default function DashboardHandler({
 
             <div className="w-2/3">
                 <ProductConfig />
-                <div className='px-4 font-semibold text-primarySize text-secondaryColor'>Lead List:</div>
+                <div className="px-4 font-semibold text-primarySize text-secondaryColor">
+                    Lead List:
+                </div>
                 <div className="w-full p-4 pt-1 justify-center grid grid-cols-3 gap-2">
-                    <RedditLeadCard />
+                    {!result?.allLeads ? (
+                        <> No leads at the moment!</>
+                    ) : (
+                        (result.allLeads as (CommentLead[] | PostLead[])).map((lead) => {
+                            return <>{lead === CommentLead}</>
+                        })
+                    )}
                 </div>
             </div>
             <RightSideBarLeadResult />
