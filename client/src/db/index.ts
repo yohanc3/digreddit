@@ -3,7 +3,7 @@ import * as schema from './schema';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { eq } from 'drizzle-orm';
 import { commentLeads, postLeads, products } from './schema';
-import { Lead } from '@/types/backend/db';
+import { Payload, Products } from '@/types/backend/db';
 // import { neon } from "@neondatabase/serverless"
 
 // const neonConnection = neon(process.env.DATABASE_URL!);
@@ -32,6 +32,15 @@ export const productsQueries = {
 
         return results[0];
     },
+
+    createProduct: async (payload: Payload<Products>) => {
+        const [createdProduct] = await db
+            .insert(products)
+            .values(payload)
+            .returning();
+
+        return createdProduct;
+    }
 };
 
 export const leadsQueries = {

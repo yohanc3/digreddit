@@ -2,10 +2,10 @@
 import clsx from 'clsx';
 import { Button } from '../button';
 import { Badge } from '../badge';
-import type { Lead } from '@/types/backend/db';
+import type { Products } from '@/types/backend/db';
 
 interface ProductCardProps {
-    leadDetails?: Lead;
+    leadDetails: Products;
     className?: string;
 }
 
@@ -34,7 +34,7 @@ const industries = [
     'locus',
 ];
 
-export default function ProductCard({ className }: ProductCardProps) {
+export default function ProductCard({ leadDetails, className }: ProductCardProps) {
     return (
         <div
             className={clsx(
@@ -44,16 +44,12 @@ export default function ProductCard({ className }: ProductCardProps) {
         >
             {/* Product Header */}
             <h2 className="text-lg font-semibold text-secondaryColor mb-2">
-                KeepSake
+                {leadDetails.title}
             </h2>
 
             {/* Product Description - Truncated */}
             <p className="text-sm text-gray-600 mb-4 line-clamp-4">
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
-                dictum scelerisque rutrum. Mauris consequat cursus sem, eget
-                sodales lorem mollis auctor. Integer commodo lacus risus, vitae
-                porttitor augue viverra quis. Aenean blandit fermentum lorem, id
-                interdum mauris semper quis.
+                {leadDetails.description}
             </p>
 
             {/* Keywords */}
@@ -62,7 +58,7 @@ export default function ProductCard({ className }: ProductCardProps) {
                     Keywords Selected:
                 </p>
                 <div className="flex flex-wrap gap-1.5 mb-4">
-                    {industries.slice(0, 12).map((item, index) => (
+                    {(leadDetails.keywords as string[]).slice(0, 12).map((item, index) => (
                         <Badge
                             key={index}
                             variant="outline"
@@ -71,7 +67,7 @@ export default function ProductCard({ className }: ProductCardProps) {
                             {item}
                         </Badge>
                     ))}
-                    {industries.length > 12 && (
+                    {(leadDetails.keywords as string[]).length > 12 && (
                         <Badge
                             variant="outline"
                             className="text-xs py-0.5 px-2 bg-gray-50 border-gray-200 rounded-full"
