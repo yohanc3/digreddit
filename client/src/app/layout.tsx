@@ -5,6 +5,7 @@ import './globals.css';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Providers from './providers';
+import { Toaster } from '@/lib/components/ui/toaster';
 
 const poppins = Poppins({
     subsets: ['latin'], // You can add more subsets if you want
@@ -42,6 +43,7 @@ export default function RootLayout({
                 className={`${poppins.variable} antialiased font-poppins bg-white`}
             >
                 <Providers>{children}</Providers>
+                <Toaster />
             </body>
         </html>
     );
