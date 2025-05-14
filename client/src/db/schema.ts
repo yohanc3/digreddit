@@ -9,6 +9,7 @@ import {
     integer,
     jsonb,
     unique,
+    doublePrecision,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
@@ -24,7 +25,7 @@ export const commentLeads = pgTable(
         downs: smallint().notNull(),
         productId: uuid().notNull(),
         createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
-        rating: smallint().notNull(),
+        rating: doublePrecision().notNull(),
     },
     (table) => [
         foreignKey({
@@ -51,7 +52,7 @@ export const postLeads = pgTable(
         downs: smallint().notNull(),
         productId: uuid().notNull(),
         createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
-        rating: smallint().notNull(),
+        rating: doublePrecision().notNull(),
     },
     (table) => [
         foreignKey({
