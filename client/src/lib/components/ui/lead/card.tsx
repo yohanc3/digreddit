@@ -89,8 +89,18 @@ export function RedditCommentLeadCard({
 
                 {/* Card Rating */}
                 <div
-                    className="
-            items-center text-xs font-semibold text-tertiaryColor gap-x-1 bg-gradient-to-r from-orange-700 to-purple-500 inline-block text-transparent bg-clip-text"
+                className={clsx(
+                    'items-center text-xs font-semibold text-tertiaryColor gap-x-1',
+                    {
+                        'text-orange-600': leadDetails.rating < 3.3,
+                        'text-yellow-600':
+                            leadDetails.rating < 5.5 &&
+                            leadDetails.rating > 3.3,
+                        'text-green-600':
+                            leadDetails.rating <= 10 &&
+                            leadDetails.rating > 5.5,
+                    }
+                )}
                 >
                     <p>
                         AI Lead Rating:{' '}
@@ -178,8 +188,18 @@ export function RedditPostLeadCard({
 
             {/* Card Rating */}
             <div
-                className="
-            items-center text-xs font-semibold text-tertiaryColor gap-x-1 bg-gradient-to-r from-orange-700 to-purple-500 inline-block text-transparent bg-clip-text"
+                className={clsx(
+                    'items-center text-xs font-semibold text-tertiaryColor gap-x-1',
+                    {
+                        'text-orange-600': leadDetails.rating < 3.3,
+                        'text-yellow-600':
+                            leadDetails.rating < 6.6 &&
+                            leadDetails.rating > 3.3,
+                        'text-green-600':
+                            leadDetails.rating <= 10 &&
+                            leadDetails.rating > 6.6,
+                    }
+                )}
             >
                 <p>
                     AI Lead Rating:{' '}

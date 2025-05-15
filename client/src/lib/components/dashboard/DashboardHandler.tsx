@@ -64,7 +64,7 @@ export default function DashboardHandler({
             />
 
             <div className="w-2/3">
-                <ProductConfig />
+                <ProductConfig productDetails={selectedProduct}/>
                 <div className="px-4 font-semibold text-primarySize text-secondaryColor">
                     Lead List:
                 </div>

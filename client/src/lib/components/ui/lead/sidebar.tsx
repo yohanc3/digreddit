@@ -1,4 +1,4 @@
-"use client"
+'use client';
 
 import { BiChevronsLeft, BiPlus, BiTrash } from 'react-icons/bi';
 import clsx from 'clsx';
@@ -70,11 +70,12 @@ export function RightSideBarLeadResult({
                 className
             )}
         >
-            <Button variant={'dark'} className="!justify-between w-full" onClick={()=>router.push("/create-product")}>
-                Create New Request <BiPlus size={20} />
-            </Button>
-            <Button variant={'lightDelete'}>
-                Delete Results <BiTrash size={20} />
+            <Button
+                variant={'dark'}
+                className="!justify-between w-full"
+                onClick={() => router.push('/create-product')}
+            >
+                Create New Product <BiPlus size={20} />
             </Button>
         </div>
     );
