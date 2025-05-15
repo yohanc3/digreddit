@@ -3,6 +3,8 @@ import * as schema from './schema';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { eq } from 'drizzle-orm';
 import { commentLeads, postLeads, products } from './schema';
+import { Payload, Products } from '@/types/backend/db';
+// import { neon } from "@neondatabase/serverless"
 
 export const db = drizzle(process.env.DATABASE_URL!, { schema });
 
@@ -11,7 +13,8 @@ export const productsQueries = {
         return await db
             .select()
             .from(products)
-            .where(eq(products.userId, userID));
+            .where(eq(products.userId, userID))
+            .orderBy(products.createdAt);
     },
 
     getProductByUserID: async (userID: string) => {
@@ -28,6 +31,27 @@ export const productsQueries = {
             .where(eq(products.id, productID));
 
         return results[0];
+    },
+
+    createProduct: async (payload: Payload<Products>) => {
+        const [createdProduct] = await db
+            .insert(products)
+            .values(payload)
+            .returning();
+
+        return createdProduct;
+    },
+
+    updateProductByID: async (
+        productID: string,
+        title: string,
+        description: string,
+        keywords: string[]
+    ) => {
+        await db
+            .update(products)
+            .set({ title, description, keywords })
+            .where(eq(products.id, productID));
     },
 };
 

@@ -1,23 +1,29 @@
 'use client';
 
+import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/lib/components/ui/badge';
 import { Button } from '@/lib/components/ui/button';
+import { ToastAction } from '@/lib/components/ui/toast';
+import { UseFetch } from '@/lib/frontend/hooks/useFetch';
 import { X } from 'lucide-react';
 import { FormEvent, useState } from 'react';
+import { BiCheckCircle } from 'react-icons/bi';
 
 interface FormDataTarget extends EventTarget {
     description: { value: string };
-    productName: { value: string };
+    title: { value: string };
     industry: { value: string };
-    MRR?: { value: Number };
+    mrr?: { value: Number };
+    url?: { value: string };
 }
 
 interface FormDataError {
     description?: boolean;
-    productName?: boolean;
+    title?: boolean;
     industry?: boolean;
-    MRR?: boolean;
     keywords?: boolean;
+    mrr?: boolean;
+    url?: boolean;
 }
 
 function ErrorText() {
@@ -31,6 +37,8 @@ function ErrorText() {
 export default function Dashboard() {
     const [keywords, setKeywords] = useState<string[]>([]);
     const [error, setError] = useState<FormDataError>({});
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+    const { apiPost } = UseFetch();
     function handleEnterKeyPress(
         event: React.KeyboardEvent<HTMLInputElement>,
         newKeyword: string
@@ -42,17 +50,19 @@ export default function Dashboard() {
         }
     }
 
-    function submitLeadSearchDetails(event: FormEvent<HTMLFormElement>) {
+    async function submitLeadSearchDetails(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        setIsSubmitting(true);
         const form = event.target as FormDataTarget;
         const description = form.description.value;
-        const productName = form.productName.value;
+        const title = form.title.value;
         const industry = form.industry.value;
-        const MRR = form.MRR?.value || undefined;
+        const mrr = form.mrr?.value || undefined;
+        const url = form.url?.value || undefined;
 
         const newErrors: FormDataError = {
             description: !description,
-            productName: !productName,
+            title: !title,
             industry: !industry,
             keywords: keywords.length < 1,
         };
@@ -65,14 +75,31 @@ export default function Dashboard() {
 
         //Successful Submit Logic
         if (!hasErrors) {
-            console.log('Form submitted successfully!', {
-                description,
-                productName,
-                industry,
-                MRR,
-                keywords,
-            });
+            try {
+                const result = await apiPost('api/products', {
+                    description,
+                    title,
+                    industry,
+                    keywords,
+                    mrr,
+                    url
+                })
+                toast({
+                    title: `Lead Search Started for ${title}`,
+                    description: "Started at: " + result.createdProduct.createdAt,
+                    action: (
+                        <BiCheckCircle color='#576F72' size={35} />
+                    ),
+                })
+                setIsSubmitting(false)
+                return result;
+            } catch (e) {
+                console.error({ "message": "", e });
+                setIsSubmitting(false)
+                return [];
+            }
         }
+        setIsSubmitting(false)
     }
 
     return (
@@ -97,6 +124,7 @@ export default function Dashboard() {
                         name="description"
                         className="w-full h-40 p-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
                         placeholder='Tell use about your product and describe target audience (e.g., "I am working on a platform for clay artists and my target audience are people who like clay art, sculpture, architecture, etc..").'
+                        disabled={isSubmitting}
                     />
                     {error.description && <ErrorText />}
                 </div>
@@ -108,11 +136,12 @@ export default function Dashboard() {
                             Name:
                         </label>
                         <input
-                            name="productName"
+                            name="title"
                             className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
                             placeholder="e.g., DigReddit, Twitter, or KeepSake"
+                            disabled={isSubmitting}
                         />
-                        {error.productName && <ErrorText />}
+                        {error.title && <ErrorText />}
                     </div>
 
                     {/* Industry */}
@@ -124,23 +153,42 @@ export default function Dashboard() {
                             name="industry"
                             className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
                             placeholder="e.g., Real Estate, Tech, or Politics"
+                            disabled={isSubmitting}
                         />
                         {error.industry && <ErrorText />}
                     </div>
                 </div>
 
-                {/* MRR */}
-                <div className="flex flex-col gap-y-1">
-                    <label className="text-secondaryColor text-sm font-medium">
-                        MRR (Optional):
-                    </label>
-                    <input
-                        name="MRR"
-                        className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
-                        placeholder="e.g., 6000, 10000"
-                        type="number"
-                    />
+                {/* Form Fields */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* MRR */}
+                    <div className="flex flex-col gap-y-1">
+                        <label className="text-secondaryColor text-sm font-medium">
+                            MRR (Optional):
+                        </label>
+                        <input
+                            name="mrr"
+                            className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
+                            placeholder="e.g., 6000, 10000"
+                            type="number"
+                            disabled={isSubmitting}
+                        />
+                    </div>
+                    {/* URL */}
+                    <div className="flex flex-col gap-y-1">
+                        <label className="text-secondaryColor text-sm font-medium">
+                            URL (Optional):
+                        </label>
+                        <input
+                            name="url"
+                            className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
+                            placeholder="e.g., twitter.com, google.com"
+                            type="text"
+                            disabled={isSubmitting}
+                        />
+                    </div>
                 </div>
+
 
                 {/* Keywords Input */}
                 <div className="flex flex-col gap-y-1 mt-1">
@@ -153,6 +201,7 @@ export default function Dashboard() {
                         onKeyDown={(e) => {
                             handleEnterKeyPress(e, e.currentTarget.value);
                         }}
+                        disabled={isSubmitting}
                     />
                     {error.keywords && <ErrorText />}
                     <p className="text-tertiaryColor text-xs mt-1">
@@ -191,6 +240,7 @@ export default function Dashboard() {
                         variant={'dark'}
                         type="submit"
                         className="w-40 h-9 text-sm"
+                        disabled={isSubmitting}
                     >
                         Create New Product
                     </Button>
