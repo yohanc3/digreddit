@@ -22,7 +22,7 @@ export default function RedditLeadListItem({
                 {title}
             </p>
             <p className="text-tertiarySize text-tertiaryColor">
-                {date}
+                Started At: {date}
             </p>
         </div>
     );

@@ -6,6 +6,7 @@ import { Button } from '../button';
 import RedditLeadList from './list';
 import { Products } from '@/types/backend/db';
 import { useRouter } from 'next/navigation';
+import { readableDateFormat } from '@/lib/frontend/utils/timeFormat';
 
 interface LeftSideBarLeadResultProps {
     products: Products[];
@@ -24,15 +25,7 @@ export function LeftSideBarLeadResult({
 }: LeftSideBarLeadResultProps) {
     const redditLeadListData: { title: string; date: string }[] = products.map(
         (product) => {
-            const newDate = new Date(product.createdAt);
-
-            // Get month name
-            const month = newDate.toLocaleString('en-US', { month: 'long' });
-            const day = newDate.getDate().toString().padStart(2, '0');
-            const year = newDate.getFullYear();
-
-            const formattedDate = `${month} ${day}, ${year}`;
-
+            const formattedDate = readableDateFormat(product.createdAt);
             return {
                 title: product.title,
                 date: formattedDate,
