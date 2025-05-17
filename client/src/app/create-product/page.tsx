@@ -134,7 +134,7 @@ export default function Dashboard() {
         }
         toast({
             title: "Missing Fields",
-            description: "Try again later.",
+            description: "Please fill in all required fields before submitting.",
             action: (
                 <BiErrorCircle color='#f87171' size={35} />
             ),
