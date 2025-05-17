@@ -1,16 +1,17 @@
 import { X } from "lucide-react";
 import { Badge } from "../badge";
-import { Skeleton } from "../skeleton"
 import KeywordsListLoading from "./keywordsListLoading";
 import clsx from "clsx";
+import { ProductFormDataFields, ProductFormInputFields } from "@/types/frontend/product/form";
+import { SetStateAction } from "react";
 
 type KeywordsListProps = {
     keywords: string[];
     isLoading: boolean;
-    setKeywords: React.Dispatch<React.SetStateAction<string[]>>;
+    setValue: React.Dispatch<SetStateAction<ProductFormDataFields>>;
 };
 
-export default function KeywordsList({ keywords, isLoading = false, setKeywords }: KeywordsListProps) {
+export default function KeywordsList({ keywords, isLoading = false, setValue }: KeywordsListProps) {
     return (
         <div className={clsx("flex flex-wrap gap-1.5 w-full mt-2 overflow-y-auto")}>
             {
@@ -28,11 +29,7 @@ export default function KeywordsList({ keywords, isLoading = false, setKeywords 
                                 strokeWidth={3}
                                 className="cursor-pointer text-red-400"
                                 onClick={() =>
-                                    setKeywords((prev) => {
-                                        return prev.filter(
-                                            (keyword) => item != keyword
-                                        );
-                                    })
+                                    setValue((prev) => ({...prev, "keywords": prev.keywords.filter((keyword)=> item != keyword)}))
                                 }
                             />
                         </Badge>
