@@ -22,7 +22,7 @@ export const POST = auth(async function POST(req: NextAuthRequest) {
         return NextResponse.json({ error: 'Missing Fields' }, { status: 400 });
     }
 
-    const createdProduct = await productsQueries.createProduct({ title, description, url, mrr, industry, keywords, userId });
+    const createdProduct = await productsQueries.createProduct({ title, description, url, mrr: Number(mrr), industry, keywords, userId });
 
     return NextResponse.json({ createdProduct }, { status: 200 });
 });
