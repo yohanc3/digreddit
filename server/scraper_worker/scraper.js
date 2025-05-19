@@ -81,9 +81,8 @@ async function main() {
             const sanitizedChildren =
                 WORKER_THING_TYPE === 'posts' ? sanitizePosts(things) : sanitizeComments(things)
 
-            WORKER_THING_TYPE === 'posts'
-                ? sendToServer(sanitizedChildren, {}, true)
-                : sendToServer({}, sanitizedChildren, false)
+            // Send the sanitized children to the server, which receives the contentEntry and isPost boolean
+            sendToServer(sanitizedChildren, true)
 
             logInfo(
                 thingsBatchCount,

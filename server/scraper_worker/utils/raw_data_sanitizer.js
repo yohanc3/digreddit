@@ -19,7 +19,7 @@ export function sanitizePosts(rawPosts) {
                 createdAt: rawPostData.created,
                 ups: rawPostData.ups,
                 downs: rawPostData.downs,
-                num_comments: rawPostData.num_comments,
+                numComments: rawPostData.num_comments,
                 url: rawPostData.url,
                 subredditSubscribers: rawPostData.subreddit_subscribers,
                 over18: rawPostData.over_18,
