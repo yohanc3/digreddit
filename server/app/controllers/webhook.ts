@@ -1,6 +1,6 @@
 import { HttpContext } from '@adonisjs/core/http'
-import { compareEmbeddings } from '../utils/vector_embedding_test.js'
 import DynamicAhoCorasick from '#services/AhoCorasick'
+import env from '#start/env'
 export default class UserController {
     // Class properties must use private/public/protected keywords
     private static ahoCorasickInstance: DynamicAhoCorasick | null = null
@@ -11,10 +11,6 @@ export default class UserController {
             console.log('Initializing AhoCorasick instance for UserController')
 
             this.ahoCorasickInstance = await DynamicAhoCorasick.create()
-
-            console.log(
-                `Initialized with ${this.ahoCorasickInstance.getKeywords().length} keywords`
-            )
         }
         return this.ahoCorasickInstance
     }
@@ -28,59 +24,70 @@ export default class UserController {
         return UserController.ahoCorasickInstance
     }
 
+    /*
+    This endpoint is used to intake the contentEntry and isPost boolean from the scraper worker
+    It then uses the AhoCorasick instance to match the keywords in the contentEntry
+    and returns the keywords that were matched.
+
+    Parameters expected in the request body:
+    {
+        contentEntry: string,
+        isPost: boolean
+    }
+
+    
+    */
     async intake({ request, response }: HttpContext) {
         const start = Date.now()
         const ahoCorasick = await this.getAhoCorasick()
-        console.log('took ', (Date.now() - start) / 1000, 'ms seconds to start the aho corasick')
 
         if (!ahoCorasick) {
-            console.log('aho corasick is null')
+            console.log('aho corasick is null. an error occurred')
             return response.status(500).send({ error: 'Aho Corasick is null' })
         }
 
         const body = request.body()
 
-        const posts = body.posts
+        if (!body || !body.contentEntry || body.isPost === undefined || body.isPost === null) {
+            console.log('Invalid request body.')
+            return response.status(500).send({ error: 'Invalid request body.' })
+        }
 
-        const now = Date.now()
+        const contentEntry = body.contentEntry
 
-        const processedScores = (
-            await Promise.all(
-                posts.map(async (post: any) => {
-                    const postBody = post.body.toLowerCase()
-                    const postTitle = post.title.toLowerCase()
+        const ahoCorasickMatches = ahoCorasick.matchInText(contentEntry.body)
 
-                    const content = postBody + '\n' + postTitle
+        const keywords = ahoCorasickMatches.map((match: any) => match.keyword)
 
-                    // matchedKeywords looks like ["reddit lead gen", "lead gen", "asd", "123"]
-                    const matchedKeyWords = ahoCorasick
-                        .matchInText(content)
-                        .map((match: any) => match.keyword)
+        const isPost = body.isPost
 
-                    if (matchedKeyWords.length === 0) return
+        if (keywords.length === 0) {
+            console.log('No keywords matched in the contentEntry')
+            return response.status(200).send({ message: 'No keywords matched in the contentEntry' })
+        }
 
-                    const embeddingsComparison = await compareEmbeddings(content)
+        const responses = await fetch(env.get('LEAD_EVALUATOR_URL'), {
+            method: 'POST',
+            body: JSON.stringify({
+                post: isPost ? contentEntry : null,
+                comment: !isPost ? contentEntry : null,
+                isPost: isPost,
+                keywords: keywords,
+            }),
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': env.get('LEAD_EVALUATOR_AUTH_KEY'),
+            },
+        })
 
-                    const result = {
-                        id: post.id,
-                        score: embeddingsComparison,
-                        url: post.url,
-                        keywords: matchedKeyWords,
-                        body: postBody,
-                    }
-
-                    return result
-                })
-            )
-        ).filter(Boolean)
+        const leadEvaluatorResponse = await responses.json()
 
         console.log(
             'success, time it took: ',
-            (Date.now() - now) / 1000,
-            ' seconds',
-            processedScores
+            (Date.now() - start) / 1000,
+            ' seconds. Responses from the lead evaluator: '
         )
 
-        return response.status(200).send({ body: 'success', processedScores })
+        return response.status(200).send({ body: 'success', responses: leadEvaluatorResponse })
     }
 }
