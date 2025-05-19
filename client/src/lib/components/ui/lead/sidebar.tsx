@@ -1,9 +1,16 @@
+"use client"
+
 import { BiChevronsLeft, BiPlus, BiTrash } from 'react-icons/bi';
 import clsx from 'clsx';
 import { Button } from '../button';
 import RedditLeadList from './list';
+import { Products } from '@/types/backend/db';
+import { useRouter } from 'next/navigation';
+import { readableDateFormat } from '@/lib/frontend/utils/timeFormat';
 
 interface LeftSideBarLeadResultProps {
+    products: Products[];
+    onSelectedProductChange: (index: number) => void;
     className?: string;
 }
 
@@ -12,8 +19,20 @@ interface RightSideBarLeadResultProps {
 }
 
 export function LeftSideBarLeadResult({
+    products,
     className,
+    onSelectedProductChange,
 }: LeftSideBarLeadResultProps) {
+    const redditLeadListData: { title: string; date: string }[] = products.map(
+        (product) => {
+            const formattedDate = readableDateFormat(product.createdAt);
+            return {
+                title: product.title,
+                date: formattedDate,
+            };
+        }
+    );
+
     return (
         <div
             className={clsx(
@@ -25,7 +44,10 @@ export function LeftSideBarLeadResult({
                 <BiChevronsLeft color="#576F72" size={24} />
             </div>
             <p className="text-secondarySize text-secondaryColor">Results:</p>
-            <RedditLeadList />
+            <RedditLeadList
+                productsList={redditLeadListData}
+                onSelectedProductChange={onSelectedProductChange}
+            />
         </div>
     );
 }
@@ -33,6 +55,7 @@ export function LeftSideBarLeadResult({
 export function RightSideBarLeadResult({
     className,
 }: RightSideBarLeadResultProps) {
+    const router = useRouter();
     return (
         <div
             className={clsx(
@@ -40,10 +63,10 @@ export function RightSideBarLeadResult({
                 className
             )}
         >
-            <Button variant={"dark"} className='!justify-between w-full'>
+            <Button variant={'dark'} className="!justify-between w-full" onClick={()=>router.push("/create-product")}>
                 Create New Request <BiPlus size={20} />
             </Button>
-            <Button variant={"lightDelete"}>
+            <Button variant={'lightDelete'}>
                 Delete Results <BiTrash size={20} />
             </Button>
         </div>

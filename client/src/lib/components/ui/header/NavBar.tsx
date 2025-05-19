@@ -1,9 +1,9 @@
 import clsx from 'clsx';
 import DashboardNavItems from './DashboardNavItems';
-import { auth } from '../../../../auth';
+import { auth } from '../../../../../auth';
 import { redirect } from 'next/navigation';
 import { UserDropdown } from '@/lib/components/avatar-dropdown';
-import { FullLogo } from '../logo';
+import { FullLogo } from '../../logo';
 
 interface NavBarProps {
     className?: string;

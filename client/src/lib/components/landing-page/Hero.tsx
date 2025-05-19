@@ -4,7 +4,6 @@ import LightButton from '../button/light';
 import { ArrowRight } from 'lucide-react';
 import { Session } from 'next-auth';
 import Image from 'next/image';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 

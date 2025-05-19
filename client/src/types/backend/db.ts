@@ -1,22 +1,11 @@
-export type Lead = {
-    id: string;
-    subreddit: string;
-    author: string;
-    body: string;
-    createdAt: number;
-    ups: number;
-    downs: number;
-    url: string;
-};
+import { commentLeads, postLeads, products } from '@/db/schema';
+import { InferSelectModel } from 'drizzle-orm';
 
-export type PostLead = Lead & {
-    title: string;
-    numComments: number;
-    subreddditSubscribers: number;
-    over18: boolean;
-    requestId: string;
-    rating: number;
-    aiResponse: string;
-};
+export type PostLead = InferSelectModel<typeof postLeads>;
 
-export type CommentLead = Lead & {};
+export type CommentLead = InferSelectModel<typeof commentLeads>;
+
+export type Products = InferSelectModel<typeof products>;
+
+//CRUD Function Parameter Types
+export type Payload<T> = Omit<T, 'id' | 'createdAt' | 'updatedAt'>;
