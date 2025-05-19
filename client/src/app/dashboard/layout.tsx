@@ -13,9 +13,7 @@ export default function DashboardLayout({
         <div className="flex flex-col w-full">
             <NavBar />
             <div className="h-full flex flex-row">
-                <LeftSideBarLeadResult />
                 {children}
-                <RightSideBarLeadResult />
             </div>
         </div>
     );

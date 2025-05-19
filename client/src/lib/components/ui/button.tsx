@@ -12,7 +12,7 @@ const buttonVariants = cva(
                 lightDelete:
                     "w-full justify-between hover:bg-red-400 hover:text-white text-primarySize text-red-400 border border-light",
                 light:
-                    "flex flex-row items-center justify-between font-semibold bg-white text-primarySize text-primaryColor border rounded-md border-light hover:bg-primaryColor/20 py-2 px-5 gap-x-2 transition-all duration-200 ease-in-out",
+                    "flex flex-row items-center justify-between font-semibold bg-white text-primarySize !text-primaryColor border rounded-md border-light hover:bg-primaryColor/20 !py-0 px-5 gap-x-2 transition-all duration-200 ease-in-out",
                 dark:
                     "flex flex-row w-full items-center justify-center font-semibold bg-primaryColor text-primarySize text-white border rounded-md border-light py-2 px-5 hover:bg-primaryColor/20 hover:border-light hover:text-primaryColor transition-all duration-200 ease-in-out",
                 default:
