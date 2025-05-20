@@ -37,4 +37,3 @@ export const GET = auth(async function GET(req: NextAuthRequest) {
 
     return NextResponse.json({ userProducts }, { status: 200 });
 });
-

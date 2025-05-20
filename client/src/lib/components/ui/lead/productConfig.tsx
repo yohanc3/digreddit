@@ -1,108 +1,253 @@
+"use client"
+
 import clsx from 'clsx';
 import { Button } from '../button';
 import { useState } from 'react';
 import { Badge } from '../badge';
+import { Products } from '@/types/backend/db';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '../dialog';
+import { Label } from '../label';
+import { Input } from '../input';
+import LightButton from '../../button/light';
+import { X } from 'lucide-react';
+import { useFetch } from '@/lib/frontend/hooks/useFetch';
+import { toast } from '@/hooks/use-toast';
+import { BiCheckCircle } from 'react-icons/bi';
+import { useRouter } from 'next/navigation';
 
 interface ProductConfigProps {
+    productDetails: Products | null;
     className?: string;
 }
 
-
-const industries = [
-    'Technology',
-    'Healthcare',
-    'Finance',
-    'Education',
-    'Retail',
-    'Manufacturing',
-    'Energy',
-    'Transportation',
-    'Real Estate',
-    'Hospitality',
-    'Entertainment',
-    'Agriculture',
-    'Telecommunications',
-    'Construction',
-    'Legal Services',
-    'Food and Beverage',
-    'Automotive',
-    'Aerospace',
-    'Pharmaceuticals',
-    'Insurance',
-    'Consulting',
-    'Media and Publishing',
-    'Marketing and Advertising',
-    'Fashion and Apparel',
-    'Biotechnology',
-    'Cybersecurity',
-    'Environmental Services',
-    'Nonprofit Organizations',
-    'Government',
-    'Mining and Metals',
-    'Logistics and Supply Chain',
-    'Sports and Recreation',
-    'Tourism and Travel',
-    'Architecture and Design',
-    'Human Resources',
-    'Petroleum and Gas',
-    'Home and Garden',
-    'Arts and Crafts',
-    'Event Management',
-    'Marine and Shipping',
-    'Electronics',
-    'Venture Capital and Private Equity',
-    'Luxury Goods and Jewelry',
-    'Fitness and Wellness',
-    'Public Relations',
-    'Waste Management',
-    'Data and Analytics',
-    'Blockchain and Cryptocurrency',
-    'E-commerce',
-    'Education Technology (EdTech)',
-];
-
 export default function ProductConfig({
     className,
+    productDetails,
 }: ProductConfigProps) {
-    const [showProductConfig, setShowProductConfig] = useState(false)
+    const [showProductConfig, setShowProductConfig] = useState(false);
+
+    const [keywords, setKeywords] = useState<string[]>(productDetails?.keywords as string[] || []);
+    const [description, setDescription] = useState<string>(productDetails?.description || 'No product description.');
+
     return (
-        <div
-            className={clsx(
-                'p-4 w-full flex flex-col gap-y-2',
-                className
-            )}
-        >
+        <div className={clsx('p-4 w-full flex flex-col gap-y-2', className)}>
             <div className="flex items-center gap-x-5">
-                <p className='font-semibold text-secondaryColor text-primarySize'>Product Settings:</p>
-                <Button variant={"light"} onClick={() => setShowProductConfig(!showProductConfig)} className='px-8 !h-7'>{showProductConfig ? "Hide" : "Show"}</Button>
+                <p className="font-semibold text-secondaryColor text-primarySize">
+                    Product Settings:
+                </p>
+                <Button
+                    variant={'light'}
+                    onClick={() => setShowProductConfig(!showProductConfig)}
+                    className="px-8 !h-7"
+                >
+                    {showProductConfig ? 'Hide' : 'Show'}
+                </Button>
             </div>
-            {
-                showProductConfig && <>
-
+            {showProductConfig && (
+                <>
                     {/* Lead Dscription */}
-                    <div className='text-secondarySize text-tertiaryColor text-justify'>
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed dictum scelerisque rutrum. Mauris consequat cursus sem, eget sodales lorem mollis auctor. Integer commodo lacus risus, vitae porttitor augue viverra quis. Aenean blandit fermentum lorem, id interdum mauris semper quis. Donec consectetur maximus orci, sed facilisis nibh varius in. Vivamus at dui id nibh dignissim sodales. Duis condimentum eu mauris id porta. In dapibus suscipit neque in blandit. Fusce arcu sapien, sagittis ac convallis viverra, faucibus sed justo. Vestibulum eu tincidunt velit, sed vehicula dolor. Sed sed vestibulum lacus. Phasellus ut turpis malesuada lectus laoreet pulvinar at non lacus. Sed volutpat ac purus facilisis malesuada.
+                    <div className="text-secondarySize text-tertiaryColor text-justify">
+                        {description}
                     </div>
-
                     {/* Lead Keywords */}
                     <div>
-                        <p className='font-semibold text-secondaryColor text-primarySize'>Selected Keywords:</p>
-                        <div className="flex flex-wrap gap-1.5 w-full overflow-y-auto p-1">
-                            {industries.map((item: string, index: number) => (
+                        <p className="font-semibold text-secondaryColor text-primarySize">
+                            Selected Keywords:
+                        </p>
+                        {productDetails &&
+                        Array.isArray(productDetails.keywords) ? (
+                            <div className="flex flex-wrap gap-1.5 w-full overflow-y-auto p-1">
+                                {keywords.map((item: string, index: number) => (
+                                    <Badge
+                                        key={index}
+                                        variant={'leadKeyword'}
+                                        className="text-tertiarySize py-0.5 px-2 flex items-center justify-center gap-x-2"
+                                    >
+                                        {item}
+                                    </Badge>
+                                ))}
+                            </div>
+                        ) : (
+                            <>No keywords so far!</>
+                        )}
+                    </div>
+                    <EditProductDialog
+                        productDetails={productDetails}
+                        setKeywords={setKeywords}
+                        setDescription={setDescription}
+                    />
+                </>
+            )}
+        </div>
+    );
+}
+
+interface EditProductConfigProps {
+    productDetails: Products | null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setKeywords: (prev: any) => void;
+    setDescription: (prev: string) => void;
+}
+
+function EditProductDialog({
+    productDetails,
+    setKeywords,
+    setDescription,
+}: EditProductConfigProps) {
+    const router = useRouter();
+
+    const { apiPost } = useFetch();
+
+    const [newTitle, setNewTitle] = useState<string>(
+        productDetails?.title || ''
+    );
+    const [newDescription, setNewDescription] = useState<string>(
+        productDetails?.description || ''
+    );
+
+    const [newKeywords, setNewKeywords] = useState<string[]>(
+        (productDetails?.keywords as string[]) || []
+    );
+
+    function handleEnterKeyPress(
+        event: React.KeyboardEvent<HTMLInputElement>,
+        newKeyword: string
+    ) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            (event.target as HTMLInputElement).value = '';
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            setNewKeywords((prev: string[]) => [...prev, newKeyword]);
+        }
+    }
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <div className="max-w-40">
+                    <LightButton title="Edit Product" className="!py-1" />
+                </div>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                    <DialogTitle>Edit profile</DialogTitle>
+                    <DialogDescription>
+                        Make changes to your product here.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="name" className="text-right">
+                            Name
+                        </Label>
+                        <Input
+                            id="name"
+                            defaultValue={productDetails?.title}
+                            onChange={(e) => setNewTitle(e.currentTarget.value)}
+                            className="col-span-3"
+                        />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="description" className="text-right">
+                            Description
+                        </Label>
+                        <Input
+                            id="description"
+                            defaultValue={productDetails?.description}
+                            className="col-span-3"
+                            onChange={(e) =>
+                                setNewDescription(e.currentTarget.value)
+                            }
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label className="text-right" htmlFor="keywords">
+                            Keywords
+                        </Label>
+
+                        <Input
+                            id="keywords"
+                            className="col-span-3"
+                            placeholder="e.g., Tax, Sports, or Law"
+                            onKeyDown={(e) => {
+                                handleEnterKeyPress(e, e.currentTarget.value);
+                            }}
+                        />
+                    </div>
+
+                    <div className="max-h-48 overflow-y-auto">
+                        <div className="flex flex-wrap gap-1.5 w-full mt-2 p-1 overflow-y-auto">
+                            {newKeywords && newKeywords.length > 0 && newKeywords.map((item: string, index: number) => (
                                 <Badge
                                     key={index}
                                     variant={'leadKeyword'}
-                                    className="text-tertiarySize py-0.5 px-2 flex items-center justify-center gap-x-2"
+                                    className="text-xs py-0.5 px-2 flex items-center justify-center gap-x-2"
                                 >
-                                    {item}
+                                    {item}{' '}
+                                    <X
+                                        key={index}
+                                        width={13}
+                                        strokeWidth={3}
+                                        className="cursor-pointer text-red-400"
+                                        onClick={() =>
+                                            setNewKeywords((prev: string[]) => {
+                                                return prev.filter(
+                                                    (keyword: string) =>
+                                                        item != keyword
+                                                );
+                                            })
+                                        }
+                                    />
                                 </Badge>
                             ))}
                         </div>
                     </div>
+                </div>
+                <DialogFooter>
+                    <LightButton
+                        title="Save Changes"
+                        onClick={async () => {
 
-                </>
-            }
 
-        </div>
+                            const { status } = await apiPost(
+                                'api/product/update',
+                                {
+                                    productID: productDetails?.id,
+                                    title: newTitle,
+                                    description: newDescription,
+                                    keywords: newKeywords,
+                                }
+                            );
+
+                            if (status === 200) {
+                                router.refresh();
+                                setKeywords([...newKeywords]);
+                                setDescription(newDescription);
+                                toast({
+                                    title: `Product Successfully Updated!`,
+                                    description:
+                                        'New Leads will begin to propagate in 5-10 minutes',
+                                    action: (
+                                        <BiCheckCircle
+                                            color="#576F72"
+                                            size={35}
+                                        />
+                                    ),
+                                });
+                            }
+                        }}
+                    />
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }

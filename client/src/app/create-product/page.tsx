@@ -120,7 +120,7 @@ export default function Dashboard() {
                 })
                 setIsSubmitting({ form: false });
                 return result;
-            } catch (e) {
+            } catch {
                 toast({
                     title: "Something Went Wrong",
                     description: "Try again later.",
@@ -280,6 +280,7 @@ export default function Dashboard() {
                         {/* MRR Error */}
                         <MaximumCharactersReachedError trigger={isMaximumCharactersReached(formsInput.mrr?.toString() || "", productMRRMaximumCharacters)} />
                     </div>
+
 
                     {/* URL */}
                     <div className="flex flex-col gap-y-1">

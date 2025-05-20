@@ -7,7 +7,10 @@ export function parseKeywordString(keywordString: string) {
             throw new Error('Parsed value is not an array');
         }
     } catch (error) {
-        console.error('Failed to parse keyword string:', (error as Error).message);
+        console.error(
+            'Failed to parse keyword string:',
+            (error as Error).message
+        );
         return [];
     }
 }
@@ -15,7 +18,8 @@ export function parseKeywordString(keywordString: string) {
 export function isValidKeywordJsonString(input: string) {
     // Step 1: Quick structural check
     if (typeof input !== 'string') return false;
-    if (!input.trim().startsWith('[') || !input.trim().endsWith(']')) return false;
+    if (!input.trim().startsWith('[') || !input.trim().endsWith(']'))
+        return false;
 
     try {
         // Step 2: Try parsing the string
@@ -25,8 +29,8 @@ export function isValidKeywordJsonString(input: string) {
         if (!Array.isArray(parsed)) return false;
 
         // Step 4: Ensure every element is a string
-        return parsed.every(item => typeof item === 'string');
-    } catch (e) {
+        return parsed.every((item) => typeof item === 'string');
+    } catch {
         // JSON parse failed
         return false;
     }
