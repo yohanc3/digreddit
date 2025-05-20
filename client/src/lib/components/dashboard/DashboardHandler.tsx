@@ -90,7 +90,10 @@ export default function DashboardHandler({
                     )}
                 </div>
             </div>
-            <RightSideBarLeadResult />
+            <RightSideBarLeadResult
+                productID={selectedProduct?.id}
+                productTitle={selectedProduct?.title}
+            />
         </>
     );
 }

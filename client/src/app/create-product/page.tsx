@@ -120,7 +120,7 @@ export default function Dashboard() {
                 })
                 setIsSubmitting({ form: false });
                 return result;
-            } catch (e) {
+            } catch {
                 toast({
                     title: "Something Went Wrong",
                     description: "Try again later.",
