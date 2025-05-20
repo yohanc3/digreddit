@@ -4,7 +4,6 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { eq } from 'drizzle-orm';
 import { commentLeads, postLeads, products } from './schema';
 import { Payload, Products } from '@/types/backend/db';
-// import { neon } from "@neondatabase/serverless"
 
 export const db = drizzle(process.env.DATABASE_URL!, { schema });
 
@@ -40,18 +39,6 @@ export const productsQueries = {
             .returning();
 
         return createdProduct;
-    },
-
-    updateProductByID: async (
-        productID: string,
-        title: string,
-        description: string,
-        keywords: string[]
-    ) => {
-        await db
-            .update(products)
-            .set({ title, description, keywords })
-            .where(eq(products.id, productID));
     },
 };
 

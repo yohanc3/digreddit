@@ -1,4 +1,4 @@
-export function UseFetch() {
+export function useFetch() {
     const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
     
     async function apiGet(route: string, headers?: Record<string, string>) {

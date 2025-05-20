@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { UseFetch } from "./useFetch";
+import { useFetch } from "./useFetch";
 
-export function UseProducts() {
-    const {apiGet} = UseFetch()
-    const { data: allUserProducts, isLoading: isAllUserProductsIsLoading } = useQuery({
+export function useProducts() {
+    const {apiGet} = useFetch()
+    const { data: allUserProducts, isLoading: isAllUserProductsLoading } = useQuery({
         queryKey: ['allUserProducts'],
         queryFn: async () => {
             try {
@@ -22,6 +22,6 @@ export function UseProducts() {
 
     return {
         allUserProducts,
-        isAllUserProductsIsLoading
+        isAllUserProductsLoading
     }
 }
