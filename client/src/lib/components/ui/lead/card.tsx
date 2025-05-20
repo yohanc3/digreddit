@@ -1,5 +1,5 @@
 'use client';
-import { CommentLead, Lead } from '@/types/backend/db';
+import { CommentLead, PostLead } from '@/types/backend/db';
 import {
     BiUpvote,
     BiCommentDetail,
@@ -17,15 +17,107 @@ import {
 } from '@/lib/components/ui/dialog';
 import { Badge } from '../badge';
 import { useState } from 'react';
+import { timeAgo } from '@/util/utils';
 
 interface RedditCommentLeadCardProps {
     leadDetails: CommentLead;
     className?: string;
 }
 
-export default function RedditCommentLeadCard({ className, leadDetails }: RedditCommentLeadCardProps) {
+export function RedditCommentLeadCard({
+    className,
+    leadDetails,
+}: RedditCommentLeadCardProps) {
+    const unixCreatedAt = new Date(leadDetails.createdAt).getTime();
 
-    const date = ''
+    const howLongAgo = timeAgo(unixCreatedAt);
+
+    return (
+        <div
+            className={clsx(
+                'w-auto flex flex-col bg-white text-black p-3 rounded-lg gap-y-1 border border-light justify-between',
+                className
+            )}
+        >
+            <div>
+                {/* Card Header */}
+                <div className="flex flex-row justify-between">
+                    <div className="flex flex-col">
+                        <div className="text-secondaryColor text-primarySize font-semibold">
+                            {leadDetails.subreddit}
+                        </div>
+                        <div className="text-tertiaryColor text-tertiarySize font-medium">
+                            by: {leadDetails.author}
+                        </div>
+                    </div>
+                    <div>
+                        <a href={leadDetails.url} target="_blank">
+                            <Button variant={'light'}>
+                                Open <BiLinkExternal size={18} />
+                            </Button>
+                        </a>
+                    </div>
+                </div>
+
+                {/* Card Body */}
+                <div className="flex flex-col pt-4 h-28">
+                    <div className="text-tertiarySize font-medium text-tertiaryColor text-justify h-12">
+                        {leadDetails.body.substring(0, 200) + '...'}
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                {/* Reddit Post/Comment Details */}
+                <div className="flex flex-row h-10 gap-x-3 items-center">
+                    <div className="flex flex-row items-center justify-center gap-x-0.5">
+                        <BiUpvote color="#D93900" size={18} />{' '}
+                        <p className="text-tertiarySize text-tertiaryColor">
+                            {' '}
+                            {leadDetails.ups - leadDetails.downs}{' '}
+                        </p>
+                    </div>
+
+                    <div className="flex flex-row items-center justify-center gap-x-1">
+                        <BiTimeFive color="#344054" size={18} />{' '}
+                        <p className="text-tertiarySize text-tertiaryColor">
+                            {' '}
+                            {howLongAgo}{' '}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Card Rating */}
+                <div
+                    className="
+            items-center text-xs font-semibold text-tertiaryColor gap-x-1 bg-gradient-to-r from-orange-700 to-purple-500 inline-block text-transparent bg-clip-text"
+                >
+                    <p>
+                        AI Lead Rating:{' '}
+                        <span className="font-bold text-sm">
+                            {leadDetails.rating}
+                        </span>
+                    </p>
+                </div>
+
+                <RedditLeadCardDialog />
+            </div>
+        </div>
+    );
+}
+
+interface RedditPostLeadCardProps {
+    leadDetails: PostLead;
+    className?: string;
+}
+
+export function RedditPostLeadCard({
+    className,
+    leadDetails,
+}: RedditPostLeadCardProps) {
+    const unixCreatedAt = new Date(leadDetails.createdAt).getTime();
+
+    const howLongAgo = timeAgo(unixCreatedAt);
 
     return (
         <div
@@ -40,21 +132,27 @@ export default function RedditCommentLeadCard({ className, leadDetails }: Reddit
                     <div className="text-secondaryColor text-primarySize font-semibold">
                         {leadDetails.subreddit}
                     </div>
-                    <div className="text-tertiaryColor text-tertiarySize">
+                    <div className="text-tertiaryColor text-tertiarySize font-medium">
                         by: {leadDetails.author}
                     </div>
                 </div>
                 <div>
-                    <Button variant={'light'}>
-                        Open <BiLinkExternal size={18} />
-                    </Button>
+                    <a href={leadDetails.url} target="_blank">
+                        <Button variant={'light'}>
+                            Open <BiLinkExternal size={18} />
+                        </Button>
+                    </a>
                 </div>
             </div>
 
             {/* Card Body */}
-            <div className="flex flex-col">
-                <div className="text-tertiarySize text-tertiaryColor text-justify">
-                    {leadDetails.body}
+            <div className="flex flex-col h-28">
+                <div className="text-mediumSize font-semibold">
+                    {leadDetails.title}
+                </div>
+
+                <div className="text-tertiarySize text-tertiaryColor text-justify font-medium text-clip h-8">
+                    {leadDetails.body.substring(0, 200) + '...'}
                 </div>
             </div>
 
@@ -73,14 +171,22 @@ export default function RedditCommentLeadCard({ className, leadDetails }: Reddit
                     <BiTimeFive color="#344054" size={18} />{' '}
                     <p className="text-tertiarySize text-tertiaryColor">
                         {' '}
-                        {}{' '}
+                        {howLongAgo}{' '}
                     </p>
                 </div>
             </div>
 
             {/* Card Rating */}
-            <div className="flex flex-row items-center text-xs font-semibold text-tertiaryColor gap-x-1">
-                <p>Lead Rating:</p> <p> 7/10 </p>
+            <div
+                className="
+            items-center text-xs font-semibold text-tertiaryColor gap-x-1 bg-gradient-to-r from-orange-700 to-purple-500 inline-block text-transparent bg-clip-text"
+            >
+                <p>
+                    AI Lead Rating:{' '}
+                    <span className="font-bold text-sm">
+                        {leadDetails.rating}
+                    </span>
+                </p>
             </div>
 
             <RedditLeadCardDialog />
