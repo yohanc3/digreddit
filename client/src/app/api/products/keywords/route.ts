@@ -2,7 +2,11 @@ import { NextResponse } from 'next/server';
 import { NextAuthRequest } from 'next-auth';
 import { auth } from '../../../../../auth';
 import { openai } from '@/lib/backend/ai/connection';
-import { generateKeywordsPrompt } from '@/lib/backend/constant/keywords';
+import {
+    generateKeywordsPrompt,
+    keywordsExample,
+    keywordsPromptExample,
+} from '@/lib/backend/constant/keywords';
 import {
     parseKeywordString,
     isValidKeywordJsonString,
@@ -14,10 +18,10 @@ export const POST = auth(async function POST(req: NextAuthRequest) {
 
     const body = await req.json();
 
-    const { title, description, industry } = body;
+    const { description, title, industry } = body;
     const userId = req.auth.user.id;
 
-    if (!title || !description || !industry || !userId) {
+    if (!description || !title || !industry || !userId) {
         return NextResponse.json({ error: 'Missing Fields' }, { status: 400 });
     }
 
@@ -30,9 +34,17 @@ export const POST = auth(async function POST(req: NextAuthRequest) {
                 },
                 {
                     role: 'user',
+                    content: keywordsPromptExample,
+                },
+                {
+                    role: 'assistant',
+                    content: keywordsExample,
+                },
+                {
+                    role: 'user',
                     content: JSON.stringify({
-                        title: title,
                         description: description,
+                        title: title,
                         industry: industry,
                     }),
                 },
