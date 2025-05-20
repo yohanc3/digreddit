@@ -10,6 +10,7 @@ These keywords will be used to search Reddit, so they must:
 - Match everyday language, phrases, and jargon used by the target audience.
 - Include pain points, desires, and common expressions tied to the product's value.
 - Include short phrases and variations people may use (e.g., "lead gen", "generate leads", "need more users", "how to grow", etc.).
+- Instead of using the name of the product or a very specific chain of words, use more general keywords that are relevant to the product. For example, instead of "Freelance Lead Generation Tool", use "freelancing", "freelancer", "freelance", etc.
 - Cover synonyms, abbreviations, and alternative spellings if relevant.
 
 Response format (strictly enforced):
