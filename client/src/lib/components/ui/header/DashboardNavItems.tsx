@@ -31,7 +31,7 @@ export default function DashboardNavItems({
                         onClick={() => router.push(`/${path}`)}
                         variant={'light'}
                         className={clsx(
-                            'border-0 text-secondaryColor text-sm',
+                            'border-0 !text-primaryColor',
                             pathname === `/${path}` && 'bg-primaryColor/20'
                         )}
                     >
