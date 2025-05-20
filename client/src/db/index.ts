@@ -58,11 +58,11 @@ export const productsQueries = {
 export const leadsQueries = {
     getAllLeadsByProductID: async (productID: string) => {
         const allPostLeads = await db.query.postLeads.findMany({
-            where: eq(postLeads.productId, productID),
+            where: eq(postLeads.productID, productID),
         });
 
         const allCommentLeads = await db.query.commentLeads.findMany({
-            where: eq(commentLeads.productId, productID),
+            where: eq(commentLeads.productID, productID),
         });
 
         const allSortedLeads = [...allPostLeads, ...allCommentLeads].sort(

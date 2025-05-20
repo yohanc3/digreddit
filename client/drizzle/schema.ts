@@ -1,49 +1,7 @@
-import { pgTable, foreignKey, uuid, text, smallint, timestamp, boolean, integer, jsonb, unique } from "drizzle-orm/pg-core"
+import { pgTable, uuid, text, integer, timestamp, jsonb, foreignKey, smallint, doublePrecision, boolean, unique } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 
-
-export const commentLeads = pgTable("CommentLeads", {
-	id: uuid().defaultRandom().notNull(),
-	subreddit: text().notNull(),
-	author: text().notNull(),
-	body: text().notNull(),
-	url: text().notNull(),
-	ups: smallint().notNull(),
-	downs: smallint().notNull(),
-	productId: uuid().notNull(),
-	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
-	rating: smallint().notNull(),
-}, (table) => [
-	foreignKey({
-			columns: [table.productId],
-			foreignColumns: [products.id],
-			name: "fk_product"
-		}),
-]);
-
-export const postLeads = pgTable("PostLeads", {
-	id: uuid().defaultRandom().notNull(),
-	subreddit: text().notNull(),
-	title: text().notNull(),
-	author: text().notNull(),
-	body: text().notNull(),
-	url: text().notNull(),
-	numComments: smallint().notNull(),
-	subredditSubscribers: smallint(),
-	over18: boolean().notNull(),
-	ups: smallint().notNull(),
-	downs: smallint().notNull(),
-	productId: uuid().notNull(),
-	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
-	rating: smallint().notNull(),
-}, (table) => [
-	foreignKey({
-			columns: [table.productId],
-			foreignColumns: [products.id],
-			name: "fk_product"
-		}),
-]);
 
 export const products = pgTable("Products", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
@@ -57,6 +15,48 @@ export const products = pgTable("Products", {
 	keywords: jsonb().notNull(),
 	userId: uuid().notNull(),
 });
+
+export const commentLeads = pgTable("CommentLeads", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	subreddit: text().notNull(),
+	author: text().notNull(),
+	body: text().notNull(),
+	url: text().notNull(),
+	ups: smallint().notNull(),
+	downs: smallint().notNull(),
+	productId: uuid().notNull(),
+	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+	rating: doublePrecision().notNull(),
+}, (table) => [
+	foreignKey({
+			columns: [table.productId],
+			foreignColumns: [products.id],
+			name: "fk_product"
+		}),
+]);
+
+export const postLeads = pgTable("PostLeads", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	subreddit: text().notNull(),
+	title: text().notNull(),
+	author: text().notNull(),
+	body: text().notNull(),
+	url: text().notNull(),
+	numComments: smallint().notNull(),
+	subredditSubscribers: integer(),
+	over18: boolean().notNull(),
+	ups: smallint().notNull(),
+	downs: smallint().notNull(),
+	productId: uuid().notNull(),
+	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+	rating: doublePrecision().notNull(),
+}, (table) => [
+	foreignKey({
+			columns: [table.productId],
+			foreignColumns: [products.id],
+			name: "fk_product"
+		}),
+]);
 
 export const session = pgTable("Session", {
 	sessionToken: text().primaryKey().notNull(),
