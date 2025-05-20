@@ -4,9 +4,7 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { eq } from 'drizzle-orm';
 import { commentLeads, postLeads, products } from './schema';
 import { Payload, Products } from '@/types/backend/db';
-// import { neon } from "@neondatabase/serverless"
 
-// const neonConnection = neon(process.env.DATABASE_URL!);
 export const db = drizzle(process.env.DATABASE_URL!, { schema });
 
 export const productsQueries = {

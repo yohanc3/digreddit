@@ -6,9 +6,10 @@ import {
     LeftSideBarLeadResult,
     RightSideBarLeadResult,
 } from '../ui/lead/sidebar';
-import RedditLeadCard from '../ui/lead/card';
+import { RedditCommentLeadCard, RedditPostLeadCard } from '../ui/lead/card';
 import { useQuery } from '@tanstack/react-query';
 import ProductConfig from '../ui/lead/productConfig';
+import { isPostLead } from '@/util/utils';
 
 export default function DashboardHandler({
     fetchedProducts,
@@ -18,8 +19,6 @@ export default function DashboardHandler({
     const [selectedProduct, setSelectedProduct] = useState<Products | null>(
         fetchedProducts[0]
     );
-
-    console.log('current product id: ', selectedProduct?.id);
 
     const { data: result, isLoading } = useQuery({
         queryKey: ['allLeads', selectedProduct?.id],
@@ -50,13 +49,12 @@ export default function DashboardHandler({
                 return [];
             }
         },
+        staleTime: 0,
     });
 
     function onSelectedProductChange(index: number) {
         setSelectedProduct(fetchedProducts[index]);
     }
-
-    console.log('all leads: ', result?.allLeads);
 
     return (
         <>
@@ -71,12 +69,24 @@ export default function DashboardHandler({
                     Lead List:
                 </div>
                 <div className="w-full p-4 pt-1 justify-center grid grid-cols-3 gap-2">
-                    {!result?.allLeads ? (
-                        <> No leads at the moment!</>
+                    {isLoading ? (
+                        <> Loading...</>
+                    ) : !isLoading && result?.allLeads.length === 0 ? (
+                        <>No leads at the moment.</>
                     ) : (
-                        (result.allLeads as (CommentLead[] | PostLead[])).map((lead) => {
-                            return <>{lead === CommentLead}</>
-                        })
+                        (result.allLeads as CommentLead[] | PostLead[]).map(
+                            (lead) => {
+                                return isPostLead(lead) ? (
+                                    <RedditPostLeadCard
+                                        leadDetails={lead as PostLead}
+                                    />
+                                ) : (
+                                    <RedditCommentLeadCard
+                                        leadDetails={lead as CommentLead}
+                                    />
+                                );
+                            }
+                        )
                     )}
                 </div>
             </div>
