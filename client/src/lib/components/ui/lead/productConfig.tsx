@@ -16,7 +16,7 @@ import { Label } from '../label';
 import { Input } from '../input';
 import LightButton from '../../button/light';
 import { X } from 'lucide-react';
-import { UseFetch } from '@/lib/frontend/hooks/useFetch';
+import { useFetch } from '@/lib/frontend/hooks/useFetch';
 import { toast } from '@/hooks/use-toast';
 import { BiCheckCircle } from 'react-icons/bi';
 import { useRouter } from 'next/navigation';
@@ -113,7 +113,7 @@ function EditProductDialog({
 }: EditProductConfigProps) {
     const router = useRouter();
 
-    const { apiPost } = UseFetch();
+    const { apiPost } = useFetch();
 
     const [newTitle, setNewTitle] = useState<string>(
         productDetails?.title || ''
