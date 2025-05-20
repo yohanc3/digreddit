@@ -2,7 +2,9 @@ export const generateKeywordsPrompt = `You are a keyword generation assistant fo
 
 You will receive the description of a product or service.
 
-Your task is to generate at least 30 highly relevant keywords or keyphrases that people are likely to use in real Reddit posts and comments. These keywords should reflect how potential leads *naturally talk* about their needs, problems, or goals.
+Your task is to generate at least 30 highly relevant keywords or keyphrases that people are likely to use in real Reddit posts and comments. These keywords should reflect how potential leads *naturally talk* about their needs, problems, or goals. 
+
+You should not add very specific words, like the name of the product or service. Instead, try to find more general keywords that are relevant to the product. Sometimes even incomplete phrases are relevant. For instance: "more users" instead of "need more users for my SaaS", or "find clients" instead of "how to find clients for my freelancing business".
 
 These keywords will be used to search Reddit, so they must:
 - Match everyday language, phrases, and jargon used by the target audience.
