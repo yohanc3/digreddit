@@ -81,7 +81,6 @@ export default function ProductConfig({
                     </div>
                     <EditProductDialog
                         productDetails={productDetails}
-                        keywords={keywords}
                         setKeywords={setKeywords}
                         setDescription={setDescription}
                     />
@@ -93,7 +92,6 @@ export default function ProductConfig({
 
 interface EditProductConfigProps {
     productDetails: Products | null;
-    keywords: string[];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setKeywords: (prev: any) => void;
     setDescription: (prev: string) => void;
@@ -101,7 +99,6 @@ interface EditProductConfigProps {
 
 function EditProductDialog({
     productDetails,
-    keywords,
     setKeywords,
     setDescription,
 }: EditProductConfigProps) {
@@ -220,7 +217,7 @@ function EditProductDialog({
                         title="Save Changes"
                         onClick={async () => {
 
-                            console.log("keywords", keywords);
+
                             const { status } = await apiPost(
                                 'api/product/update',
                                 {
