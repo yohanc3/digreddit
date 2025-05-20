@@ -1,5 +1,5 @@
 {
-	"name": "my-first-worker",
+	"name": "lead-evaluator",
 	"version": "0.0.0",
 	"private": true,
 	"scripts": {
@@ -13,7 +13,7 @@
 		"@cloudflare/vitest-pool-workers": "^0.8.19",
 		"typescript": "^5.5.2",
 		"vitest": "~3.0.7",
-		"wrangler": "^4.15.2"
+		"wrangler": "^4.16.0"
 	},
 	"dependencies": {
 		"openai": "^4.100.0",

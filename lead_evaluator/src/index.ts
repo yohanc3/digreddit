@@ -92,8 +92,6 @@ export default {
 			return new Response(JSON.stringify({ error: `No products found for keywords: ${keywords.join(', ')}` }), { status: 404 });
 		}
 
-		console.log(`Products: ${JSON.stringify(products, null, 2)}`);
-
 		const similarity: SimilarityResponse | null = await calculateSimilarity(contentEntry!.body, products, env.DEEPSEEK_API_KEY);
 
 		if (similarity === null) {

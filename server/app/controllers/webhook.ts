@@ -85,7 +85,8 @@ export default class UserController {
         console.log(
             'success, time it took: ',
             (Date.now() - start) / 1000,
-            ' seconds. Responses from the lead evaluator: '
+            ' seconds. Responses from the lead evaluator: ',
+            leadEvaluatorResponse
         )
 
         return response.status(200).send({ body: 'success', responses: leadEvaluatorResponse })
