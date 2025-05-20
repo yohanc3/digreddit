@@ -12,7 +12,8 @@ export const productsQueries = {
         return await db
             .select()
             .from(products)
-            .where(eq(products.userId, userID));
+            .where(eq(products.userId, userID))
+            .orderBy(products.createdAt);
     },
 
     getProductByUserID: async (userID: string) => {
@@ -31,6 +32,26 @@ export const productsQueries = {
         return results[0];
     },
 
+    updateProductByID: async (
+        productID: string,
+        title: string,
+        description: string,
+        keywords: string[]
+    ) => {
+        const [updatedProduct] = await db
+            .update(products)
+            .set({
+                title,
+                description,
+                keywords,
+                updatedAt: new Date().toISOString(),
+            })
+            .where(eq(products.id, productID))
+            .returning();
+
+        return updatedProduct;
+    },
+
     createProduct: async (payload: Payload<Products>) => {
         const [createdProduct] = await db
             .insert(products)
@@ -38,17 +59,17 @@ export const productsQueries = {
             .returning();
 
         return createdProduct;
-    }
+    },
 };
 
 export const leadsQueries = {
     getAllLeadsByProductID: async (productID: string) => {
         const allPostLeads = await db.query.postLeads.findMany({
-            where: eq(postLeads.productId, productID),
+            where: eq(postLeads.productID, productID),
         });
 
         const allCommentLeads = await db.query.commentLeads.findMany({
-            where: eq(commentLeads.productId, productID),
+            where: eq(commentLeads.productID, productID),
         });
 
         const allSortedLeads = [...allPostLeads, ...allCommentLeads].sort(
