@@ -1,6 +1,8 @@
+"use client"
+
 import clsx from 'clsx';
 import { Button } from '../button';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Badge } from '../badge';
 import { Products } from '@/types/backend/db';
 import {
@@ -32,17 +34,8 @@ export default function ProductConfig({
 }: ProductConfigProps) {
     const [showProductConfig, setShowProductConfig] = useState(false);
 
-    const [keywords, setKeywords] = useState<string[]>([]);
-
-    useEffect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-        Array.isArray(productDetails?.keywords)
-            ? setKeywords(productDetails.keywords)
-            : [];
-
-        return;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [productDetails?.id]);
+    const [keywords, setKeywords] = useState<string[]>(productDetails?.keywords as string[] || []);
+    const [description, setDescription] = useState<string>(productDetails?.description || 'No product description.');
 
     return (
         <div className={clsx('p-4 w-full flex flex-col gap-y-2', className)}>
@@ -62,9 +55,7 @@ export default function ProductConfig({
                 <>
                     {/* Lead Dscription */}
                     <div className="text-secondarySize text-tertiaryColor text-justify">
-                        {productDetails?.description
-                            ? productDetails.description
-                            : 'No product description.'}
+                        {description}
                     </div>
                     {/* Lead Keywords */}
                     <div>
@@ -92,6 +83,7 @@ export default function ProductConfig({
                         productDetails={productDetails}
                         keywords={keywords}
                         setKeywords={setKeywords}
+                        setDescription={setDescription}
                     />
                 </>
             )}
@@ -104,12 +96,14 @@ interface EditProductConfigProps {
     keywords: string[];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setKeywords: (prev: any) => void;
+    setDescription: (prev: string) => void;
 }
 
 function EditProductDialog({
     productDetails,
     keywords,
     setKeywords,
+    setDescription,
 }: EditProductConfigProps) {
     const router = useRouter();
 
@@ -134,7 +128,7 @@ function EditProductDialog({
             event.preventDefault();
             (event.target as HTMLInputElement).value = '';
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            setNewKeywords((prev: any) => [...prev, newKeyword]);
+            setNewKeywords((prev: string[]) => [...prev, newKeyword]);
         }
     }
 
@@ -195,7 +189,7 @@ function EditProductDialog({
 
                     <div className="max-h-48 overflow-y-auto">
                         <div className="flex flex-wrap gap-1.5 w-full mt-2 p-1 overflow-y-auto">
-                            {newKeywords.map((item: string, index: number) => (
+                            {newKeywords && newKeywords.length > 0 && newKeywords.map((item: string, index: number) => (
                                 <Badge
                                     key={index}
                                     variant={'leadKeyword'}
@@ -208,7 +202,7 @@ function EditProductDialog({
                                         strokeWidth={3}
                                         className="cursor-pointer text-red-400"
                                         onClick={() =>
-                                            setKeywords((prev: string[]) => {
+                                            setNewKeywords((prev: string[]) => {
                                                 return prev.filter(
                                                     (keyword: string) =>
                                                         item != keyword
@@ -225,19 +219,22 @@ function EditProductDialog({
                     <LightButton
                         title="Save Changes"
                         onClick={async () => {
+
+                            console.log("keywords", keywords);
                             const { status } = await apiPost(
                                 'api/product/update',
                                 {
                                     productID: productDetails?.id,
                                     title: newTitle,
                                     description: newDescription,
-                                    keywords,
+                                    keywords: newKeywords,
                                 }
                             );
 
                             if (status === 200) {
                                 router.refresh();
                                 setKeywords([...newKeywords]);
+                                setDescription(newDescription);
                                 toast({
                                     title: `Product Successfully Updated!`,
                                     description:

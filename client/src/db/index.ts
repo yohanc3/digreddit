@@ -32,6 +32,26 @@ export const productsQueries = {
         return results[0];
     },
 
+    updateProductByID: async (
+        productID: string,
+        title: string,
+        description: string,
+        keywords: string[]
+    ) => {
+        const [updatedProduct] = await db
+            .update(products)
+            .set({
+                title,
+                description,
+                keywords,
+                updatedAt: new Date().toISOString(),
+            })
+            .where(eq(products.id, productID))
+            .returning();
+
+        return updatedProduct;
+    },
+
     createProduct: async (payload: Payload<Products>) => {
         const [createdProduct] = await db
             .insert(products)

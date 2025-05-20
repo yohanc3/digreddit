@@ -52,8 +52,6 @@ export default function DashboardHandler({
         staleTime: 0,
     });
 
-    console.log("results", result);
-
     function onSelectedProductChange(index: number) {
         setSelectedProduct(fetchedProducts[index]);
     }
