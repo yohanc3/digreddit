@@ -71,7 +71,7 @@ export default function DashboardHandler({
                 <div className="w-full p-4 pt-1 justify-center grid grid-cols-3 gap-2">
                     {isLoading ? (
                         <> Loading...</>
-                    ) : !isLoading && result?.allLeads.length === 0 ? (
+                    ) : !result?.allLeads || !isLoading && result.allLeads === null ? (
                         <>No leads at the moment.</>
                     ) : (
                         (result.allLeads as CommentLead[] | PostLead[]).map(

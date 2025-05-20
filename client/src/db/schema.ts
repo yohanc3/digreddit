@@ -11,7 +11,6 @@ import {
     unique,
     doublePrecision,
 } from 'drizzle-orm/pg-core';
-import { sql } from 'drizzle-orm';
 
 export const commentLeads = pgTable(
     'CommentLeads',
@@ -23,13 +22,13 @@ export const commentLeads = pgTable(
         url: text().notNull(),
         ups: smallint().notNull(),
         downs: smallint().notNull(),
-        productId: uuid().notNull(),
+        productID: uuid().notNull(),
         createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
         rating: doublePrecision().notNull(),
     },
     (table) => [
         foreignKey({
-            columns: [table.productId],
+            columns: [table.productID],
             foreignColumns: [products.id],
             name: 'fk_product',
         }),
@@ -50,13 +49,13 @@ export const postLeads = pgTable(
         over18: boolean().notNull(),
         ups: smallint().notNull(),
         downs: smallint().notNull(),
-        productId: uuid().notNull(),
+        productID: uuid().notNull(),
         createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
         rating: doublePrecision().notNull(),
     },
     (table) => [
         foreignKey({
-            columns: [table.productId],
+            columns: [table.productID],
             foreignColumns: [products.id],
             name: 'fk_product',
         }),
