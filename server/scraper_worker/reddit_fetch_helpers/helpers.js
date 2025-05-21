@@ -78,6 +78,8 @@ export async function fetchInitialThingID(errorsNum = 0) {
 
         const initialThingJSON = await initialThing.json()
 
+        console.log('initialThingJSON: ', initialThingJSON)
+
         if (
             Object.hasOwn(initialThingJSON, 'message') &&
             Object.hasOwn(initialThingJSON, 'error') &&

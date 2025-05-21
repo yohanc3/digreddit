@@ -38,57 +38,75 @@ export default class UserController {
     
     */
     async intake({ request, response }: HttpContext) {
-        const start = Date.now()
-        const ahoCorasick = await this.getAhoCorasick()
+        try {
+            const start = Date.now()
+            const ahoCorasick = await this.getAhoCorasick()
 
-        if (!ahoCorasick) {
-            console.log('aho corasick is null. an error occurred')
-            return response.status(500).send({ error: 'Aho Corasick is null' })
+            if (!ahoCorasick) {
+                console.log('aho corasick is null. an error occurred')
+                return response.status(500).send({ error: 'Aho Corasick is null' })
+            }
+
+            const body = request.body()
+
+            if (
+                !body ||
+                !body.contentEntry ||
+                !Array.isArray(body.contentEntry) ||
+                body.isPost === undefined ||
+                body.isPost === null
+            ) {
+                console.log('Invalid request body.')
+                return response.status(500).send({ error: 'Invalid request body.' })
+            }
+
+            const contentEntry = body.contentEntry
+
+            for (const content of contentEntry) {
+                const ahoCorasickMatches = ahoCorasick.matchInText(
+                    content.title + ' ' + content.body
+                )
+
+                const keywords = ahoCorasickMatches.map((match: any) => match.keyword)
+
+                const isPost = body.isPost
+
+                if (keywords.length === 0) {
+                    console.log('No keywords matched in the given content')
+                    continue
+                    // return response
+                    //     .status(200)
+                    //     .send({ message: 'No keywords matched in the given content' })
+                }
+
+                const responses = await fetch(env.get('LEAD_EVALUATOR_URL'), {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        post: isPost ? contentEntry : null,
+                        comment: !isPost ? contentEntry : null,
+                        isPost: isPost,
+                        keywords: keywords,
+                    }),
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': env.get('LEAD_EVALUATOR_AUTH_KEY'),
+                    },
+                })
+
+                const leadEvaluatorResponse = await responses.json()
+
+                console.log(
+                    'success, time it took: ',
+                    (Date.now() - start) / 1000,
+                    ' seconds. Responses from the lead evaluator: ',
+                    leadEvaluatorResponse
+                )
+            }
+
+            return response.status(200).send({ body: 'success' })
+        } catch (error) {
+            console.error('Error processing intake: ', error)
+            return response.status(500).send({ error: 'Error processing intake' })
         }
-
-        const body = request.body()
-
-        if (!body || !body.contentEntry || body.isPost === undefined || body.isPost === null) {
-            console.log('Invalid request body.')
-            return response.status(500).send({ error: 'Invalid request body.' })
-        }
-
-        const contentEntry = body.contentEntry
-
-        const ahoCorasickMatches = ahoCorasick.matchInText(contentEntry.body)
-
-        const keywords = ahoCorasickMatches.map((match: any) => match.keyword)
-
-        const isPost = body.isPost
-
-        if (keywords.length === 0) {
-            console.log('No keywords matched in the contentEntry')
-            return response.status(200).send({ message: 'No keywords matched in the contentEntry' })
-        }
-
-        const responses = await fetch(env.get('LEAD_EVALUATOR_URL'), {
-            method: 'POST',
-            body: JSON.stringify({
-                post: isPost ? contentEntry : null,
-                comment: !isPost ? contentEntry : null,
-                isPost: isPost,
-                keywords: keywords,
-            }),
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': env.get('LEAD_EVALUATOR_AUTH_KEY'),
-            },
-        })
-
-        const leadEvaluatorResponse = await responses.json()
-
-        console.log(
-            'success, time it took: ',
-            (Date.now() - start) / 1000,
-            ' seconds. Responses from the lead evaluator: ',
-            leadEvaluatorResponse
-        )
-
-        return response.status(200).send({ body: 'success', responses: leadEvaluatorResponse })
     }
 }

@@ -57,6 +57,8 @@ async function cleanupBeforeExit() {
                     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)',
             },
         })
+
+        console.log('token revoked')
     } catch (e) {
         console.log(
             '\nError when revoking token: ',
