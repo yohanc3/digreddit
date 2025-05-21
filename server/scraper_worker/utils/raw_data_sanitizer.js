@@ -34,7 +34,7 @@ export function sanitizeComments(rawComments) {
                 rawComment.data.body.length > 0 &&
                 rawComment.data.body.length < 1000 &&
                 // deleted comments in reddit say [deleted]
-                rawComment.data.body !== '[deleted]'
+                rawComment.data.body !== '[removed]'
         )
         .map((rawComment) => {
             const rawCommentData = rawComment.data

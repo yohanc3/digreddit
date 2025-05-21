@@ -6,7 +6,7 @@ export function sendToServer(contentEntry, isPost) {
             method: 'POST',
             body: JSON.stringify({ contentEntry: contentEntry, isPost: isPost }),
             headers: {
-                'content-type': 'application/json',
+                'Content-Type': 'application/json',
             },
         }).catch((e) => {
             console.error('Error caught when sending a batch of posts/comments: ', e)
