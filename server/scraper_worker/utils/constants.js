@@ -36,7 +36,7 @@ export const CONSTANTS = {
 
 // --------- User agents. Ideally we should switch among them every now and then, we do so every 1000 requests right now
 export const USER_AGENTS = [
-    'macos:www.digreddit.net:v1.0.0 (by /u/Hot-Glass8919)',
+    'macos:www.digreddit.net:v1.0.0 (by /u/yohanc32)',
     'Mozilla/5.0 (iPhone; CPU iPhone OS 10_0_0; like Mac OS X) AppleWebKit/536.50 (KHTML, like Gecko)  Chrome/49.0.3802.298 Mobile Safari/602.9',
     'Mozilla/5.0 (Linux; U; Linux x86_64; en-US) Gecko/20100101 Firefox/70.3',
     'Mozilla/5.0 (Windows; U; Windows NT 10.3;; en-US) AppleWebKit/600.30 (KHTML, like Gecko) Chrome/53.0.2336.373 Safari/535.8 Edge/14.56048',
