@@ -354,7 +354,7 @@ function RedditLeadCardDialog({ lead }: RedditLeadCardDialogProps) {
 
                         {/* Action Button */}
                         <div className="flex justify-end mt-6">
-                            <a href={lead.url} target="_blank">
+                            <a href={`${!isPost ? 'https://www.reddit.com' : ''}${lead.url}`} target="_blank">
                                 <Button variant="dark" className="w-36 h-9 text-sm">
                                     View Comment
                                 </Button>
