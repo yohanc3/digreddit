@@ -84,6 +84,10 @@ async function main() {
             // Send the sanitized children to the server, which receives the contentEntry and isPost boolean
             sendToServer(sanitizedChildren, WORKER_THING_TYPE === 'posts' ? true : false)
 
+            
+            // Delay for posts is 1750, for comments 0. Comment creation rate is way bigger than that of posts
+            await delay(WORKER_THING_TYPE === 'posts' ? 350 : 0)
+
             logInfo(
                 thingsBatchCount,
                 sanitizedChildren.length,
