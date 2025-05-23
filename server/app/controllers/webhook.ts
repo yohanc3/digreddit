@@ -82,8 +82,8 @@ export default class UserController {
                 const responses = await fetch(env.get('LEAD_EVALUATOR_URL'), {
                     method: 'POST',
                     body: JSON.stringify({
-                        post: isPost ? contentEntry : null,
-                        comment: !isPost ? contentEntry : null,
+                        post: isPost ? content : null,
+                        comment: !isPost ? content : null,
                         isPost: isPost,
                         keywords: keywords,
                     }),
