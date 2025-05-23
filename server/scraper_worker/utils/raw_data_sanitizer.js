@@ -39,7 +39,7 @@ export function sanitizeComments(rawComments) {
         .map((rawComment) => {
             const rawCommentData = rawComment.data
 
-            return {
+            const returnData = {
                 id: rawCommentData.id,
                 subreddit: rawCommentData.subreddit_name_prefixed,
                 author: rawCommentData.author,
@@ -47,7 +47,9 @@ export function sanitizeComments(rawComments) {
                 createdAt: rawCommentData.created,
                 ups: rawCommentData.ups,
                 downs: rawCommentData.downs,
-                url: rawCommentData.link_url,
+                url: rawCommentData.permalink || "n/a",
             }
+
+            return returnData
         })
 }
