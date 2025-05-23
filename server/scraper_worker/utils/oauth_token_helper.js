@@ -59,7 +59,7 @@ async function cleanupBeforeExit() {
             },
         })
 
-        console.log('\nToken revoked')
+        console.log('\nToken revoked. response: ', res)
     } catch (e) {
         console.log(
             '\nError when revoking token: ',
