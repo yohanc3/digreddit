@@ -76,6 +76,8 @@ export async function fetchInitialThingID(errorsNum = 0) {
             },
         })
 
+        console.log('initialThing: ', initialThing)
+
         const initialThingJSON = await initialThing.json()
 
         if (

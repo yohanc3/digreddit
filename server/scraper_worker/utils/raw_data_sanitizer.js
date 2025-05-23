@@ -47,7 +47,7 @@ export function sanitizeComments(rawComments) {
                 createdAt: rawCommentData.created,
                 ups: rawCommentData.ups,
                 downs: rawCommentData.downs,
-                url: rawCommentData.url,
+                url: rawCommentData.link_url,
             }
         })
 }
