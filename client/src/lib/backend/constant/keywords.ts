@@ -11,4 +11,3 @@ Response rules (strictly enforced):
 - Do not include any explanations, introductions, or extra text — only the JSON array.
 - If the input is invalid or insufficient, return an empty array: []
 - Do not hallucinate. Only generate keywords that are clearly relevant to the provided inputs.
-`

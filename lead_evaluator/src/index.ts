@@ -46,6 +46,8 @@ export default {
 		try {
 			body = await request.json();
 
+			console.log('body: ', body);
+
 			if (
 				!body ||
 				body.isPost === undefined ||
@@ -97,6 +99,8 @@ export default {
 		if (similarity === null) {
 			return new Response(JSON.stringify({ error: 'Failed to calculate similarity.' }), { status: 500 });
 		}
+
+		console.log('similarity: ', similarity);
 
 		let pushLeadsReturn: PushLeadsReturn;
 
