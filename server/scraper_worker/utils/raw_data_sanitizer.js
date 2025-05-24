@@ -19,7 +19,7 @@ export function sanitizePosts(rawPosts) {
                 createdAt: rawPostData.created,
                 ups: rawPostData.ups,
                 downs: rawPostData.downs,
-                num_comments: rawPostData.num_comments,
+                numComments: rawPostData.num_comments,
                 url: rawPostData.url,
                 subredditSubscribers: rawPostData.subreddit_subscribers,
                 over18: rawPostData.over_18,
@@ -34,12 +34,12 @@ export function sanitizeComments(rawComments) {
                 rawComment.data.body.length > 0 &&
                 rawComment.data.body.length < 1000 &&
                 // deleted comments in reddit say [deleted]
-                rawComment.data.body !== '[deleted]'
+                rawComment.data.body !== '[removed]'
         )
         .map((rawComment) => {
             const rawCommentData = rawComment.data
 
-            return {
+            const returnData = {
                 id: rawCommentData.id,
                 subreddit: rawCommentData.subreddit_name_prefixed,
                 author: rawCommentData.author,
@@ -47,7 +47,9 @@ export function sanitizeComments(rawComments) {
                 createdAt: rawCommentData.created,
                 ups: rawCommentData.ups,
                 downs: rawCommentData.downs,
-                url: rawCommentData.url,
+                url: rawCommentData.permalink || "n/a",
             }
+
+            return returnData
         })
 }
