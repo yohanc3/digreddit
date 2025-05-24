@@ -10,10 +10,10 @@ export default function ProductList() {
         <>
          {  
             !isAllUserProductsLoading ? allUserProducts.map((product:Products) =>{
-                return <ProductCard leadDetails={product}/>
+                return <ProductCard key={product.id} leadDetails={product}/>
             })
-            : Array.from({ length: 8 }).map(()=>{
-                return <LoadingProductCard />
+            : Array.from({ length: 8 }).map((_, i)=>{
+                return <LoadingProductCard key={i} />
             })
          }
         </>
