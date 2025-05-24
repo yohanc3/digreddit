@@ -76,6 +76,8 @@ export async function fetchInitialThingID(errorsNum = 0) {
             },
         })
 
+        console.log('initialThing: ', initialThing)
+
         const initialThingJSON = await initialThing.json()
 
         if (
@@ -97,6 +99,10 @@ export async function fetchInitialThingID(errorsNum = 0) {
         }
 
         const thingsLength = initialThingJSON.data.children.length
+
+        if (thingsLength === 0) {
+            throw new Error('No things found. Children is an empty array')
+        }
 
         let initialThingID = initialThingJSON.data.children[thingsLength - 1].data.id
 
