@@ -1,5 +1,3 @@
-import { ChangeEvent } from "react";
-
 export interface ProductFormDataFields {
     description: string;
     title: string;
@@ -14,7 +12,7 @@ export interface ProductFormInputFields {
     description?: string;
     title?: string;
     industry?: string;
-    keyword?:string;
+    keyword?: string;
     keywords?: string[];
     mrr?: string;
     url?: string;
@@ -24,7 +22,7 @@ export interface ProductFormDataTarget extends EventTarget {
     description: { value: string };
     title: { value: string };
     industry: { value: string };
-    mrr?: { value: Number };
+    mrr?: { value: number };
     url?: { value: string };
 }
 
