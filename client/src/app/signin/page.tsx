@@ -1,9 +1,6 @@
-import { auth, signIn } from '@/../auth';
+import { signIn } from '@/../auth';
 
 export default async function SignIn() {
-    const session = await auth();
-
-    console.log('session is: ', session);
 
     return (
         <form
