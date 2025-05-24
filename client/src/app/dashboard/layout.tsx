@@ -1,8 +1,4 @@
 import NavBar from '@/lib/components/ui/header/NavBar';
-import {
-    LeftSideBarLeadResult,
-    RightSideBarLeadResult,
-} from '@/lib/components/ui/lead/sidebar';
 
 export default function DashboardLayout({
     children,

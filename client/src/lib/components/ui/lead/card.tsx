@@ -1,5 +1,5 @@
 'use client';
-import { CommentLead, Lead } from '@/types/backend/db';
+import { CommentLead, PostLead } from '@/types/backend/db';
 import {
     BiUpvote,
     BiCommentDetail,
@@ -17,15 +17,117 @@ import {
 } from '@/lib/components/ui/dialog';
 import { Badge } from '../badge';
 import { useState } from 'react';
+import { timeAgo, isPostLead } from '@/util/utils';
 
 interface RedditCommentLeadCardProps {
     leadDetails: CommentLead;
     className?: string;
 }
 
-export default function RedditCommentLeadCard({ className, leadDetails }: RedditCommentLeadCardProps) {
+export function RedditCommentLeadCard({
+    className,
+    leadDetails,
+}: RedditCommentLeadCardProps) {
+    const unixCreatedAt = new Date(leadDetails.createdAt).getTime();
 
-    const date = ''
+    const howLongAgo = timeAgo(unixCreatedAt);
+
+    return (
+        <div
+            className={clsx(
+                'w-auto flex flex-col bg-white text-black p-3 rounded-lg gap-y-1 border border-light justify-between',
+                className
+            )}
+        >
+            <div>
+                {/* Card Header */}
+                <div className="flex flex-row justify-between">
+                    <div className="flex flex-col">
+                        <div className="text-secondaryColor text-primarySize font-semibold">
+                            {leadDetails.subreddit}
+                        </div>
+                        <div className="text-tertiaryColor text-tertiarySize font-medium">
+                            by: {leadDetails.author}
+                        </div>
+                    </div>
+                    <div>
+                        <a href={leadDetails.url} target="_blank">
+                            <Button variant={'light'}>
+                                Open <BiLinkExternal size={18} />
+                            </Button>
+                        </a>
+                    </div>
+                </div>
+
+                {/* Card Body */}
+                <div className="flex flex-col pt-4 h-28">
+                    <div className="text-tertiarySize font-medium text-tertiaryColor text-justify h-12">
+                        {leadDetails.body.substring(0, 200) + '...'}
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                {/* Reddit Post/Comment Details */}
+                <div className="flex flex-row h-10 gap-x-3 items-center">
+                    <div className="flex flex-row items-center justify-center gap-x-0.5">
+                        <BiUpvote color="#D93900" size={18} />{' '}
+                        <p className="text-tertiarySize text-tertiaryColor">
+                            {' '}
+                            {leadDetails.ups - leadDetails.downs}{' '}
+                        </p>
+                    </div>
+
+                    <div className="flex flex-row items-center justify-center gap-x-1">
+                        <BiTimeFive color="#344054" size={18} />{' '}
+                        <p className="text-tertiarySize text-tertiaryColor">
+                            {' '}
+                            {howLongAgo}{' '}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Card Rating */}
+                <div
+                className={clsx(
+                    'items-center text-xs font-semibold text-tertiaryColor gap-x-1',
+                    {
+                        'text-orange-600': leadDetails.rating < 3.3,
+                        'text-yellow-600':
+                            leadDetails.rating < 5.5 &&
+                            leadDetails.rating > 3.3,
+                        'text-green-600':
+                            leadDetails.rating <= 10 &&
+                            leadDetails.rating > 5.5,
+                    }
+                )}
+                >
+                    <p>
+                        AI Lead Rating:{' '}
+                        <span className="font-bold text-sm">
+                            {leadDetails.rating}
+                        </span>
+                    </p>
+                </div>
+
+                <RedditLeadCardDialog lead={leadDetails} />
+            </div>
+        </div>
+    );
+}
+
+interface RedditPostLeadCardProps {
+    leadDetails: PostLead;
+    className?: string;
+}
+
+export function RedditPostLeadCard({
+    className,
+    leadDetails,
+}: RedditPostLeadCardProps) {
+    const unixCreatedAt = new Date(leadDetails.createdAt).getTime();
+
+    const howLongAgo = timeAgo(unixCreatedAt);
 
     return (
         <div
@@ -40,21 +142,27 @@ export default function RedditCommentLeadCard({ className, leadDetails }: Reddit
                     <div className="text-secondaryColor text-primarySize font-semibold">
                         {leadDetails.subreddit}
                     </div>
-                    <div className="text-tertiaryColor text-tertiarySize">
+                    <div className="text-tertiaryColor text-tertiarySize font-medium">
                         by: {leadDetails.author}
                     </div>
                 </div>
                 <div>
-                    <Button variant={'light'}>
-                        Open <BiLinkExternal size={18} />
-                    </Button>
+                    <a href={leadDetails.url} target="_blank">
+                        <Button variant={'light'}>
+                            Open <BiLinkExternal size={18} />
+                        </Button>
+                    </a>
                 </div>
             </div>
 
             {/* Card Body */}
-            <div className="flex flex-col">
-                <div className="text-tertiarySize text-tertiaryColor text-justify">
-                    {leadDetails.body}
+            <div className="flex flex-col h-28">
+                <div className="text-mediumSize font-semibold">
+                    {leadDetails.title}
+                </div>
+
+                <div className="text-tertiarySize text-tertiaryColor text-justify font-medium text-clip h-8">
+                    {leadDetails.body.substring(0, 200) + '...'}
                 </div>
             </div>
 
@@ -73,24 +181,51 @@ export default function RedditCommentLeadCard({ className, leadDetails }: Reddit
                     <BiTimeFive color="#344054" size={18} />{' '}
                     <p className="text-tertiarySize text-tertiaryColor">
                         {' '}
-                        {}{' '}
+                        {howLongAgo}{' '}
                     </p>
                 </div>
             </div>
 
             {/* Card Rating */}
-            <div className="flex flex-row items-center text-xs font-semibold text-tertiaryColor gap-x-1">
-                <p>Lead Rating:</p> <p> 7/10 </p>
+            <div
+                className={clsx(
+                    'items-center text-xs font-semibold text-tertiaryColor gap-x-1',
+                    {
+                        'text-orange-600': leadDetails.rating < 3.3,
+                        'text-yellow-600':
+                            leadDetails.rating < 6.6 &&
+                            leadDetails.rating > 3.3,
+                        'text-green-600':
+                            leadDetails.rating <= 10 &&
+                            leadDetails.rating > 6.6,
+                    }
+                )}
+            >
+                <p>
+                    AI Lead Rating:{' '}
+                    <span className="font-bold text-sm">
+                        {leadDetails.rating}
+                    </span>
+                </p>
             </div>
 
-            <RedditLeadCardDialog />
+            <RedditLeadCardDialog lead={leadDetails} />
         </div>
     );
 }
 
-function RedditLeadCardDialog() {
+interface RedditLeadCardDialogProps {
+    lead: CommentLead | PostLead;
+}
+
+function RedditLeadCardDialog({ lead }: RedditLeadCardDialogProps) {
     const [showRedditDescription, setShowRedditDescription] =
         useState<boolean>(false);
+    
+    const isPost = isPostLead(lead);
+    const unixCreatedAt = new Date(lead.createdAt).getTime();
+    const howLongAgo = timeAgo(unixCreatedAt);
+    const upvotes = lead.ups - lead.downs;
 
     return (
         <Dialog>
@@ -99,163 +234,132 @@ function RedditLeadCardDialog() {
                     Open Details
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl p-14 h-[85vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl p-14 h-[85vh] overflow-y-auto flex flex-col">
                 {/* Header - Subreddit info and rating */}
                 <div className="flex justify-between items-start mb-4">
                     <div>
                         <h3 className="font-medium text-sm text-secondaryColor">
-                            r/Philippines
+                            {lead.subreddit}
                         </h3>
                         <p className="text-xs text-tertiaryColor">
-                            u/randomguy
+                            {lead.author}
                         </p>
                     </div>
                     <Badge
-                        variant="dark"
-                        className="rounded-xl px-4 py-2 !text-base !font-semibold"
+                        variant="outline"
+                        className={clsx(
+                            "rounded-xl px-4 py-2 !text-base !font-semibold",
+                            {
+                                'bg-orange-100 text-orange-600 border-orange-200': lead.rating < 3.3,
+                                'bg-yellow-100 text-yellow-600 border-yellow-200': 
+                                    lead.rating < 6.6 && lead.rating >= 3.3,
+                                'bg-green-100 text-green-600 border-green-200': 
+                                    lead.rating <= 10 && lead.rating >= 6.6,
+                            }
+                        )}
                     >
-                        Rating: 7/10
+                        Rating: {lead.rating}/10
                     </Badge>
                 </div>
 
-                <div className="flex flex-col gap-y-4">
-                    {/* Post Title */}
-                    <h2 className="text-lg font-semibold text-secondaryColor">
-                        Lorem ipsum dolor sit amet, consectetur adipscing elit.
-                    </h2>
+                <div className="flex flex-col gap-y-4 flex-grow">
+                    {/* Post Title - Only shown for PostLead */}
+                    {isPost && (
+                        <h2 className="text-lg font-semibold text-secondaryColor">
+                            {(lead as PostLead).title}
+                        </h2>
+                    )}
 
                     {/* Post Description with expand/collapse */}
                     <div
                         className={clsx(
                             'w-full relative transition-all duration-300 ease-in-out',
-                            showRedditDescription ? 'max-h-full' : 'max-h-40'
+                            showRedditDescription ? '' : 'max-h-60 overflow-hidden'
                         )}
                     >
+                        {/* Post content */}
+                        <div className="text-sm text-tertiaryColor">
+                            {lead.body}
+                        </div>
+                        
                         {/* Gradient overlay and "See More" button */}
                         {!showRedditDescription && (
-                            <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent flex items-end justify-center">
+                            <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white to-transparent flex items-end justify-center w-full">
                                 <button
-                                    className="flex items-center text-sm text-tertiaryColor hover:text-secondaryColor transition-colors"
-                                    onClick={() =>
-                                        setShowRedditDescription(true)
-                                    }
+                                    className="flex items-center text-sm text-tertiaryColor hover:text-secondaryColor transition-colors mb-1"
+                                    onClick={() => setShowRedditDescription(true)}
                                 >
                                     <BiChevronDown size={25} /> See More
                                 </button>
                             </div>
                         )}
-
-                        {/* Post content */}
-                        <div className="text-sm text-tertiaryColor">
-                            Lorem ipsum dolor sit amet, consectetur adipiscing
-                            elit. Sed dictum scelerisque rutrum. Mauris
-                            consequat cursus sem, eget sodales lorem mollis
-                            auctor. Integer commodo lacus risus, vitae porttitor
-                            augue viverra quis. Aenean blandit fermentum lorem,
-                            id interdum mauris semper quis. Donec consectetur
-                            maximus orci, sed facilisis nibh varius in. Vivamus
-                            at dui id nibh dignissim sodales. Duis condimentum
-                            eu mauris id porta. In dapibus suscipit neque in
-                            blandit. Fusce arcu sapien, sagittis ac convallis
-                            viverra, faucibus sed justo. Vestibulum eu tincidunt
-                            velit, sed vehicula dolor. Sed sed vestibulum lacus.
-                            Phasellus ut turpis malesuada lectus laoreet
-                            pulvinar at non lacus. Sed volutpat ac purus
-                            facilisis malesuada.
-                            {/* Repeated lorem ipsum text omitted for brevity */}
-                            {/* "See Less" button */}
-                            {showRedditDescription && (
-                                <button
-                                    className="flex items-center text-sm text-tertiaryColor hover:text-secondaryColor transition-colors mt-4 mx-auto"
-                                    onClick={() =>
-                                        setShowRedditDescription(false)
-                                    }
-                                >
-                                    <BiChevronUp size={25} /> See More
-                                </button>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Post Stats */}
-                    <div className="grid grid-cols-3 gap-3 my-2">
-                        {/* Upvotes */}
-                        <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50">
-                            <div className="items-center justify-center h-min">
-                                <BiUpvote color="#D93900" size={25} />
-                            </div>
-                            <div className="items-center justify-center h-min">
-                                <div className="text-sm text-secondaryColor">
-                                    Upvotes
-                                </div>
-                                <div className="text-xl text-secondaryColor font-semibold">
-                                    1.4k
-                                </div>
-                            </div>
-                        </div>
-                        {/* <Badge
-                        variant={'leadDetails'}
-                        className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50"
-                    >
                         
-                    </Badge> */}
+                        {/* "See Less" button */}
+                        {showRedditDescription && (
+                            <div className="flex justify-center mt-4">
+                                <button
+                                    className="flex items-center text-sm text-tertiaryColor hover:text-secondaryColor transition-colors"
+                                    onClick={() => setShowRedditDescription(false)}
+                                >
+                                    <BiChevronUp size={25} /> See Less
+                                </button>
+                            </div>
+                        )}
+                    </div>
 
-                        {/* Comments */}
-                        <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50">
-                            <BiCommentDetail color="#344054" size={25} />
-                            <div>
-                                <p className="text-sm text-secondaryColor">
-                                    Comments
-                                </p>
-                                <p className="text-xl font-semibold text-secondaryColor">
-                                    16
-                                </p>
+                    <div className="mt-auto">
+                        {/* Post Stats */}
+                        <div className="grid grid-cols-3 gap-3 my-2">
+                            {/* Upvotes */}
+                            <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50">
+                                <div className="items-center justify-center h-min">
+                                    <BiUpvote color="#D93900" size={25} />
+                                </div>
+                                <div className="items-center justify-center h-min">
+                                    <div className="text-sm text-secondaryColor">
+                                        Upvotes
+                                    </div>
+                                    <div className="text-xl text-secondaryColor font-semibold">
+                                        {upvotes}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Comments - Only shown for PostLead */}
+                            {isPost && <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50">
+                                <BiCommentDetail color="#344054" size={25} />
+                                <div>
+                                    <p className="text-sm text-secondaryColor">
+                                        Comments
+                                    </p>
+                                    <p className="text-xl font-semibold text-secondaryColor">
+                                        {lead.numComments}
+                                    </p>
+                                </div>
+                            </div>}
+
+                            {/* Posted Date */}
+                            <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50">
+                                <BiTimeFive color="#344054" size={25} />
+                                <div>
+                                    <p className="text-xs text-secondaryColor">
+                                        Posted
+                                    </p>
+                                    <p className="text-xl font-semibold text-secondaryColor">
+                                        {howLongAgo}
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Posted Date */}
-                        <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50">
-                            <BiTimeFive color="#344054" size={25} />
-                            <div>
-                                <p className="text-xs text-secondaryColor">
-                                    Posted
-                                </p>
-                                <p className="text-xl font-semibold text-secondaryColor">
-                                    16 Days
-                                </p>
-                            </div>
+                        {/* Action Button */}
+                        <div className="flex justify-end mt-6">
+                            <a href={`${!isPost ? 'https://www.reddit.com' : ''}${lead.url}`} target="_blank">
+                                <Button variant="dark" className="w-36 h-9 text-sm">
+                                    View Comment
+                                </Button>
+                            </a>
                         </div>
-                    </div>
-
-                    {/* AI Response */}
-                    <div className="mt-2">
-                        <label className="text-sm font-medium text-secondaryColor block mb-2">
-                            AI Generated Response:
-                        </label>
-                        <div className="border border-gray-100 rounded-md p-3 text-sm text-tertiaryColor bg-gray-50">
-                            Thanks for sharing your thoughts! I really
-                            appreciate you bringing this up. It actually ties
-                            perfectly into something I wanted to mention — if
-                            you're looking for a solution that could help with
-                            this, you might want to check out what we're
-                            offering. We've been working hard on a product
-                            that's specifically designed to make things easier,
-                            faster, and a lot more efficient. It's built around
-                            the exact kinds of challenges you're highlighting,
-                            and the feedback from early users has been
-                            incredibly positive. I won't go into a full pitch
-                            here, but if you're curious, feel free to take a
-                            quick look! It could save you a ton of time and
-                            effort compared to trying to patch things together
-                            manually.
-                        </div>
-                    </div>
-
-                    {/* Action Button */}
-                    <div className="flex justify-end mt-2">
-                        <Button variant="dark" className="w-36 h-9 text-sm">
-                            View Comment
-                        </Button>
                     </div>
                 </div>
             </DialogContent>
