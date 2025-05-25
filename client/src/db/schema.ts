@@ -10,6 +10,7 @@ import {
     jsonb,
     unique,
     doublePrecision,
+    serial,
 } from 'drizzle-orm/pg-core';
 
 export const products = pgTable('Products', {
@@ -151,3 +152,9 @@ export const authenticator = pgTable(
         unique('authenticator_credentialID_unique').on(table.credentialId),
     ]
 );
+
+export const nonBetaUsers = pgTable('NonBetaUsers', {
+    id: serial().primaryKey().notNull(),
+    email: text().notNull(),
+    createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+});
