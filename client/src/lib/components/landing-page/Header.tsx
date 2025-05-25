@@ -4,38 +4,46 @@ import { FullLogo } from '../logo';
 import { Session } from 'next-auth';
 import SignIn from '../signin';
 
-export default async function Header({ session }: { session: Session | null }) {
+export default async function Header({
+    session,
+    showNav = true,
+}: {
+    session: Session | null;
+    showNav?: boolean;
+}) {
     return (
         <header className="container mx-auto py-6 px-4 flex justify-around items-center">
             <div className="flex items-center gap-2">
                 <FullLogo />
             </div>
-            <nav className="hidden md:flex justify-center items-center gap-x-16">
-                <Link
-                    href="#how-it-works"
-                    className="text-md font-semibold hover:text-[#576F72] transition-colors"
-                >
-                    How It Works
-                </Link>
-                <Link
-                    href="#who-its-for"
-                    className="text-md font-semibold hover:text-[#576F72] transition-colors"
-                >
-                    Who It's For
-                </Link>
-                <Link
-                    href="#faq"
-                    className="text-md font-semibold hover:text-[#576F72] transition-colors"
-                >
-                    FAQ
-                </Link>
-                <Link
-                    href="#contact"
-                    className="text-md font-semibold hover:text-[#576F72] transition-colors"
-                >
-                    Contact
-                </Link>
-            </nav>
+            {showNav && (
+                <nav className="hidden md:flex justify-center items-center gap-x-16">
+                    <Link
+                        href="#how-it-works"
+                        className="text-md font-semibold hover:text-[#576F72] transition-colors"
+                    >
+                        How It Works
+                    </Link>
+                    <Link
+                        href="#who-its-for"
+                        className="text-md font-semibold hover:text-[#576F72] transition-colors"
+                    >
+                        Who It's For
+                    </Link>
+                    <Link
+                        href="#faq"
+                        className="text-md font-semibold hover:text-[#576F72] transition-colors"
+                    >
+                        FAQ
+                    </Link>
+                    <Link
+                        href="#contact"
+                        className="text-md font-semibold hover:text-[#576F72] transition-colors"
+                    >
+                        Contact
+                    </Link>
+                </nav>
+            )}
             <SignIn session={session} />
             <LightButton title="Menu" className="md:hidden">
                 <>
