@@ -26,6 +26,7 @@ export default function NonBetaUserPage() {
         },
         onSuccess: () => {
             setIsSubmitted(true);
+
             toast({
                 title: 'Email added to waitlist.',
                 description:
