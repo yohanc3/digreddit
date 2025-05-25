@@ -8,3 +8,6 @@ export const productKeywordsMaximumLength = 50;
 
 // Maximum length of each keyword
 export const productKeywordMaximumLength = 30;
+
+// Minimum length of each keyword
+export const productKeywordMinimumLength = 3;

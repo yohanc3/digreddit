@@ -5,6 +5,7 @@ import {
     productDescriptionMaximumWords,
     productIndustryMaximumCharacters,
     productKeywordMaximumLength,
+    productKeywordMinimumLength,
     productKeywordsMaximumLength,
     productMRRMaximumCharacters,
     productNameMaximumCharacters,
@@ -16,6 +17,7 @@ import {
     MaximumCharactersReachedError,
     MaximumLengthReachedError,
     MaximumWordsReachedError,
+    MinimumCharactersReachedError,
     MissingFieldError,
 } from '@/lib/components/error/form';
 
@@ -30,6 +32,7 @@ import {
     handleTitleInputOnChange,
     handleDescriptionInputOnChange,
     handleKeywordInputOnChange,
+    isMinimumCharactersReached,
 } from '@/lib/frontend/utils/productCreationForm';
 
 // Product Form Types
@@ -95,7 +98,11 @@ export default function Dashboard() {
     ) {
         if (event.key === 'Enter') {
             event.preventDefault();
-            if (formsInput.keywords.length < productKeywordsMaximumLength) {
+            if (
+                formsInput.keywords.length < productKeywordsMaximumLength &&
+                formsInput.keyword.length > productKeywordMinimumLength &&
+                !formsInput.keywords.includes(formsInput.keyword)
+            ) {
                 (event.target as HTMLInputElement).value = '';
                 setProductInput({
                     keywords: [...formsInput.keywords, newKeyword],
@@ -442,6 +449,13 @@ export default function Dashboard() {
                                 Add up to {productKeywordsMaximumLength}{' '}
                                 keywords. Press Enter to add each one.
                             </p>
+                            {/* Keyword Error */}
+                            <MinimumCharactersReachedError
+                                trigger={isMinimumCharactersReached(
+                                    formsInput.keyword,
+                                    productKeywordMinimumLength
+                                )}
+                            />
                             <MaximumCharactersReachedError
                                 trigger={isMaximumCharactersReached(
                                     formsInput.keyword,
@@ -449,7 +463,10 @@ export default function Dashboard() {
                                 )}
                             />
                             <MaximumLengthReachedError
-                                trigger={Boolean(error.keywordslength)}
+                                trigger={
+                                    formsInput.keywords.length >=
+                                    productKeywordsMaximumLength
+                                }
                             />
                         </>
                     )}
