@@ -53,6 +53,7 @@ import { readableDateFormat } from '@/lib/frontend/utils/timeFormat';
 import { FormEvent, useState } from 'react';
 import { BiCheckCircle, BiErrorCircle } from 'react-icons/bi';
 import { RiSparkling2Line } from 'react-icons/ri';
+import { prohibitedKeywords } from '@/lib/backend/constant/prohibitedKeywords';
 
 export default function Dashboard() {
     const [formsInput, setFormsInput] = useState<ProductFormDataFields>({
@@ -98,7 +99,18 @@ export default function Dashboard() {
     ) {
         if (event.key === 'Enter') {
             event.preventDefault();
+
+            if (prohibitedKeywords.includes(newKeyword)) {
+                toast({
+                    title: 'Keyword is too common',
+                    description: 'Please avoid keywords that are too common.',
+                    action: <BiErrorCircle color="#f87171" size={35} />,
+                });
+                return;
+            }
+
             if (
+                // Only add keyword if it's not already in the list, not prohibited, and not too long or too short
                 formsInput.keywords.length < productKeywordsMaximumLength &&
                 formsInput.keyword.length > productKeywordMinimumLength &&
                 !formsInput.keywords.includes(formsInput.keyword)
