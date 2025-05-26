@@ -1,16 +1,48 @@
 'use client';
 
 // Constants
-import { productDescriptionMaximumWords, productIndustryMaximumCharacters, productKeywordMaximumLength, productKeywordsMaximumLength, productMRRMaximumCharacters, productNameMaximumCharacters } from '@/lib/frontend/constant/form';
+import {
+    productDescriptionMaximumWords,
+    productIndustryMaximumCharacters,
+    productKeywordMaximumLength,
+    productKeywordMinimumLength,
+    productKeywordsMaximumLength,
+    productMRRMaximumCharacters,
+    productNameMaximumCharacters,
+} from '@/lib/frontend/constant/form';
 
 // Error Components
-import { AIResponseError, MaximumCharactersReachedError, MaximumLengthReachedError, MaximumWordsReachedError, MissingFieldError } from '@/lib/components/error/form';
+import {
+    AIResponseError,
+    MaximumCharactersReachedError,
+    MaximumLengthReachedError,
+    MaximumWordsReachedError,
+    MinimumCharactersReachedError,
+    MissingFieldError,
+} from '@/lib/components/error/form';
 
 // Form Utils
-import { isMaximumWordsReached, countWords, isMaximumCharactersReached, handleMRRInputOnChange, handleURLInputOnChange, handleIndustryInputOnChange, handleTitleInputOnChange, handleDescriptionInputOnChange, handleKeywordInputOnChange } from '@/lib/frontend/utils/productCreationForm';
+import {
+    isMaximumWordsReached,
+    countWords,
+    isMaximumCharactersReached,
+    handleMRRInputOnChange,
+    handleURLInputOnChange,
+    handleIndustryInputOnChange,
+    handleTitleInputOnChange,
+    handleDescriptionInputOnChange,
+    handleKeywordInputOnChange,
+    isMinimumCharactersReached,
+} from '@/lib/frontend/utils/productCreationForm';
 
 // Product Form Types
-import { ProductFormDataError, ProductFormDataFields, ProductFormDataTarget, ProductFormInputFields, ProductInputSubmitting, BetaLimitsDialogProps } from '@/types/frontend/product/form';
+import {
+    ProductFormDataError,
+    ProductFormDataFields,
+    ProductFormDataTarget,
+    ProductFormInputFields,
+    ProductInputSubmitting,
+} from '@/types/frontend/product/form';
 
 // Others
 import { Button } from '@/lib/components/ui/button';
@@ -24,21 +56,22 @@ import { RiSparkling2Line } from 'react-icons/ri';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/lib/components/ui/dialog';
 
 
+import { prohibitedKeywords } from '@/lib/backend/constant/prohibitedKeywords';
 
 export default function Dashboard() {
     const [formsInput, setFormsInput] = useState<ProductFormDataFields>({
-        "title": "",
-        "description": "",
-        "industry": "",
-        "mrr": "",
-        "url": "",
-        "keyword": "",
-        "keywords": []
-    })
+        title: '',
+        description: '',
+        industry: '',
+        mrr: '',
+        url: '',
+        keyword: '',
+        keywords: [],
+    });
     const [isSubmitting, setIsSubmitting] = useState<ProductInputSubmitting>({
-        "form": false,
-        "keywords": false
-    })
+        form: false,
+        keywords: false,
+    });
     const [error, setError] = useState<ProductFormDataError>({
         description: false,
         title: false,
@@ -52,13 +85,16 @@ export default function Dashboard() {
     const [openBetaLimitsDialog, setOpenBetaLimitsDialog] = useState(false)
     const { apiPost } = useFetch();
 
-
     function setProductFormError(field: ProductFormDataError) {
-        setError((prev) => { return { ...prev, ...field } })
+        setError((prev) => {
+            return { ...prev, ...field };
+        });
     }
 
     function setProductInput(field: ProductFormInputFields) {
-        setFormsInput((prev) => { return { ...prev, ...field } })
+        setFormsInput((prev) => {
+            return { ...prev, ...field };
+        });
     }
 
     function handleKeywordInputEnterKeyPress(
@@ -67,12 +103,29 @@ export default function Dashboard() {
     ) {
         if (event.key === 'Enter') {
             event.preventDefault();
-            if (formsInput.keywords.length < productKeywordsMaximumLength) {
+
+            if (prohibitedKeywords.includes(newKeyword)) {
+                toast({
+                    title: 'Keyword is too common',
+                    description: 'Please avoid keywords that are too common.',
+                    action: <BiErrorCircle color="#f87171" size={35} />,
+                });
+                return;
+            }
+
+            if (
+                // Only add keyword if it's not already in the list, not prohibited, and not too long or too short
+                formsInput.keywords.length < productKeywordsMaximumLength &&
+                formsInput.keyword.length > productKeywordMinimumLength &&
+                !formsInput.keywords.includes(formsInput.keyword)
+            ) {
                 (event.target as HTMLInputElement).value = '';
-                setProductInput({ keywords: [...formsInput.keywords, newKeyword] });
-                setProductFormError({ keywordslength: false, keywords: false })
+                setProductInput({
+                    keywords: [...formsInput.keywords, newKeyword],
+                });
+                setProductFormError({ keywordslength: false, keywords: false });
             } else {
-                setProductFormError({ keywordslength: true })
+                setProductFormError({ keywordslength: true });
             }
         }
     }
@@ -110,18 +163,18 @@ export default function Dashboard() {
                     industry,
                     keywords,
                     mrr,
-                    url
-                })
+                    url,
+                });
 
-                const createdAt = readableDateFormat(result.createdProduct.createdAt)
+                const createdAt = readableDateFormat(
+                    result.createdProduct.createdAt
+                );
 
                 toast({
                     title: `Lead Search Started for ${title}`,
-                    description: "Started at: " + createdAt,
-                    action: (
-                        <BiCheckCircle color='#576F72' size={35} />
-                    ),
-                })
+                    description: 'Started at: ' + createdAt,
+                    action: <BiCheckCircle color="#576F72" size={35} />,
+                });
                 setIsSubmitting({ form: false });
                 return result;
             } catch (e) {
@@ -141,19 +194,20 @@ export default function Dashboard() {
             }
         }
         toast({
-            title: "Missing Fields",
-            description: "Please fill in all required fields before submitting.",
-            action: (
-                <BiErrorCircle color='#f87171' size={35} />
-            ),
-        })
+            title: 'Missing Fields',
+            description:
+                'Please fill in all required fields before submitting.',
+            action: <BiErrorCircle color="#f87171" size={35} />,
+        });
         setIsSubmitting({ form: false });
     }
 
-    async function generateKeywords(event: React.MouseEvent<HTMLButtonElement>) {
+    async function generateKeywords(
+        event: React.MouseEvent<HTMLButtonElement>
+    ) {
         event.preventDefault();
         setIsSubmitting({ form: true, keywords: true });
-        setProductFormError({ ai: false, keywords: false })
+        setProductFormError({ ai: false, keywords: false });
         setProductInput({ keywords: [] });
         const description = formsInput.description;
         const title = formsInput.title;
@@ -162,7 +216,7 @@ export default function Dashboard() {
         const newErrors: ProductFormDataError = {
             description: !description,
             title: !title,
-            industry: !industry
+            industry: !industry,
         };
 
         setProductFormError(newErrors);
@@ -178,12 +232,18 @@ export default function Dashboard() {
                     description,
                     title,
                     industry,
-                })
-                setProductInput({ keywords: result })
-                setProductFormError({ keywords: false })
+                });
+
+                const filteredKeywords = result.filter((keyword: string) => {
+                    return keyword.length > 3 && keyword.length < 30;
+                });
+
+                setProductInput({ keywords: filteredKeywords });
+
+                setProductFormError({ keywords: false });
             } catch (e) {
                 console.error({ message: e });
-                setProductFormError({ ai: true })
+                setProductFormError({ ai: true });
             }
         }
 
@@ -205,147 +265,242 @@ export default function Dashboard() {
                     </p>
                 </div>
 
-                <form className="flex flex-col gap-y-3" onSubmit={submitLeadSearchDetails}>
+            <form
+                className="flex flex-col gap-y-3"
+                onSubmit={submitLeadSearchDetails}
+            >
+                {/* Lead Description */}
+                <div className="flex flex-col gap-y-1">
+                    <div className="text-tertiarySize w-full flex justify-end">
+                        {countWords(formsInput.description)}/
+                        {productDescriptionMaximumWords} words
+                    </div>
+                    <textarea
+                        name="description"
+                        value={formsInput.description}
+                        className="w-full h-40 p-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
+                        placeholder='Tell use about your product and describe target audience (e.g., "I am working on a platform for clay artists and my target audience are people who like clay art, sculpture, architecture, etc..").'
+                        disabled={isSubmitting.form || isSubmitting.keywords}
+                        onChange={(e) =>
+                            handleDescriptionInputOnChange(
+                                e,
+                                setFormsInput,
+                                setProductFormError
+                            )
+                        }
+                    />
 
-                    {/* Lead Description */}
+                    {/* Description Error */}
+                    <MaximumWordsReachedError
+                        trigger={isMaximumWordsReached(
+                            formsInput.description,
+                            productDescriptionMaximumWords
+                        )}
+                    />
+                    <MissingFieldError trigger={Boolean(error.description)} />
+                </div>
+
+                {/* Form Fields */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Product Name */}
                     <div className="flex flex-col gap-y-1">
-                        <div className='text-tertiarySize w-full flex justify-end'>
-                            {countWords(formsInput.description)}/{productDescriptionMaximumWords} words
-                        </div>
-                        <textarea
-                            name="description"
-                            value={formsInput.description}
-                            className="w-full h-40 p-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
-                            placeholder='Tell use about your product and describe target audience (e.g., "I am working on a platform for clay artists and my target audience are people who like clay art, sculpture, architecture, etc..").'
-                            disabled={isSubmitting.form || isSubmitting.keywords}
-                            onChange={(e) => handleDescriptionInputOnChange(e, setFormsInput, setProductFormError)}
+                        <label className="text-secondaryColor text-sm font-medium">
+                            Name:
+                        </label>
+                        <input
+                            name="title"
+                            value={formsInput.title}
+                            className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
+                            placeholder="e.g., DigReddit, Twitter, or KeepSake"
+                            disabled={
+                                isSubmitting.form || isSubmitting.keywords
+                            }
+                            onChange={(e) =>
+                                handleTitleInputOnChange(
+                                    e,
+                                    setFormsInput,
+                                    setProductFormError
+                                )
+                            }
                         />
 
-                        {/* Description Error */}
-                        <MaximumWordsReachedError trigger={isMaximumWordsReached(formsInput.description, productDescriptionMaximumWords)} />
-                        <MissingFieldError trigger={Boolean(error.description)} />
+                        {/* Title Error */}
+                        <MaximumCharactersReachedError
+                            trigger={isMaximumCharactersReached(
+                                formsInput.title,
+                                productNameMaximumCharacters
+                            )}
+                        />
+                        <MissingFieldError trigger={Boolean(error.title)} />
                     </div>
 
-                    {/* Form Fields */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Industry */}
+                    <div className="flex flex-col gap-y-1">
+                        <label className="text-secondaryColor text-sm font-medium">
+                            Industry:
+                        </label>
+                        <input
+                            name="industry"
+                            value={formsInput.industry}
+                            className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
+                            placeholder="e.g., Real Estate, Tech, or Politics"
+                            disabled={
+                                isSubmitting.form || isSubmitting.keywords
+                            }
+                            onChange={(e) =>
+                                handleIndustryInputOnChange(
+                                    e,
+                                    setFormsInput,
+                                    setProductFormError
+                                )
+                            }
+                        />
 
-                        {/* Product Name */}
-                        <div className="flex flex-col gap-y-1">
-                            <label className="text-secondaryColor text-sm font-medium">
-                                Name:
-                            </label>
-                            <input
-                                name="title"
-                                value={formsInput.title}
-                                className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
-                                placeholder="e.g., DigReddit, Twitter, or KeepSake"
-                                disabled={isSubmitting.form || isSubmitting.keywords}
-                                onChange={(e) => handleTitleInputOnChange(e, setFormsInput, setProductFormError)}
-                            />
+                        {/* Industry Error */}
+                        <MaximumCharactersReachedError
+                            trigger={isMaximumCharactersReached(
+                                formsInput.industry,
+                                productIndustryMaximumCharacters
+                            )}
+                        />
+                        <MissingFieldError trigger={Boolean(error.industry)} />
+                    </div>
+                </div>
 
-                            {/* Title Error */}
-                            <MaximumCharactersReachedError trigger={isMaximumCharactersReached(formsInput.title, productNameMaximumCharacters)} />
-                            <MissingFieldError trigger={Boolean(error.title)} />
-                        </div>
+                {/* Form Fields */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* MRR */}
+                    <div className="flex flex-col gap-y-1">
+                        <label className="text-secondaryColor text-sm font-medium">
+                            MRR (Optional):
+                        </label>
+                        <input
+                            name="mrr"
+                            value={formsInput.mrr}
+                            className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
+                            placeholder="e.g., 6000, 10000"
+                            type="text"
+                            onChange={(e) => {
+                                handleMRRInputOnChange(
+                                    e,
+                                    setFormsInput,
+                                    setProductFormError
+                                );
+                            }}
+                            disabled={
+                                isSubmitting.form || isSubmitting.keywords
+                            }
+                        />
 
-                        {/* Industry */}
-                        <div className="flex flex-col gap-y-1">
-                            <label className="text-secondaryColor text-sm font-medium">
-                                Industry:
-                            </label>
-                            <input
-                                name="industry"
-                                value={formsInput.industry}
-                                className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
-                                placeholder="e.g., Real Estate, Tech, or Politics"
-                                disabled={isSubmitting.form || isSubmitting.keywords}
-                                onChange={(e) => handleIndustryInputOnChange(e, setFormsInput, setProductFormError)}
-                            />
-
-                            {/* Industry Error */}
-                            <MaximumCharactersReachedError trigger={isMaximumCharactersReached(formsInput.industry, productIndustryMaximumCharacters)} />
-                            <MissingFieldError trigger={Boolean(error.industry)} />
-                        </div>
+                        {/* MRR Error */}
+                        <MaximumCharactersReachedError
+                            trigger={isMaximumCharactersReached(
+                                formsInput.mrr?.toString() || '',
+                                productMRRMaximumCharacters
+                            )}
+                        />
                     </div>
 
-                    {/* Form Fields */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                        {/* MRR */}
-                        <div className="flex flex-col gap-y-1">
-                            <label className="text-secondaryColor text-sm font-medium">
-                                MRR (Optional):
-                            </label>
-                            <input
-                                name="mrr"
-                                value={formsInput.mrr}
-                                className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
-                                placeholder="e.g., 6000, 10000"
-                                type="text"
-                                onChange={(e) => { handleMRRInputOnChange(e, setFormsInput, setProductFormError) }}
-                                disabled={isSubmitting.form || isSubmitting.keywords}
-                            />
-
-                            {/* MRR Error */}
-                            <MaximumCharactersReachedError trigger={isMaximumCharactersReached(formsInput.mrr?.toString() || "", productMRRMaximumCharacters)} />
-                        </div>
-
-
-                        {/* URL */}
-                        <div className="flex flex-col gap-y-1">
-                            <label className="text-secondaryColor text-sm font-medium">
-                                URL (Optional):
-                            </label>
-                            <input
-                                name="url"
-                                value={formsInput.url}
-                                className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
-                                placeholder="e.g., twitter.com, google.com"
-                                type="url"
-                                onChange={(e) => { handleURLInputOnChange(e, setFormsInput, setProductFormError) }}
-                                disabled={isSubmitting.form || isSubmitting.keywords}
-                            />
-                        </div>
+                    {/* URL */}
+                    <div className="flex flex-col gap-y-1">
+                        <label className="text-secondaryColor text-sm font-medium">
+                            URL (Optional):
+                        </label>
+                        <input
+                            name="url"
+                            value={formsInput.url}
+                            className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
+                            placeholder="e.g., twitter.com, google.com"
+                            type="url"
+                            onChange={(e) => {
+                                handleURLInputOnChange(
+                                    e,
+                                    setFormsInput,
+                                    setProductFormError
+                                );
+                            }}
+                            disabled={
+                                isSubmitting.form || isSubmitting.keywords
+                            }
+                        />
                     </div>
+                </div>
 
-                    {/* Keywords Input */}
-                    <div className="flex flex-col gap-y-1 mt-1">
-                        <div className='flex items-center gap-x-3'>
-                            <label className="text-secondaryColor text-sm font-medium">
-                                Keywords:
-                            </label>
-                            <Button
-                                variant={'light'}
-                                disabled={isSubmitting.form || isSubmitting.keywords}
-                                onClick={generateKeywords}
-                            >
-                                Generate Keywords <RiSparkling2Line />
-                            </Button>
+                {/* Keywords Input */}
+                <div className="flex flex-col gap-y-1 mt-1">
+                    <div className="flex items-center gap-x-3">
+                        <label className="text-secondaryColor text-sm font-medium">
+                            Keywords:
+                        </label>
+                        <Button
+                            variant={'light'}
+                            disabled={
+                                isSubmitting.form || isSubmitting.keywords
+                            }
+                            onClick={generateKeywords}
+                        >
+                            Generate Keywords <RiSparkling2Line />
+                        </Button>
 
                             {/* Fetch Generated Keywords Error*/}
                             <AIResponseError trigger={Boolean(error.ai)} />
                         </div>
 
-                        {
-                            formsInput.keywords.length > 0 && <>
-                                <input
-                                    value={formsInput.keyword}
-                                    className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
-                                    placeholder="e.g., Tax, Sports, or Law"
-                                    onChange={(e) => { handleKeywordInputOnChange(e, setFormsInput, setProductFormError) }}
-                                    onKeyDown={(e) => { handleKeywordInputEnterKeyPress(e, e.currentTarget.value) }}
-                                    disabled={isSubmitting.form || isSubmitting.keywords}
-                                />
-                                <p className="text-tertiaryColor text-xs mt-1">
-                                    Add up to {productKeywordsMaximumLength} keywords. Press Enter to add each one.
-                                </p>
-                                <MaximumCharactersReachedError trigger={isMaximumCharactersReached(formsInput.keyword, productKeywordMaximumLength)} />
-                                <MaximumLengthReachedError trigger={Boolean(error.keywordslength)} />
-                            </>
-                        }
+                    {formsInput.keywords.length > 0 && (
+                        <>
+                            <input
+                                value={formsInput.keyword}
+                                className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
+                                placeholder="e.g., Tax, Sports, or Law"
+                                onChange={(e) => {
+                                    handleKeywordInputOnChange(
+                                        e,
+                                        setFormsInput,
+                                        setProductFormError
+                                    );
+                                }}
+                                onKeyDown={(e) => {
+                                    handleKeywordInputEnterKeyPress(
+                                        e,
+                                        e.currentTarget.value
+                                    );
+                                }}
+                                disabled={
+                                    isSubmitting.form || isSubmitting.keywords
+                                }
+                            />
+                            <p className="text-tertiaryColor text-xs mt-1">
+                                Add up to {productKeywordsMaximumLength}{' '}
+                                keywords. Press Enter to add each one.
+                            </p>
+                            {/* Keyword Error */}
+                            <MinimumCharactersReachedError
+                                trigger={isMinimumCharactersReached(
+                                    formsInput.keyword,
+                                    productKeywordMinimumLength
+                                )}
+                            />
+                            <MaximumCharactersReachedError
+                                trigger={isMaximumCharactersReached(
+                                    formsInput.keyword,
+                                    productKeywordMaximumLength
+                                )}
+                            />
+                            <MaximumLengthReachedError
+                                trigger={
+                                    formsInput.keywords.length >=
+                                    productKeywordsMaximumLength
+                                }
+                            />
+                        </>
+                    )}
 
-                        {/* Generated Keywords & Input List */}
-                        <KeywordsList keywords={formsInput.keywords} isLoading={Boolean(isSubmitting.keywords)} setValue={setFormsInput} />
+                    {/* Generated Keywords & Input List */}
+                    <KeywordsList
+                        keywords={formsInput.keywords}
+                        isLoading={Boolean(isSubmitting.keywords)}
+                        setValue={setFormsInput}
+                    />
 
                         {/* Keywords Error */}
                         <MissingFieldError trigger={Boolean(error.keywords)} />

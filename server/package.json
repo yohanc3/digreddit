@@ -6,7 +6,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "start": "node bin/server.js",
-    "build": "node ace build && cp scraper_worker/.env build/",
+    "build": "node ace build && cp .env build/",
     "dev": "node ace serve --hmr",
     "test": "node ace test",
     "lint": "eslint .",
@@ -57,11 +57,10 @@
     "@adonisjs/lucid": "^21.6.1",
     "@monyone/aho-corasick": "^1.0.4",
     "@vinejs/vine": "^3.0.0",
-    "@xenova/transformers": "^2.17.2",
     "luxon": "^3.6.1",
-    "ml-distance": "^4.0.1",
     "openai": "^4.96.0",
     "pg": "^8.15.6",
+    "pm2": "^6.0.6",
     "reflect-metadata": "^0.2.2"
   },
   "hotHook": {

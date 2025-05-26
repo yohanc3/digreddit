@@ -10,6 +10,7 @@ import {
     jsonb,
     unique,
     doublePrecision,
+    serial,
 } from 'drizzle-orm/pg-core';
 
 export const products = pgTable('Products', {
@@ -149,5 +150,29 @@ export const authenticator = pgTable(
             name: 'authenticator_userId_Users_id_fk',
         }).onDelete('cascade'),
         unique('authenticator_credentialID_unique').on(table.credentialId),
+    ]
+);
+
+export const nonBetaUsers = pgTable('NonBetaUsers', {
+    id: serial().primaryKey().notNull(),
+    email: text().notNull(),
+    createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+});
+
+export const feedback = pgTable(
+    'Feedback',
+    {
+        id: serial().primaryKey().notNull(),
+        userId: text().notNull(),
+        area: text().notNull(),
+        feedback: text().notNull(),
+        createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.userId],
+            foreignColumns: [users.id],
+            name: 'feedback_userID_Users_id_fk',
+        }).onDelete('cascade'),
     ]
 );
