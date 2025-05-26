@@ -42,6 +42,7 @@ import {
     ProductFormDataTarget,
     ProductFormInputFields,
     ProductInputSubmitting,
+    BetaLimitsDialogProps
 } from '@/types/frontend/product/form';
 
 // Others
