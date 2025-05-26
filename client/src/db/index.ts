@@ -2,7 +2,13 @@ import 'dotenv/config';
 import * as schema from './schema';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { eq } from 'drizzle-orm';
-import { commentLeads, nonBetaUsers, postLeads, products } from './schema';
+import {
+    commentLeads,
+    feedback,
+    nonBetaUsers,
+    postLeads,
+    products,
+} from './schema';
 import { Payload, Products } from '@/types/backend/db';
 
 export const db = drizzle(process.env.DATABASE_URL!, { schema });
@@ -93,5 +99,20 @@ export const nonBetaUsersQueries = {
             .returning();
 
         return createdNonBetaUserEmail;
+    },
+};
+
+export const feedbackQueries = {
+    createFeedback: async (
+        area: string,
+        feedbackText: string,
+        userID: string
+    ) => {
+        const [createdFeedback] = await db
+            .insert(feedback)
+            .values({ area, feedback: feedbackText, userId: userID })
+            .returning();
+
+        return createdFeedback;
     },
 };

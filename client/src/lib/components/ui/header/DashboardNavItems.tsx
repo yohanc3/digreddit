@@ -5,6 +5,7 @@ import clsx from 'clsx';
 import { Button } from '../button';
 import { navigationItems } from '@/lib/frontend/constant/navigation';
 import { toPascalCasePreserveSymbols } from '@/lib/utils';
+import { Feedback } from './Feedback';
 
 interface DashboardNavItemsProps {
     className?: string;
@@ -39,6 +40,7 @@ export default function DashboardNavItems({
                     </Button>
                 );
             })}
+            <Feedback />
         </div>
     );
 }
