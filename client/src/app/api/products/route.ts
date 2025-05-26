@@ -14,7 +14,7 @@ export const POST = auth(async function POST(req: NextAuthRequest) {
 
     const userLimit = await productsQueries.isProductLimitReached(userId)
 
-    if (userLimit) return NextResponse.json({ error: "Product limit reached. Upgrade your subscription to add more products." }, { status: 403 });
+    if (userLimit) return NextResponse.json({ error: "Beta Limit" }, { status: 403 });
 
     if (
         !title ||
