@@ -7,6 +7,7 @@ import {
     session,
     account,
     authenticator,
+    feedback,
 } from './schema';
 
 export const commentLeadsRelations = relations(commentLeads, ({ one }) => ({
@@ -51,6 +52,13 @@ export const accountRelations = relations(account, ({ one }) => ({
 export const authenticatorRelations = relations(authenticator, ({ one }) => ({
     user: one(users, {
         fields: [authenticator.userId],
+        references: [users.id],
+    }),
+}));
+
+export const feedbackRelations = relations(feedback, ({ one }) => ({
+    user: one(users, {
+        fields: [feedback.userId],
         references: [users.id],
     }),
 }));

@@ -71,18 +71,21 @@ export default function DashboardHandler({
                 <div className="w-full p-4 pt-1 justify-center grid grid-cols-3 gap-2">
                     {isLoading ? (
                         <> Loading...</>
-                    ) : !result?.allLeads || !isLoading && result.allLeads === null ? (
+                    ) : !result?.allLeads ||
+                      (!isLoading && result.allLeads === null) ? (
                         <>No leads at the moment.</>
                     ) : (
                         (result.allLeads as CommentLead[] | PostLead[]).map(
-                            (lead) => {
+                            (lead, index) => {
                                 return isPostLead(lead) ? (
                                     <RedditPostLeadCard
                                         leadDetails={lead as PostLead}
+                                        key={index}
                                     />
                                 ) : (
                                     <RedditCommentLeadCard
                                         leadDetails={lead as CommentLead}
+                                        key={index}
                                     />
                                 );
                             }

@@ -158,3 +158,21 @@ export const nonBetaUsers = pgTable('NonBetaUsers', {
     email: text().notNull(),
     createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 });
+
+export const feedback = pgTable(
+    'Feedback',
+    {
+        id: serial().primaryKey().notNull(),
+        userId: text().notNull(),
+        area: text().notNull(),
+        feedback: text().notNull(),
+        createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.userId],
+            foreignColumns: [users.id],
+            name: 'feedback_userID_Users_id_fk',
+        }).onDelete('cascade'),
+    ]
+);
