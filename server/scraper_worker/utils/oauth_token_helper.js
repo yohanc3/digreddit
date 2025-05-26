@@ -1,3 +1,5 @@
+import { getCurrentUserAgent } from './user-agents.js'
+
 export async function setOauthToken() {
     const username = process.env.REDDIT_USERNAME
     const password = process.env.REDDIT_PASSWORD
@@ -53,10 +55,11 @@ async function cleanupBeforeExit() {
             headers: {
                 'Authorization': `Basic ${credentials}`,
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'User-Agent':
-                    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)',
+                'User-Agent': getCurrentUserAgent(),
             },
         })
+
+        console.log('\nToken revoked. response: ', res)
     } catch (e) {
         console.log(
             '\nError when revoking token: ',
@@ -74,7 +77,28 @@ export function registerExitHandler() {
         process.exit()
     })
 
-    process.on('exit', async () => {
+    process.on('exit', () => {
+        cleanupBeforeExit()
+        process.exit()
+    })
+
+    process.on('SIGTERM', async () => {
         await cleanupBeforeExit()
+        process.exit()
+    })
+
+    process.on('uncaughtException', async (error) => {
+        await cleanupBeforeExit()
+        process.exit()
+    })
+
+    process.on('unhandledRejection', async (error) => {
+        await cleanupBeforeExit()
+        process.exit()
+    })
+
+    process.on('beforeExit', async () => {
+        await cleanupBeforeExit()
+        process.exit()
     })
 }
