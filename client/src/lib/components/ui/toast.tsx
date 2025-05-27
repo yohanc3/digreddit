@@ -29,9 +29,9 @@ const toastVariants = cva(
   {
     variants: {
       variant: {
-        default: "border bg-background text-foreground",
+        default: "border bg-background text-foreground !text-secondaryColor",
         destructive:
-          "destructive group border-destructive bg-destructive text-destructive-foreground",
+          "destructive group border-destructive bg-destructive text-white",
       },
     },
     defaultVariants: {
@@ -94,7 +94,7 @@ const ToastTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Title
     ref={ref}
-    className={cn("text-sm font-semibold !text-secondaryColor [&+div]:text-xs", className)}
+    className={cn("text-sm font-semibold [&+div]:text-xs", className)}
     {...props}
   />
 ))
@@ -106,7 +106,7 @@ const ToastDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Description
     ref={ref}
-    className={cn("text-tertiarySize !text-tertiaryColor opacity-90", className)}
+    className={cn("text-tertiarySize opacity-90", className)}
     {...props}
   />
 ))
