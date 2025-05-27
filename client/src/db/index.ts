@@ -89,6 +89,20 @@ export const leadsQueries = {
 
         return allSortedLeads;
     },
+
+    updateLeadInteraction: async (
+        leadID: string,
+        isInteracted: boolean,
+        isPost: boolean
+    ) => {
+        const [updatedLead] = await db
+            .update(isPost ? postLeads : commentLeads)
+            .set({ isInteracted })
+            .where(eq(isPost ? postLeads.id : commentLeads.id, leadID))
+            .returning();
+
+        return updatedLead;
+    },
 };
 
 export const nonBetaUsersQueries = {
