@@ -10,12 +10,10 @@ export function useLeads(
     leads: CommentLead[] | PostLead[] | null;
     isLoading: boolean;
 } {
-    if (!selectedProduct) return { leads: null, isLoading: false };
-
     const { data: result, isLoading } = useQuery({
         queryKey: ['allLeads', selectedProduct?.id],
         queryFn: async () => {
-            if (!selectedProduct) return { allLeads: null };
+            if (!selectedProduct) return [];
 
             try {
                 const result = await fetch('/api/leads', {
