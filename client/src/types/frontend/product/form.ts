@@ -42,3 +42,8 @@ export interface ProductInputSubmitting {
     form?: boolean;
     keywords?: boolean;
 }
+
+export interface BetaLimitsDialogProps {
+    isOpen: boolean;
+    setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}

@@ -42,8 +42,9 @@ export function useFetch() {
             });
 
             if (!result.ok) {
+                const res = await result.json()
                 throw new Error(
-                    `POST ${route} failed with status ${result.status}`
+                    res?.error || `POST ${route} failed with status ${result.status}`
                 );
             }
 

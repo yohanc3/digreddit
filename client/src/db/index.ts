@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import * as schema from './schema';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { eq } from 'drizzle-orm';
+import { count, eq } from 'drizzle-orm';
 import {
     commentLeads,
     feedback,
@@ -65,6 +65,16 @@ export const productsQueries = {
             .returning();
 
         return createdProduct;
+    },
+
+    isProductLimitReached: async (userID: string) => {
+        const results = await db
+            .select({ value: count() })
+            .from(products)
+            .where(eq(products.userId, userID))
+
+        const data = results[0]?.value ?? 0;
+        return data >= 2;;
     },
 };
 

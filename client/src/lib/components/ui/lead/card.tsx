@@ -186,7 +186,7 @@ export function RedditPostLeadCard({
 
             {/* Card Body */}
             <div className="flex flex-col h-28">
-                <div className="text-mediumSize font-semibold">
+                <div className="text-mediumSize font-semibold line-clamp-2">
                     {leadDetails.title}
                 </div>
 
@@ -297,7 +297,7 @@ function RedditLeadCardDialog({ lead }: RedditLeadCardDialogProps) {
                 <div className="flex flex-col gap-y-4 flex-grow">
                     {/* Post Title - Only shown for PostLead */}
                     {isPost && (
-                        <h2 className="text-lg font-semibold text-secondaryColor">
+                        <h2 className={`text-lg font-semibold text-secondaryColor ${!showRedditDescription && "line-clamp-2"}`}>
                             {(lead as PostLead).title}
                         </h2>
                     )}

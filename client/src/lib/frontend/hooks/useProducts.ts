@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useFetch } from './useFetch';
 import { Products } from '@/types/backend/db';
+import { toast } from '@/hooks/use-toast';
+import { BiCheckCircle, BiErrorCircle } from 'react-icons/bi';
 
 export function useProducts() {
     const { apiGet } = useFetch();
@@ -13,7 +15,12 @@ export function useProducts() {
 
                     return result.userProducts as Products[];
                 } catch (e) {
-                    console.error('Error when fetching all user Products', e);
+                    toast({
+                        variant: "destructive",
+                        title: 'Error',
+                        description: 'Something went wrong when fetching your Products List.'
+                    });
+                    console.error('Error when fetching user Products', e);
                     return [] as Products[];
                 }
             },
