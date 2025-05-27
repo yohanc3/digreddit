@@ -17,15 +17,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         signIn: '/',
     },
     callbacks: {
-        authorized: async ({ auth, request }) => {
-            if (auth && auth.user && auth.user.email) {
-                if (betaUsersEmails.includes(auth.user.email)) {
-                    return true;
-                }
-            }
-
-            console.log('auth invalid: ', auth);
-            return NextResponse.redirect(new URL('/', request.url));
+        authorized: async ({ auth }) => {
+            return !!auth;
         },
         signIn: async ({ user }) => {
             if (user && user.email) {
@@ -34,7 +27,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 }
             }
 
-            // return false;
             const returnURL = new URL('/non-beta-user', process.env.AUTH_URL);
             return returnURL.toString();
         },
