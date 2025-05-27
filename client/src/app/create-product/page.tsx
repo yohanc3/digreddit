@@ -42,6 +42,7 @@ import {
     ProductFormDataTarget,
     ProductFormInputFields,
     ProductInputSubmitting,
+    BetaLimitsDialogProps
 } from '@/types/frontend/product/form';
 
 // Others
@@ -53,6 +54,9 @@ import { readableDateFormat } from '@/lib/frontend/utils/timeFormat';
 import { FormEvent, useState } from 'react';
 import { BiCheckCircle, BiErrorCircle } from 'react-icons/bi';
 import { RiSparkling2Line } from 'react-icons/ri';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/lib/components/ui/dialog';
+
+
 import { prohibitedKeywords } from '@/lib/backend/constant/prohibitedKeywords';
 
 export default function Dashboard() {
@@ -79,6 +83,7 @@ export default function Dashboard() {
         url: false,
         ai: false,
     });
+    const [openBetaLimitsDialog, setOpenBetaLimitsDialog] = useState(false)
     const { apiPost } = useFetch();
 
     function setProductFormError(field: ProductFormDataError) {
@@ -173,12 +178,18 @@ export default function Dashboard() {
                 });
                 setIsSubmitting({ form: false });
                 return result;
-            } catch {
-                toast({
-                    title: 'Something Went Wrong',
-                    description: 'Try again later.',
-                    action: <BiErrorCircle color="#f87171" size={35} />,
-                });
+            } catch (e) {
+                if ((e as Error).message === "Beta Limit") {
+                    setOpenBetaLimitsDialog(true)
+                } else {
+                    toast({
+                        title: "Something Went Wrong",
+                        description: "Try again later.",
+                        action: (
+                            <BiErrorCircle color='#f87171' size={35} />
+                        ),
+                    })
+                }
                 setIsSubmitting({ form: false });
                 return [];
             }
@@ -241,17 +252,19 @@ export default function Dashboard() {
     }
 
     return (
-        <div className="flex flex-col h-full w-full max-w-3xl mx-auto gap-y-4 px-4 pt-12 pb-8">
-            {/* Title */}
-            <div className="flex flex-col mb-2">
-                <h1 className="text-3xl md:text-4xl font-semibold text-center text-secondaryColor">
-                    Launch a Lead Search
-                </h1>
-                <p className="text-sm text-primaryColor text-center mt-1">
-                    Describe your target lead, and we'll dig through Reddit for
-                    you.
-                </p>
-            </div>
+        <>
+            <div className="flex flex-col h-full w-full max-w-3xl mx-auto gap-y-4 px-4 pt-12 pb-8">
+
+                {/* Title */}
+                <div className="flex flex-col mb-2">
+                    <h1 className="text-3xl md:text-4xl font-semibold text-center text-secondaryColor">
+                        Launch a Lead Search
+                    </h1>
+                    <p className="text-sm text-primaryColor text-center mt-1">
+                        Describe your target lead, and we'll dig through Reddit for
+                        you.
+                    </p>
+                </div>
 
             <form
                 className="flex flex-col gap-y-3"
@@ -430,9 +443,9 @@ export default function Dashboard() {
                             Generate Keywords <RiSparkling2Line />
                         </Button>
 
-                        {/* Fetch Generated Keywords Error*/}
-                        <AIResponseError trigger={Boolean(error.ai)} />
-                    </div>
+                            {/* Fetch Generated Keywords Error*/}
+                            <AIResponseError trigger={Boolean(error.ai)} />
+                        </div>
 
                     {formsInput.keywords.length > 0 && (
                         <>
@@ -490,22 +503,42 @@ export default function Dashboard() {
                         setValue={setFormsInput}
                     />
 
-                    {/* Keywords Error */}
-                    <MissingFieldError trigger={Boolean(error.keywords)} />
-                </div>
+                        {/* Keywords Error */}
+                        <MissingFieldError trigger={Boolean(error.keywords)} />
+                    </div>
 
-                {/* Submit Product Button */}
-                <div className="flex justify-end mt-2">
-                    <Button
-                        variant={'dark'}
-                        type="submit"
-                        className="w-40 h-9 text-sm"
-                        disabled={isSubmitting.form || isSubmitting.keywords}
-                    >
-                        Create New Product
-                    </Button>
-                </div>
-            </form>
-        </div>
+                    {/* Submit Product Button */}
+                    <div className="flex justify-end mt-2">
+                        <Button
+                            variant={'dark'}
+                            type="submit"
+                            className="w-40 h-9 text-sm"
+                            disabled={isSubmitting.form || isSubmitting.keywords}
+                        >
+                            Create New Product
+                        </Button>
+                    </div>
+                </form >
+            </div >
+            <BetaLimitsDialog isOpen={openBetaLimitsDialog} setIsOpen={setOpenBetaLimitsDialog} />
+        </>
     );
+}
+
+export function BetaLimitsDialog({ isOpen, setIsOpen }: BetaLimitsDialogProps) {
+    return (
+        <Dialog open={isOpen}>
+            <DialogContent className="sm:max-w-[425px] [&>button]:hidden">
+                <DialogHeader>
+                    <DialogTitle>Beta Limits Reached!</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    You’ve reached the limit of 2 products allowed during our beta. We’re currently testing things out and will expand limits soon — stay tuned!
+                </div>
+                <DialogFooter>
+                    <DialogClose onClick={() => setIsOpen(false)}>Close</DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
 }
