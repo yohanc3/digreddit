@@ -50,6 +50,8 @@ export function useLeads(
         staleTime: 0,
     });
 
+    if (!result) return { leads: null, isLoading };
+
     let leadsCopy = [...result] as CommentLead[] | PostLead[];
 
     if (options?.minRating) {
