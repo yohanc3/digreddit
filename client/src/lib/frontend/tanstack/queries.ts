@@ -3,9 +3,9 @@ import { toast } from '@/hooks/use-toast';
 import { useMutation } from '@tanstack/react-query';
 import { useFetch } from '../hooks/useFetch';
 
-const { apiPost } = useFetch();
-
 export function useUpdateLeadInteraction() {
+    const { apiPost } = useFetch();
+
     const { mutate: updateLeadInteraction } = useMutation({
         mutationFn: async ({
             leadID,
