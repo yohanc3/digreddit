@@ -18,6 +18,7 @@ import {
 import { Badge } from '../badge';
 import { useState } from 'react';
 import { timeAgo, isPostLead } from '@/util/utils';
+import { useUpdateLeadInteraction } from '@/lib/frontend/tanstack/queries';
 
 interface RedditCommentLeadCardProps {
     leadDetails: CommentLead;
@@ -31,6 +32,8 @@ export function RedditCommentLeadCard({
     const unixCreatedAt = new Date(leadDetails.createdAt).getTime();
 
     const howLongAgo = timeAgo(unixCreatedAt);
+
+    const updateLeadInteraction = useUpdateLeadInteraction();
 
     return (
         <div
@@ -51,8 +54,23 @@ export function RedditCommentLeadCard({
                         </div>
                     </div>
                     <div>
-                        <a href={leadDetails.url} target="_blank">
-                            <Button variant={'light'}>
+                        <a
+                            href={`https://www.reddit.com${leadDetails.url}`}
+                            target="_blank"
+                        >
+                            <Button
+                                variant={'light'}
+                                onClick={async () => {
+                                    console.log(
+                                        'leadDetails.id',
+                                        leadDetails.id
+                                    );
+                                    await updateLeadInteraction({
+                                        leadID: leadDetails.id,
+                                        isPost: false,
+                                    });
+                                }}
+                            >
                                 Open <BiLinkExternal size={18} />
                             </Button>
                         </a>
@@ -89,18 +107,18 @@ export function RedditCommentLeadCard({
 
                 {/* Card Rating */}
                 <div
-                className={clsx(
-                    'items-center text-xs font-semibold text-tertiaryColor gap-x-1',
-                    {
-                        'text-orange-600': leadDetails.rating < 3.3,
-                        'text-yellow-600':
-                            leadDetails.rating < 5.5 &&
-                            leadDetails.rating > 3.3,
-                        'text-green-600':
-                            leadDetails.rating <= 10 &&
-                            leadDetails.rating > 5.5,
-                    }
-                )}
+                    className={clsx(
+                        'items-center text-xs font-semibold text-tertiaryColor gap-x-1',
+                        {
+                            'text-orange-600': leadDetails.rating < 3.3,
+                            'text-yellow-600':
+                                leadDetails.rating < 5.5 &&
+                                leadDetails.rating > 3.3,
+                            'text-green-600':
+                                leadDetails.rating <= 10 &&
+                                leadDetails.rating > 5.5,
+                        }
+                    )}
                 >
                     <p>
                         AI Lead Rating:{' '}
@@ -129,6 +147,8 @@ export function RedditPostLeadCard({
 
     const howLongAgo = timeAgo(unixCreatedAt);
 
+    const updateLeadInteraction = useUpdateLeadInteraction();
+
     return (
         <div
             className={clsx(
@@ -148,7 +168,16 @@ export function RedditPostLeadCard({
                 </div>
                 <div>
                     <a href={leadDetails.url} target="_blank">
-                        <Button variant={'light'}>
+                        <Button
+                            variant={'light'}
+                            onClick={async () => {
+                                await updateLeadInteraction({
+                                    leadID: leadDetails.id,
+                                    isPost: true,
+                                });
+                                console.log('leadDetails.id', leadDetails.id);
+                            }}
+                        >
                             Open <BiLinkExternal size={18} />
                         </Button>
                     </a>
@@ -221,11 +250,13 @@ interface RedditLeadCardDialogProps {
 function RedditLeadCardDialog({ lead }: RedditLeadCardDialogProps) {
     const [showRedditDescription, setShowRedditDescription] =
         useState<boolean>(false);
-    
+
     const isPost = isPostLead(lead);
     const unixCreatedAt = new Date(lead.createdAt).getTime();
     const howLongAgo = timeAgo(unixCreatedAt);
     const upvotes = lead.ups - lead.downs;
+
+    const updateLeadInteraction = useUpdateLeadInteraction();
 
     return (
         <Dialog>
@@ -248,12 +279,13 @@ function RedditLeadCardDialog({ lead }: RedditLeadCardDialogProps) {
                     <Badge
                         variant="outline"
                         className={clsx(
-                            "rounded-xl px-4 py-2 !text-base !font-semibold",
+                            'rounded-xl px-4 py-2 !text-base !font-semibold',
                             {
-                                'bg-orange-100 text-orange-600 border-orange-200': lead.rating < 3.3,
-                                'bg-yellow-100 text-yellow-600 border-yellow-200': 
+                                'bg-orange-100 text-orange-600 border-orange-200':
+                                    lead.rating < 3.3,
+                                'bg-yellow-100 text-yellow-600 border-yellow-200':
                                     lead.rating < 6.6 && lead.rating >= 3.3,
-                                'bg-green-100 text-green-600 border-green-200': 
+                                'bg-green-100 text-green-600 border-green-200':
                                     lead.rating <= 10 && lead.rating >= 6.6,
                             }
                         )}
@@ -274,32 +306,38 @@ function RedditLeadCardDialog({ lead }: RedditLeadCardDialogProps) {
                     <div
                         className={clsx(
                             'w-full relative transition-all duration-300 ease-in-out',
-                            showRedditDescription ? '' : 'max-h-60 overflow-hidden'
+                            showRedditDescription
+                                ? ''
+                                : 'max-h-60 overflow-hidden'
                         )}
                     >
                         {/* Post content */}
                         <div className="text-sm text-tertiaryColor">
                             {lead.body}
                         </div>
-                        
+
                         {/* Gradient overlay and "See More" button */}
                         {!showRedditDescription && (
                             <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white to-transparent flex items-end justify-center w-full">
                                 <button
                                     className="flex items-center text-sm text-tertiaryColor hover:text-secondaryColor transition-colors mb-1"
-                                    onClick={() => setShowRedditDescription(true)}
+                                    onClick={() =>
+                                        setShowRedditDescription(true)
+                                    }
                                 >
                                     <BiChevronDown size={25} /> See More
                                 </button>
                             </div>
                         )}
-                        
+
                         {/* "See Less" button */}
                         {showRedditDescription && (
                             <div className="flex justify-center mt-4">
                                 <button
                                     className="flex items-center text-sm text-tertiaryColor hover:text-secondaryColor transition-colors"
-                                    onClick={() => setShowRedditDescription(false)}
+                                    onClick={() =>
+                                        setShowRedditDescription(false)
+                                    }
                                 >
                                     <BiChevronUp size={25} /> See Less
                                 </button>
@@ -326,17 +364,22 @@ function RedditLeadCardDialog({ lead }: RedditLeadCardDialogProps) {
                             </div>
 
                             {/* Comments - Only shown for PostLead */}
-                            {isPost && <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50">
-                                <BiCommentDetail color="#344054" size={25} />
-                                <div>
-                                    <p className="text-sm text-secondaryColor">
-                                        Comments
-                                    </p>
-                                    <p className="text-xl font-semibold text-secondaryColor">
-                                        {lead.numComments}
-                                    </p>
+                            {isPost && (
+                                <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50">
+                                    <BiCommentDetail
+                                        color="#344054"
+                                        size={25}
+                                    />
+                                    <div>
+                                        <p className="text-sm text-secondaryColor">
+                                            Comments
+                                        </p>
+                                        <p className="text-xl font-semibold text-secondaryColor">
+                                            {lead.numComments}
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>}
+                            )}
 
                             {/* Posted Date */}
                             <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50">
@@ -354,9 +397,21 @@ function RedditLeadCardDialog({ lead }: RedditLeadCardDialogProps) {
 
                         {/* Action Button */}
                         <div className="flex justify-end mt-6">
-                            <a href={`${!isPost ? 'https://www.reddit.com' : ''}${lead.url}`} target="_blank">
-                                <Button variant="dark" className="w-36 h-9 text-sm">
-                                    View Comment
+                            <a
+                                href={`${!isPost ? 'https://www.reddit.com' : ''}${lead.url}`}
+                                target="_blank"
+                            >
+                                <Button
+                                    variant="dark"
+                                    className="w-36 h-9 text-sm"
+                                    onClick={async () => {
+                                        await updateLeadInteraction({
+                                            leadID: lead.id,
+                                            isPost,
+                                        });
+                                    }}
+                                >
+                                    View {isPost ? 'Post' : 'Comment'}
                                 </Button>
                             </a>
                         </div>
