@@ -39,6 +39,7 @@ export const commentLeads = pgTable(
         productID: uuid().notNull(),
         createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
         rating: doublePrecision().notNull(),
+        isInteracted: boolean().default(false),
     },
     (table) => [
         foreignKey({
@@ -66,6 +67,7 @@ export const postLeads = pgTable(
         productID: uuid().notNull(),
         createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
         rating: doublePrecision().notNull(),
+        isInteracted: boolean().default(false),
     },
     (table) => [
         foreignKey({
