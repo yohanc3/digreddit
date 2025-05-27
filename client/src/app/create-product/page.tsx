@@ -42,6 +42,7 @@ import {
     ProductFormDataTarget,
     ProductFormInputFields,
     ProductInputSubmitting,
+    BetaLimitsDialogProps,
 } from '@/types/frontend/product/form';
 
 // Others
@@ -53,6 +54,16 @@ import { readableDateFormat } from '@/lib/frontend/utils/timeFormat';
 import { FormEvent, useState } from 'react';
 import { BiCheckCircle, BiErrorCircle } from 'react-icons/bi';
 import { RiSparkling2Line } from 'react-icons/ri';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogClose,
+} from '@/lib/components/ui/dialog';
+
 import { prohibitedKeywords } from '@/lib/backend/constant/prohibitedKeywords';
 
 export default function Dashboard() {
@@ -79,6 +90,7 @@ export default function Dashboard() {
         url: false,
         ai: false,
     });
+    const [openBetaLimitsDialog, setOpenBetaLimitsDialog] = useState(false);
     const { apiPost } = useFetch();
 
     function setProductFormError(field: ProductFormDataError) {
@@ -173,12 +185,16 @@ export default function Dashboard() {
                 });
                 setIsSubmitting({ form: false });
                 return result;
-            } catch {
-                toast({
-                    title: 'Something Went Wrong',
-                    description: 'Try again later.',
-                    action: <BiErrorCircle color="#f87171" size={35} />,
-                });
+            } catch (e) {
+                if ((e as Error).message === 'Beta Limit') {
+                    setOpenBetaLimitsDialog(true);
+                } else {
+                    toast({
+                        title: 'Something Went Wrong',
+                        description: 'Try again later.',
+                        action: <BiErrorCircle color="#f87171" size={35} />,
+                    });
+                }
                 setIsSubmitting({ form: false });
                 return [];
             }
@@ -241,70 +257,39 @@ export default function Dashboard() {
     }
 
     return (
-        <div className="flex flex-col h-full w-full max-w-3xl mx-auto gap-y-4 px-4 pt-12 pb-8">
-            {/* Title */}
-            <div className="flex flex-col mb-2">
-                <h1 className="text-3xl md:text-4xl font-semibold text-center text-secondaryColor">
-                    Launch a Lead Search
-                </h1>
-                <p className="text-sm text-primaryColor text-center mt-1">
-                    Describe your target lead, and we'll dig through Reddit for
-                    you.
-                </p>
-            </div>
-
-            <form
-                className="flex flex-col gap-y-3"
-                onSubmit={submitLeadSearchDetails}
-            >
-                {/* Lead Description */}
-                <div className="flex flex-col gap-y-1">
-                    <div className="text-tertiarySize w-full flex justify-end">
-                        {countWords(formsInput.description)}/
-                        {productDescriptionMaximumWords} words
-                    </div>
-                    <textarea
-                        name="description"
-                        value={formsInput.description}
-                        className="w-full h-40 p-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
-                        placeholder='Tell use about your product and describe target audience (e.g., "I am working on a platform for clay artists and my target audience are people who like clay art, sculpture, architecture, etc..").'
-                        disabled={isSubmitting.form || isSubmitting.keywords}
-                        onChange={(e) =>
-                            handleDescriptionInputOnChange(
-                                e,
-                                setFormsInput,
-                                setProductFormError
-                            )
-                        }
-                    />
-
-                    {/* Description Error */}
-                    <MaximumWordsReachedError
-                        trigger={isMaximumWordsReached(
-                            formsInput.description,
-                            productDescriptionMaximumWords
-                        )}
-                    />
-                    <MissingFieldError trigger={Boolean(error.description)} />
+        <>
+            <div className="flex flex-col h-full w-full max-w-3xl mx-auto gap-y-4 px-4 pt-12 pb-8">
+                {/* Title */}
+                <div className="flex flex-col mb-2">
+                    <h1 className="text-3xl md:text-4xl font-semibold text-center text-secondaryColor">
+                        Launch a Lead Search
+                    </h1>
+                    <p className="text-sm text-primaryColor text-center mt-1">
+                        Describe your target lead, and we'll dig through Reddit
+                        for you.
+                    </p>
                 </div>
 
-                {/* Form Fields */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Product Name */}
+                <form
+                    className="flex flex-col gap-y-3"
+                    onSubmit={submitLeadSearchDetails}
+                >
+                    {/* Lead Description */}
                     <div className="flex flex-col gap-y-1">
-                        <label className="text-secondaryColor text-sm font-medium">
-                            Name:
-                        </label>
-                        <input
-                            name="title"
-                            value={formsInput.title}
-                            className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
-                            placeholder="e.g., DigReddit, Twitter, or KeepSake"
+                        <div className="text-tertiarySize w-full flex justify-end">
+                            {countWords(formsInput.description)}/
+                            {productDescriptionMaximumWords} words
+                        </div>
+                        <textarea
+                            name="description"
+                            value={formsInput.description}
+                            className="w-full h-40 p-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
+                            placeholder='Tell use about your product and describe target audience (e.g., "I am working on a platform for clay artists and my target audience are people who like clay art, sculpture, architecture, etc..").'
                             disabled={
                                 isSubmitting.form || isSubmitting.keywords
                             }
                             onChange={(e) =>
-                                handleTitleInputOnChange(
+                                handleDescriptionInputOnChange(
                                     e,
                                     setFormsInput,
                                     setProductFormError
@@ -312,200 +297,268 @@ export default function Dashboard() {
                             }
                         />
 
-                        {/* Title Error */}
-                        <MaximumCharactersReachedError
-                            trigger={isMaximumCharactersReached(
-                                formsInput.title,
-                                productNameMaximumCharacters
+                        {/* Description Error */}
+                        <MaximumWordsReachedError
+                            trigger={isMaximumWordsReached(
+                                formsInput.description,
+                                productDescriptionMaximumWords
                             )}
                         />
-                        <MissingFieldError trigger={Boolean(error.title)} />
-                    </div>
-
-                    {/* Industry */}
-                    <div className="flex flex-col gap-y-1">
-                        <label className="text-secondaryColor text-sm font-medium">
-                            Industry:
-                        </label>
-                        <input
-                            name="industry"
-                            value={formsInput.industry}
-                            className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
-                            placeholder="e.g., Real Estate, Tech, or Politics"
-                            disabled={
-                                isSubmitting.form || isSubmitting.keywords
-                            }
-                            onChange={(e) =>
-                                handleIndustryInputOnChange(
-                                    e,
-                                    setFormsInput,
-                                    setProductFormError
-                                )
-                            }
-                        />
-
-                        {/* Industry Error */}
-                        <MaximumCharactersReachedError
-                            trigger={isMaximumCharactersReached(
-                                formsInput.industry,
-                                productIndustryMaximumCharacters
-                            )}
-                        />
-                        <MissingFieldError trigger={Boolean(error.industry)} />
-                    </div>
-                </div>
-
-                {/* Form Fields */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* MRR */}
-                    <div className="flex flex-col gap-y-1">
-                        <label className="text-secondaryColor text-sm font-medium">
-                            MRR (Optional):
-                        </label>
-                        <input
-                            name="mrr"
-                            value={formsInput.mrr}
-                            className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
-                            placeholder="e.g., 6000, 10000"
-                            type="text"
-                            onChange={(e) => {
-                                handleMRRInputOnChange(
-                                    e,
-                                    setFormsInput,
-                                    setProductFormError
-                                );
-                            }}
-                            disabled={
-                                isSubmitting.form || isSubmitting.keywords
-                            }
-                        />
-
-                        {/* MRR Error */}
-                        <MaximumCharactersReachedError
-                            trigger={isMaximumCharactersReached(
-                                formsInput.mrr?.toString() || '',
-                                productMRRMaximumCharacters
-                            )}
+                        <MissingFieldError
+                            trigger={Boolean(error.description)}
                         />
                     </div>
 
-                    {/* URL */}
-                    <div className="flex flex-col gap-y-1">
-                        <label className="text-secondaryColor text-sm font-medium">
-                            URL (Optional):
-                        </label>
-                        <input
-                            name="url"
-                            value={formsInput.url}
-                            className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
-                            placeholder="e.g., twitter.com, google.com"
-                            type="url"
-                            onChange={(e) => {
-                                handleURLInputOnChange(
-                                    e,
-                                    setFormsInput,
-                                    setProductFormError
-                                );
-                            }}
-                            disabled={
-                                isSubmitting.form || isSubmitting.keywords
-                            }
-                        />
-                    </div>
-                </div>
-
-                {/* Keywords Input */}
-                <div className="flex flex-col gap-y-1 mt-1">
-                    <div className="flex items-center gap-x-3">
-                        <label className="text-secondaryColor text-sm font-medium">
-                            Keywords:
-                        </label>
-                        <Button
-                            variant={'light'}
-                            disabled={
-                                isSubmitting.form || isSubmitting.keywords
-                            }
-                            onClick={generateKeywords}
-                        >
-                            Generate Keywords <RiSparkling2Line />
-                        </Button>
-
-                        {/* Fetch Generated Keywords Error*/}
-                        <AIResponseError trigger={Boolean(error.ai)} />
-                    </div>
-
-                    {formsInput.keywords.length > 0 && (
-                        <>
+                    {/* Form Fields */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Product Name */}
+                        <div className="flex flex-col gap-y-1">
+                            <label className="text-secondaryColor text-sm font-medium">
+                                Name:
+                            </label>
                             <input
-                                value={formsInput.keyword}
+                                name="title"
+                                value={formsInput.title}
                                 className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
-                                placeholder="e.g., Tax, Sports, or Law"
-                                onChange={(e) => {
-                                    handleKeywordInputOnChange(
+                                placeholder="e.g., DigReddit, Twitter, or KeepSake"
+                                disabled={
+                                    isSubmitting.form || isSubmitting.keywords
+                                }
+                                onChange={(e) =>
+                                    handleTitleInputOnChange(
                                         e,
                                         setFormsInput,
                                         setProductFormError
-                                    );
-                                }}
-                                onKeyDown={(e) => {
-                                    handleKeywordInputEnterKeyPress(
+                                    )
+                                }
+                            />
+
+                            {/* Title Error */}
+                            <MaximumCharactersReachedError
+                                trigger={isMaximumCharactersReached(
+                                    formsInput.title,
+                                    productNameMaximumCharacters
+                                )}
+                            />
+                            <MissingFieldError trigger={Boolean(error.title)} />
+                        </div>
+
+                        {/* Industry */}
+                        <div className="flex flex-col gap-y-1">
+                            <label className="text-secondaryColor text-sm font-medium">
+                                Industry:
+                            </label>
+                            <input
+                                name="industry"
+                                value={formsInput.industry}
+                                className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
+                                placeholder="e.g., Real Estate, Tech, or Politics"
+                                disabled={
+                                    isSubmitting.form || isSubmitting.keywords
+                                }
+                                onChange={(e) =>
+                                    handleIndustryInputOnChange(
                                         e,
-                                        e.currentTarget.value
+                                        setFormsInput,
+                                        setProductFormError
+                                    )
+                                }
+                            />
+
+                            {/* Industry Error */}
+                            <MaximumCharactersReachedError
+                                trigger={isMaximumCharactersReached(
+                                    formsInput.industry,
+                                    productIndustryMaximumCharacters
+                                )}
+                            />
+                            <MissingFieldError
+                                trigger={Boolean(error.industry)}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Form Fields */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* MRR */}
+                        <div className="flex flex-col gap-y-1">
+                            <label className="text-secondaryColor text-sm font-medium">
+                                MRR (Optional):
+                            </label>
+                            <input
+                                name="mrr"
+                                value={formsInput.mrr}
+                                className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
+                                placeholder="e.g., 6000, 10000"
+                                type="text"
+                                onChange={(e) => {
+                                    handleMRRInputOnChange(
+                                        e,
+                                        setFormsInput,
+                                        setProductFormError
                                     );
                                 }}
                                 disabled={
                                     isSubmitting.form || isSubmitting.keywords
                                 }
                             />
-                            <p className="text-tertiaryColor text-xs mt-1">
-                                Add up to {productKeywordsMaximumLength}{' '}
-                                keywords. Press Enter to add each one.
-                            </p>
-                            {/* Keyword Error */}
-                            <MinimumCharactersReachedError
-                                trigger={isMinimumCharactersReached(
-                                    formsInput.keyword,
-                                    productKeywordMinimumLength
-                                )}
-                            />
+
+                            {/* MRR Error */}
                             <MaximumCharactersReachedError
                                 trigger={isMaximumCharactersReached(
-                                    formsInput.keyword,
-                                    productKeywordMaximumLength
+                                    formsInput.mrr?.toString() || '',
+                                    productMRRMaximumCharacters
                                 )}
                             />
-                            <MaximumLengthReachedError
-                                trigger={
-                                    formsInput.keywords.length >=
-                                    productKeywordsMaximumLength
+                        </div>
+
+                        {/* URL */}
+                        <div className="flex flex-col gap-y-1">
+                            <label className="text-secondaryColor text-sm font-medium">
+                                URL (Optional):
+                            </label>
+                            <input
+                                name="url"
+                                value={formsInput.url}
+                                className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
+                                placeholder="e.g., twitter.com, google.com"
+                                type="url"
+                                onChange={(e) => {
+                                    handleURLInputOnChange(
+                                        e,
+                                        setFormsInput,
+                                        setProductFormError
+                                    );
+                                }}
+                                disabled={
+                                    isSubmitting.form || isSubmitting.keywords
                                 }
                             />
-                        </>
-                    )}
+                        </div>
+                    </div>
 
-                    {/* Generated Keywords & Input List */}
-                    <KeywordsList
-                        keywords={formsInput.keywords}
-                        isLoading={Boolean(isSubmitting.keywords)}
-                        setValue={setFormsInput}
-                    />
+                    {/* Keywords Input */}
+                    <div className="flex flex-col gap-y-1 mt-1">
+                        <div className="flex items-center gap-x-3">
+                            <label className="text-secondaryColor text-sm font-medium">
+                                Keywords:
+                            </label>
+                            <Button
+                                variant={'light'}
+                                disabled={
+                                    isSubmitting.form || isSubmitting.keywords
+                                }
+                                onClick={generateKeywords}
+                            >
+                                Generate Keywords <RiSparkling2Line />
+                            </Button>
 
-                    {/* Keywords Error */}
-                    <MissingFieldError trigger={Boolean(error.keywords)} />
+                            {/* Fetch Generated Keywords Error*/}
+                            <AIResponseError trigger={Boolean(error.ai)} />
+                        </div>
+
+                        {formsInput.keywords.length > 0 && (
+                            <>
+                                <input
+                                    value={formsInput.keyword}
+                                    className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
+                                    placeholder="e.g., Tax, Sports, or Law"
+                                    onChange={(e) => {
+                                        handleKeywordInputOnChange(
+                                            e,
+                                            setFormsInput,
+                                            setProductFormError
+                                        );
+                                    }}
+                                    onKeyDown={(e) => {
+                                        handleKeywordInputEnterKeyPress(
+                                            e,
+                                            e.currentTarget.value
+                                        );
+                                    }}
+                                    disabled={
+                                        isSubmitting.form ||
+                                        isSubmitting.keywords
+                                    }
+                                />
+                                <p className="text-tertiaryColor text-xs mt-1">
+                                    Add up to {productKeywordsMaximumLength}{' '}
+                                    keywords. Press Enter to add each one.
+                                </p>
+                                {/* Keyword Error */}
+                                <MinimumCharactersReachedError
+                                    trigger={isMinimumCharactersReached(
+                                        formsInput.keyword,
+                                        productKeywordMinimumLength
+                                    )}
+                                />
+                                <MaximumCharactersReachedError
+                                    trigger={isMaximumCharactersReached(
+                                        formsInput.keyword,
+                                        productKeywordMaximumLength
+                                    )}
+                                />
+                                <MaximumLengthReachedError
+                                    trigger={
+                                        formsInput.keywords.length >=
+                                        productKeywordsMaximumLength
+                                    }
+                                />
+                            </>
+                        )}
+
+                        {/* Generated Keywords & Input List */}
+                        <KeywordsList
+                            keywords={formsInput.keywords}
+                            isLoading={Boolean(isSubmitting.keywords)}
+                            setValue={setFormsInput}
+                        />
+
+                        {/* Keywords Error */}
+                        <MissingFieldError trigger={Boolean(error.keywords)} />
+                    </div>
+
+                    {/* Submit Product Button */}
+                    <div className="flex justify-end mt-2">
+                        <Button
+                            variant={'dark'}
+                            type="submit"
+                            className="w-40 h-9 text-sm"
+                            disabled={
+                                isSubmitting.form || isSubmitting.keywords
+                            }
+                        >
+                            Create New Product
+                        </Button>
+                    </div>
+                </form>
+            </div>
+            <ProductsThresholdDialog
+                isOpen={openBetaLimitsDialog}
+                setIsOpen={setOpenBetaLimitsDialog}
+            />
+        </>
+    );
+}
+
+function ProductsThresholdDialog({ isOpen, setIsOpen }: BetaLimitsDialogProps) {
+    return (
+        <Dialog open={isOpen}>
+            <DialogContent className="sm:max-w-[425px] [&>button]:hidden">
+                <DialogHeader>
+                    <DialogTitle>Beta Limits Reached!</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    You’ve reached the limit of 2 products allowed during our
+                    beta. We’re currently testing things out and will expand
+                    limits soon — stay tuned!
                 </div>
-
-                {/* Submit Product Button */}
-                <div className="flex justify-end mt-2">
-                    <Button
-                        variant={'dark'}
-                        type="submit"
-                        className="w-40 h-9 text-sm"
-                        disabled={isSubmitting.form || isSubmitting.keywords}
-                    >
-                        Create New Product
-                    </Button>
-                </div>
-            </form>
-        </div>
+                <DialogFooter>
+                    <DialogClose onClick={() => setIsOpen(false)}>
+                        Close
+                    </DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }
