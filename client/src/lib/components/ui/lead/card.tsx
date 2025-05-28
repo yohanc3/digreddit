@@ -106,20 +106,7 @@ export function RedditCommentLeadCard({
                 </div>
 
                 {/* Card Rating */}
-                <div
-                    className={clsx(
-                        'items-center text-xs font-semibold text-tertiaryColor gap-x-1',
-                        {
-                            'text-orange-600': leadDetails.rating < 3.3,
-                            'text-yellow-600':
-                                leadDetails.rating < 5.5 &&
-                                leadDetails.rating > 3.3,
-                            'text-green-600':
-                                leadDetails.rating <= 10 &&
-                                leadDetails.rating > 5.5,
-                        }
-                    )}
-                >
+                <div className="items-center text-xs font-semibold text-tertiaryColor gap-x-1">
                     <p>
                         AI Lead Rating:{' '}
                         <span className="font-bold text-sm">
@@ -216,20 +203,7 @@ export function RedditPostLeadCard({
             </div>
 
             {/* Card Rating */}
-            <div
-                className={clsx(
-                    'items-center text-xs font-semibold text-tertiaryColor gap-x-1',
-                    {
-                        'text-orange-600': leadDetails.rating < 3.3,
-                        'text-yellow-600':
-                            leadDetails.rating < 6.6 &&
-                            leadDetails.rating > 3.3,
-                        'text-green-600':
-                            leadDetails.rating <= 10 &&
-                            leadDetails.rating > 6.6,
-                    }
-                )}
-            >
+            <div className="items-center text-xs font-semibold text-tertiaryColor gap-x-1">
                 <p>
                     AI Lead Rating:{' '}
                     <span className="font-bold text-sm">
@@ -297,7 +271,9 @@ function RedditLeadCardDialog({ lead }: RedditLeadCardDialogProps) {
                 <div className="flex flex-col gap-y-4 flex-grow">
                     {/* Post Title - Only shown for PostLead */}
                     {isPost && (
-                        <h2 className={`text-lg font-semibold text-secondaryColor ${!showRedditDescription && "line-clamp-2"}`}>
+                        <h2
+                            className={`text-lg font-semibold text-secondaryColor ${!showRedditDescription && 'line-clamp-2'}`}
+                        >
                             {(lead as PostLead).title}
                         </h2>
                     )}
