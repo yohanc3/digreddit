@@ -111,7 +111,7 @@ export default class DynamicAhoCorasick {
         this.instance.keywords = [...DBKeywords]
 
         // Run the adding and removing keywords from the AhoCora every 5 minutes
-        const interval = 60 * 5
+        const interval = 60 * 5 * 1000
         console.log(`running adding and removing keywords every ${interval / 60} minutes...`)
         setInterval(async () => {
             await this.addKeywords()
