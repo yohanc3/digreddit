@@ -20,8 +20,8 @@
 	"hyperdrive": [
 		{
 			"binding": "HYPERDRIVE",
-			"id": "947de7aaa62f4a75af197897d823a988",
-			"localConnectionString": "postgresql://dev_owner:npg_k9svHVdUx2Ac@ep-weathered-mode-a5naeqei.us-east-2.aws.neon.tech/dev"
+			"id": "df7395f5b9094850812480b077322d7a",
+			"localConnectionString": "postgresql://digreddit_owner:npg_gqOho4IEL6Bk@ep-fragrant-credit-a57wi4p7-pooler.us-east-2.aws.neon.tech/digreddit?sslmode=require"
 		}
 	]
 	/**
