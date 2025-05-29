@@ -28,4 +28,12 @@ export const betaUsersEmails = [
     'agrim@codeferno.com',
     'vorenworks@gmail.com',
     'ruchit.sherathiya@techanzo.com',
+    'agrim.codeferno@gmail.com',
+    'layshah1989@gmail.com',
+    'trekkingpics009@gmail.com',
+    'kwin.1011@gmail.com',
+    'rinatn575@gmail.com',
+    'joshuahuckaby1987@gmail.com',
+    'lecfmpp@gmail.com',
+    'theclasher.tc2000@gmail.com',
 ];
