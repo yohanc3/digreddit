@@ -27,4 +27,5 @@ export const betaUsersEmails = [
     'antpalmolive@gmail.com',
     'agrim@codeferno.com',
     'vorenworks@gmail.com',
+    'ruchit.sherathiya@techanzo.com',
 ];
