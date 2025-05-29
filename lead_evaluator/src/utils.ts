@@ -96,8 +96,15 @@ export type PushLeadsReturn = {
 export async function pushPostLeads(similarityResults: SimilarityResponse, db: postgres.Sql, post: Post): Promise<PushLeadsReturn> {
 	try {
 		const leadIDs: string[] = [];
+		const skippedLeads: string[] = [];
 
 		for (const [productID, similarityScore] of Object.entries(similarityResults)) {
+			if (similarityScore < 5) {
+				console.log(`Skipping lead for product ${productID} with similarity score ${similarityScore} due to low similarity`);
+				skippedLeads.push(productID);
+				continue;
+			}
+
 			const lead = await db`
 				INSERT INTO "PostLeads" (subreddit, title, author, body, url, "numComments", "subredditSubscribers", "over18", ups, downs, "productID", rating)
 				VALUES (${post.subreddit}, ${post.title}, ${post.author}, ${post.body}, ${post.url}, ${post.numComments}, ${post.subredditSubscribers}, ${post.over18}, ${post.ups}, ${post.downs}, ${productID}, ${similarityScore})
@@ -109,8 +116,9 @@ export async function pushPostLeads(similarityResults: SimilarityResponse, db: p
 
 		// Returns true if the length of the leadIDs array is equal to the number of similarityResults
 		return {
-			success: leadIDs.length === Object.keys(similarityResults).length,
-			message: leadIDs.length === Object.keys(similarityResults).length ? 'all' : leadIDs.length > 0 ? 'some' : 'none',
+			success: leadIDs.length === Object.keys(similarityResults).length - skippedLeads.length,
+			message:
+				leadIDs.length === Object.keys(similarityResults).length - skippedLeads.length ? 'all' : leadIDs.length > 0 ? 'some' : 'none',
 		};
 	} catch (error) {
 		console.error(`Error while pushing leads: ${error}`);
@@ -128,8 +136,15 @@ export async function pushCommentLeads(
 ): Promise<PushLeadsReturn> {
 	try {
 		const leadIDs: string[] = [];
+		const skippedLeads: string[] = [];
 
 		for (const [productID, similarityScore] of Object.entries(similarityResults)) {
+			if (similarityScore < 5) {
+				console.log(`Skipping lead for product ${productID} with similarity score ${similarityScore} due to low similarity`);
+				skippedLeads.push(productID);
+				continue;
+			}
+
 			const lead = await db`
 				INSERT INTO "CommentLeads" (subreddit, author, body, url, ups, downs, "productID", rating)
 				VALUES (${comment.subreddit}, ${comment.author}, ${comment.body}, ${comment.url}, ${comment.ups}, ${comment.downs}, ${productID}, ${similarityScore})
@@ -141,8 +156,9 @@ export async function pushCommentLeads(
 
 		// Returns true if the length of the leadIDs array is equal to the number of similarityResults
 		return {
-			success: leadIDs.length === Object.keys(similarityResults).length,
-			message: leadIDs.length === Object.keys(similarityResults).length ? 'all' : leadIDs.length > 0 ? 'some' : 'none',
+			success: leadIDs.length === Object.keys(similarityResults).length - skippedLeads.length,
+			message:
+				leadIDs.length === Object.keys(similarityResults).length - skippedLeads.length ? 'all' : leadIDs.length > 0 ? 'some' : 'none',
 		};
 	} catch (error) {
 		console.error(`Error while pushing leads: ${error}`);
