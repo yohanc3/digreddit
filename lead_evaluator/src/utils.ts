@@ -105,9 +105,13 @@ export async function pushPostLeads(similarityResults: SimilarityResponse, db: p
 				continue;
 			}
 
+			// Make sure to multiply by 1000 to convert from seconds to milliseconds
+			const date = new Date(Number(post.createdAt) * 1000);
+			const dateString = date.toISOString();
+
 			const lead = await db`
-				INSERT INTO "PostLeads" (subreddit, title, author, body, url, "numComments", "subredditSubscribers", "over18", ups, downs, "productID", rating)
-				VALUES (${post.subreddit}, ${post.title}, ${post.author}, ${post.body}, ${post.url}, ${post.numComments}, ${post.subredditSubscribers}, ${post.over18}, ${post.ups}, ${post.downs}, ${productID}, ${similarityScore})
+				INSERT INTO "PostLeads" (id, subreddit, title, author, body, url, "numComments", "subredditSubscribers", "over18", ups, downs, "productID", rating, "createdAt")
+				VALUES (${post.id}, ${post.subreddit}, ${post.title}, ${post.author}, ${post.body}, ${post.url}, ${post.numComments}, ${post.subredditSubscribers}, ${post.over18}, ${post.ups}, ${post.downs}, ${productID}, ${similarityScore}, ${dateString})
 				RETURNING id
 			`;
 
@@ -145,9 +149,13 @@ export async function pushCommentLeads(
 				continue;
 			}
 
+			// Make sure to multiply by 1000 to convert from seconds to milliseconds
+			const date = new Date(Number(comment.createdAt) * 1000);
+			const dateString = date.toISOString();
+
 			const lead = await db`
-				INSERT INTO "CommentLeads" (subreddit, author, body, url, ups, downs, "productID", rating)
-				VALUES (${comment.subreddit}, ${comment.author}, ${comment.body}, ${comment.url}, ${comment.ups}, ${comment.downs}, ${productID}, ${similarityScore})
+				INSERT INTO "CommentLeads" (id, subreddit, author, body, url, ups, downs, "productID", rating, "createdAt")
+				VALUES (${comment.id}, ${comment.subreddit}, ${comment.author}, ${comment.body}, ${comment.url}, ${comment.ups}, ${comment.downs}, ${productID}, ${similarityScore}, ${dateString})
 				RETURNING id
 			`;
 
