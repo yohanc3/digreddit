@@ -5,6 +5,7 @@ import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import NextAuth from 'next-auth';
 import Google from 'next-auth/providers/google';
 import { NextResponse } from 'next/server';
+import posthog from 'posthog-js';
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
     adapter: DrizzleAdapter(db, {
@@ -23,6 +24,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         signIn: async ({ user }) => {
             if (user && user.email) {
                 if (betaUsersEmails.includes(user.email)) {
+                    posthog.identify(user.id, {
+                        email: user.email,
+                    });
                     return true;
                 }
             }
