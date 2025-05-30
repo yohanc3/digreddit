@@ -6,28 +6,34 @@ import { BiCheckCircle, BiErrorCircle } from 'react-icons/bi';
 
 export function useProducts() {
     const { apiGet } = useFetch();
-    const { data: allUserProducts, isLoading: isAllUserProductsLoading } =
-        useQuery({
-            queryKey: ['allUserProducts'],
-            queryFn: async () => {
-                try {
-                    const result = await apiGet('api/products');
+    const {
+        data: allUserProducts,
+        isLoading: isAllUserProductsLoading,
+        refetch: refetchAllUserProducts,
+    } = useQuery({
+        queryKey: ['allUserProducts'],
+        queryFn: async () => {
+            try {
+                const result = await apiGet('api/products');
 
-                    return result.userProducts as Products[];
-                } catch (e) {
-                    toast({
-                        variant: "destructive",
-                        title: 'Error',
-                        description: 'Something went wrong when fetching your Products List.'
-                    });
-                    console.error('Error when fetching user Products', e);
-                    return [] as Products[];
-                }
-            },
-        });
+                return result.userProducts as Products[];
+            } catch (e) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description:
+                        'Something went wrong when fetching your Products List.',
+                });
+                console.error('Error when fetching user Products', e);
+                return [] as Products[];
+            }
+        },
+        staleTime: 0,
+    });
 
     return {
         allUserProducts,
         isAllUserProductsLoading,
+        refetchAllUserProducts,
     };
 }
