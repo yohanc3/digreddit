@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode } from 'react';
+import { PostHogProvider } from '../providers/PostHogProvider';
 
 export const queryClient = new QueryClient({
     defaultOptions: {
@@ -25,8 +26,10 @@ export default function Providers({ children }: { children: ReactNode }) {
     });
 
     return (
-        <QueryClientProvider client={queryClient}>
-            {children}
-        </QueryClientProvider>
+        <PostHogProvider>
+            <QueryClientProvider client={queryClient}>
+                {children}
+            </QueryClientProvider>
+        </PostHogProvider>
     );
 }
