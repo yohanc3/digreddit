@@ -18,6 +18,7 @@ import { prohibitedKeywords } from '@/lib/backend/constant/prohibitedKeywords';
 import LightButton from '../../button/light';
 import type { Products } from '@/types/backend/db';
 import { useProducts } from '@/lib/frontend/hooks/useProducts';
+import { useRouter } from 'next/navigation';
 
 interface EditProductDialogProps {
     productDetails: Products;
@@ -36,6 +37,7 @@ export default function EditProductDialog({
 }: EditProductDialogProps) {
     const { apiPost } = useFetch();
     const { refetchAllUserProducts } = useProducts();
+    const router = useRouter();
 
     const [newTitle, setNewTitle] = useState<string>(
         productDetails?.title || ''
@@ -118,6 +120,9 @@ export default function EditProductDialog({
 
                 // Refresh the page to show the updated product
                 refetchAllUserProducts();
+
+                // Refresh router to update left sidebar products list
+                router.refresh();
 
                 // Show a success toast
                 toast({
