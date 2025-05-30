@@ -36,4 +36,7 @@ export const betaUsersEmails = [
     'joshuahuckaby1987@gmail.com',
     'lecfmpp@gmail.com',
     'theclasher.tc2000@gmail.com',
+    'linkenhance@gmail.com',
+    'mloeffler007@gmail.com',
+    'bill.l.oconnor@gmail.com',
 ];
