@@ -16,7 +16,7 @@ import {
     DialogTrigger,
 } from '@/lib/components/ui/dialog';
 import { Badge } from '../badge';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { timeAgo, isPostLead } from '@/util/utils';
 import { useUpdateLeadInteraction } from '@/lib/frontend/tanstack/queries';
 
@@ -231,6 +231,13 @@ function RedditLeadCardDialog({ lead }: RedditLeadCardDialogProps) {
     const upvotes = lead.ups - lead.downs;
 
     const updateLeadInteraction = useUpdateLeadInteraction();
+
+    // If the body is less than 240 words, show the full description
+    useEffect(() => {
+        if (lead.body.split(' ').length < 240) {
+            setShowRedditDescription(true);
+        }
+    }, [lead.body]);
 
     return (
         <Dialog>
