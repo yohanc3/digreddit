@@ -130,6 +130,7 @@ export const users = pgTable('Users', {
     email: text(),
     emailVerified: timestamp({ mode: 'string' }),
     image: text(),
+    redditRefreshToken:text(),
     membershipEndsAt: timestamp({ mode: 'string' }).defaultNow(),
 });
 
