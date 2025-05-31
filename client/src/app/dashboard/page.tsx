@@ -2,6 +2,7 @@ import { auth } from '../../../auth';
 import { redirect } from 'next/navigation';
 import { productsQueries } from '@/db';
 import DashboardHandler from '@/lib/components/dashboard/DashboardHandler';
+import WelcomeDialog from '@/lib/components/ui/welcome/WelcomeDialog';
 
 export default async function Dashboard() {
     const session = await auth();
@@ -12,5 +13,10 @@ export default async function Dashboard() {
         session.user.id
     );
 
-    return <DashboardHandler fetchedProducts={fetchedProducts} />;
+    return (
+        <>
+            <DashboardHandler fetchedProducts={fetchedProducts} />
+            <WelcomeDialog />
+        </>
+    );
 }
