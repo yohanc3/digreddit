@@ -15,6 +15,7 @@ export function useLeads(
 } {
     // Debounce the options to prevent excessive API calls
     const [debouncedOptions] = useDebounce(options, 1500);
+    const { apiPost } = useFetch();
 
     const { data: result, isLoading } = useQuery({
         queryKey: ['allLeads', selectedProduct?.id, page, debouncedOptions],
@@ -32,27 +33,20 @@ export function useLeads(
                       }
                     : undefined;
 
-                const result = await fetch('/api/leads', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        productID: selectedProduct.id,
-                        pagesOffset: page,
-                        filters,
-                    }),
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                const result = await apiPost('api/leads', {
+                    productID: selectedProduct.id,
+                    pagesOffset: page.toString(),
+                    filters,
                 });
 
-                if (!result.ok) {
-                    throw new Error('Failed to fetch leads');
-                }
-
-                const data = await result.json();
+                const data = result.allLeads as
+                    | CommentLead[]
+                    | PostLead[]
+                    | null;
 
                 return {
-                    allLeads: data.allLeads || [],
-                    totalCount: data.totalCount || 0,
+                    allLeads: data || [],
+                    totalCount: result.totalCount,
                 };
             } catch (e) {
                 console.error(
