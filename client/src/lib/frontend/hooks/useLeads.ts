@@ -5,21 +5,24 @@ import { LeadOptions } from '@/lib/components/dashboard/DashboardHandler';
 
 export function useLeads(
     selectedProduct: Products | null,
-    options?: LeadOptions
+    options?: LeadOptions,
+    page: number = 0
 ): {
     leads: CommentLead[] | PostLead[] | null;
+    totalCount: number;
     isLoading: boolean;
 } {
     const { data: result, isLoading } = useQuery({
-        queryKey: ['allLeads', selectedProduct?.id],
+        queryKey: ['allLeads', selectedProduct?.id, page],
         queryFn: async () => {
-            if (!selectedProduct) return [];
+            if (!selectedProduct) return { allLeads: [], totalCount: 0 };
 
             try {
                 const result = await fetch('/api/leads', {
                     method: 'POST',
                     body: JSON.stringify({
                         productID: selectedProduct.id,
+                        pagesOffset: page,
                     }),
                     headers: {
                         'Content-Type': 'application/json',
@@ -30,11 +33,12 @@ export function useLeads(
                     throw new Error('Failed to fetch leads');
                 }
 
-                const allLeads = await result.json();
+                const data = await result.json();
 
-                if (!allLeads.allLeads) return null;
-
-                return allLeads.allLeads;
+                return {
+                    allLeads: data.allLeads || [],
+                    totalCount: data.totalCount || 0,
+                };
             } catch (e) {
                 console.error(
                     'Error when fetching all leads from product id: ',
@@ -42,15 +46,15 @@ export function useLeads(
                     '. Error: ',
                     e
                 );
-                return [];
+                return { allLeads: [], totalCount: 0 };
             }
         },
         staleTime: 0,
     });
 
-    if (!result) return { leads: null, isLoading };
+    if (!result) return { leads: null, totalCount: 0, isLoading };
 
-    let leadsCopy = [...result] as CommentLead[] | PostLead[];
+    let leadsCopy = [...result.allLeads] as CommentLead[] | PostLead[];
 
     if (options?.minRating) {
         leadsCopy = leadsCopy.filter(
@@ -88,6 +92,7 @@ export function useLeads(
 
     return {
         leads: leadsCopy as CommentLead[] | PostLead[] | null,
+        totalCount: result.totalCount,
         isLoading,
     };
 }
