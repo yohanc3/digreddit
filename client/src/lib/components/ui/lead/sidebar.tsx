@@ -60,7 +60,9 @@ export function LeftSideBarLeadResult({
             <div className="flex justify-end">
                 <BiChevronsLeft color="#576F72" size={24} />
             </div>
-            <p className="text-secondarySize text-secondaryColor">Results:</p>
+            <p className="text-secondarySize text-secondaryColor">
+                Products list:
+            </p>
             <RedditLeadList
                 productsList={redditLeadListData}
                 onSelectedProductChange={onSelectedProductChange}
@@ -121,48 +123,49 @@ export function RightSideBarLeadResult({
                     <DialogTrigger asChild>
                         <Button
                             variant={'destructive'}
-                        className="!justify-between w-full bg-red-400"
-                        disabled={!productID}
-                    >
-                        Delete Product <BiTrash size={20} />
-                    </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Delete Product</DialogTitle>
-                    </DialogHeader>
-                    <DialogDescription>
-                        To delete this product, please type the product name
-                        ({productTitle}) in the input below.
-                    </DialogDescription>
-                    <Input
-                        placeholder={productTitle}
-                        className="w-full"
-                        onChange={(e) => setConfirmProductTitle(e.target.value)}
-                    />
-                    <DialogFooter className="flex justify-between">
-                        <DialogClose asChild>
-                            <Button
-                                className="w-full"
-                                variant={'destructive'}
-                            onClick={() =>
-                                productID &&
-                                confirmProductTitle === productTitle
-                                    ? deleteProduct(productID)
-                                    : toast({
-                                          title: 'Incorrect product name',
-                                          description:
-                                              'Please try again with the correct product name',
-                                      })
-                            }
+                            className="!justify-between w-full bg-red-400"
+                            disabled={!productID}
                         >
-
-                            Delete Product
-                            </Button>
-                        </DialogClose>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                            Delete Product <BiTrash size={20} />
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>Delete Product</DialogTitle>
+                        </DialogHeader>
+                        <DialogDescription>
+                            To delete this product, please type the product name
+                            ({productTitle}) in the input below.
+                        </DialogDescription>
+                        <Input
+                            placeholder={productTitle}
+                            className="w-full"
+                            onChange={(e) =>
+                                setConfirmProductTitle(e.target.value)
+                            }
+                        />
+                        <DialogFooter className="flex justify-between">
+                            <DialogClose asChild>
+                                <Button
+                                    className="w-full"
+                                    variant={'destructive'}
+                                    onClick={() =>
+                                        productID &&
+                                        confirmProductTitle === productTitle
+                                            ? deleteProduct(productID)
+                                            : toast({
+                                                  title: 'Incorrect product name',
+                                                  description:
+                                                      'Please try again with the correct product name',
+                                              })
+                                    }
+                                >
+                                    Delete Product
+                                </Button>
+                            </DialogClose>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             )}
         </div>
     );
