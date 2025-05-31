@@ -52,7 +52,7 @@ import KeywordsList from '@/lib/components/ui/keyword/keywordList';
 import { useFetch } from '@/lib/frontend/hooks/useFetch';
 import { readableDateFormat } from '@/lib/frontend/utils/timeFormat';
 import { FormEvent, useState } from 'react';
-import { BiCheckCircle, BiErrorCircle } from 'react-icons/bi';
+import { BiCheckCircle, BiErrorCircle, BiPlus } from 'react-icons/bi';
 import { RiSparkling2Line } from 'react-icons/ri';
 import {
     Dialog,
@@ -105,36 +105,57 @@ export default function Dashboard() {
         });
     }
 
+    function handleAddKeyword() {
+        const trimmedKeyword = formsInput.keyword.trim();
+
+        if (!trimmedKeyword) return;
+
+        if (prohibitedKeywords.includes(trimmedKeyword.toLowerCase())) {
+            toast({
+                title: 'Keyword is too common',
+                description: 'Please avoid keywords that are too common.',
+                action: <BiErrorCircle color="#f87171" size={35} />,
+            });
+            return;
+        }
+
+        if (
+            formsInput.keywords.length < productKeywordsMaximumLength &&
+            trimmedKeyword.length > productKeywordMinimumLength &&
+            !formsInput.keywords.includes(trimmedKeyword)
+        ) {
+            setProductInput({
+                keywords: [...formsInput.keywords, trimmedKeyword],
+                keyword: '', // Clear the input
+            });
+            setProductFormError({ keywordslength: false, keywords: false });
+        } else if (formsInput.keywords.length >= productKeywordsMaximumLength) {
+            toast({
+                title: 'Maximum keywords reached',
+                description: `You can only have up to ${productKeywordsMaximumLength} keywords.`,
+                action: <BiErrorCircle color="#f87171" size={35} />,
+            });
+        } else if (formsInput.keywords.includes(trimmedKeyword)) {
+            toast({
+                title: 'Keyword already exists',
+                description: 'This keyword has already been added.',
+                action: <BiErrorCircle color="#f87171" size={35} />,
+            });
+        } else if (trimmedKeyword.length <= productKeywordMinimumLength) {
+            toast({
+                title: 'Keyword too short',
+                description: `Keywords must be longer than ${productKeywordMinimumLength} characters.`,
+                action: <BiErrorCircle color="#f87171" size={35} />,
+            });
+        }
+    }
+
     function handleKeywordInputEnterKeyPress(
-        event: React.KeyboardEvent<HTMLInputElement>,
-        newKeyword: string
+        event: React.KeyboardEvent<HTMLInputElement>
     ) {
         if (event.key === 'Enter') {
             event.preventDefault();
-
-            if (prohibitedKeywords.includes(newKeyword)) {
-                toast({
-                    title: 'Keyword is too common',
-                    description: 'Please avoid keywords that are too common.',
-                    action: <BiErrorCircle color="#f87171" size={35} />,
-                });
-                return;
-            }
-
-            if (
-                // Only add keyword if it's not already in the list, not prohibited, and not too long or too short
-                formsInput.keywords.length < productKeywordsMaximumLength &&
-                formsInput.keyword.length > productKeywordMinimumLength &&
-                !formsInput.keywords.includes(formsInput.keyword)
-            ) {
-                (event.target as HTMLInputElement).value = '';
-                setProductInput({
-                    keywords: [...formsInput.keywords, newKeyword],
-                });
-                setProductFormError({ keywordslength: false, keywords: false });
-            } else {
-                setProductFormError({ keywordslength: true });
-            }
+            handleAddKeyword();
         }
     }
 
@@ -214,7 +235,7 @@ export default function Dashboard() {
         event.preventDefault();
         setIsSubmitting({ form: true, keywords: true });
         setProductFormError({ ai: false, keywords: false });
-        setProductInput({ keywords: [] });
+
         const description = formsInput.description;
         const title = formsInput.title;
         const industry = formsInput.industry;
@@ -244,13 +265,54 @@ export default function Dashboard() {
                     return keyword.length > 3 && keyword.length < 30;
                 });
 
-                setProductInput({ keywords: filteredKeywords });
+                // Limit AI keywords to 15 and merge with existing keywords
+                const aiKeywords = filteredKeywords.slice(0, 15);
+                const availableSpace =
+                    productKeywordsMaximumLength - formsInput.keywords.length;
+                const keywordsToAdd = aiKeywords.slice(0, availableSpace);
+
+                // Only add AI keywords that aren't already in the list
+                const uniqueNewKeywords = keywordsToAdd.filter(
+                    (keyword: string) => !formsInput.keywords.includes(keyword)
+                );
+
+                setProductInput({
+                    keywords: [...formsInput.keywords, ...uniqueNewKeywords],
+                });
+
+                if (uniqueNewKeywords.length > 0) {
+                    toast({
+                        title: 'AI Keywords Added',
+                        description: `Added ${uniqueNewKeywords.length} new keywords from AI suggestions.`,
+                        action: <BiCheckCircle color="#576F72" size={35} />,
+                    });
+                } else {
+                    toast({
+                        title: 'No New Keywords',
+                        description:
+                            'All AI-generated keywords were already in your list.',
+                        action: <BiErrorCircle color="#f87171" size={35} />,
+                    });
+                }
 
                 setProductFormError({ keywords: false });
             } catch (e) {
                 console.error({ message: e });
                 setProductFormError({ ai: true });
+                toast({
+                    title: 'AI Generation Failed',
+                    description:
+                        'Failed to generate keywords. Please try again.',
+                    action: <BiErrorCircle color="#f87171" size={35} />,
+                });
             }
+        } else {
+            toast({
+                title: 'Missing Required Fields',
+                description:
+                    'Please fill in Name, Description, and Industry before generating AI keywords.',
+                action: <BiErrorCircle color="#f87171" size={35} />,
+            });
         }
 
         setIsSubmitting({ form: false, keywords: false });
@@ -437,31 +499,22 @@ export default function Dashboard() {
                         </div>
                     </div>
 
-                    {/* Keywords Input */}
-                    <div className="flex flex-col gap-y-1 mt-1">
-                        <div className="flex items-center gap-x-3">
-                            <label className="text-secondaryColor text-sm font-medium">
-                                Keywords:
-                            </label>
-                            <Button
-                                variant={'light'}
-                                disabled={
-                                    isSubmitting.form || isSubmitting.keywords
-                                }
-                                onClick={generateKeywords}
-                            >
-                                Generate Keywords <RiSparkling2Line />
-                            </Button>
+                    {/* Keywords Section */}
+                    <div className="flex flex-col gap-y-3 mt-1">
+                        <label className="text-secondaryColor text-sm font-medium">
+                            Keywords:
+                        </label>
 
-                            {/* Fetch Generated Keywords Error*/}
-                            <AIResponseError trigger={Boolean(error.ai)} />
-                        </div>
-
-                        {formsInput.keywords.length > 0 && (
-                            <>
+                        {/* Manual Keywords Input */}
+                        <div className="space-y-2">
+                            <p className="text-tertiaryColor text-xs">
+                                Type a keyword and press Enter or click "Add
+                                Keyword" to add it to your list.
+                            </p>
+                            <div className="flex gap-2 items-center">
                                 <input
                                     value={formsInput.keyword}
-                                    className="py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
+                                    className="flex-1 py-2 px-3 text-sm rounded-md border-light border focus:ring-1 focus:ring-secondaryColor focus:outline-none transition-shadow"
                                     placeholder="e.g., Tax, Sports, or Law"
                                     onChange={(e) => {
                                         handleKeywordInputOnChange(
@@ -470,44 +523,85 @@ export default function Dashboard() {
                                             setProductFormError
                                         );
                                     }}
-                                    onKeyDown={(e) => {
-                                        handleKeywordInputEnterKeyPress(
-                                            e,
-                                            e.currentTarget.value
-                                        );
-                                    }}
+                                    onKeyDown={handleKeywordInputEnterKeyPress}
                                     disabled={
                                         isSubmitting.form ||
                                         isSubmitting.keywords
                                     }
                                 />
-                                <p className="text-tertiaryColor text-xs mt-1">
-                                    Add up to {productKeywordsMaximumLength}{' '}
-                                    keywords. Press Enter to add each one.
-                                </p>
-                                {/* Keyword Error */}
-                                <MinimumCharactersReachedError
-                                    trigger={isMinimumCharactersReached(
-                                        formsInput.keyword,
-                                        productKeywordMinimumLength
-                                    )}
-                                />
-                                <MaximumCharactersReachedError
-                                    trigger={isMaximumCharactersReached(
-                                        formsInput.keyword,
-                                        productKeywordMaximumLength
-                                    )}
-                                />
-                                <MaximumLengthReachedError
-                                    trigger={
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={handleAddKeyword}
+                                    disabled={
+                                        isSubmitting.form ||
+                                        isSubmitting.keywords ||
+                                        !formsInput.keyword.trim() ||
                                         formsInput.keywords.length >=
-                                        productKeywordsMaximumLength
+                                            productKeywordsMaximumLength
                                     }
-                                />
-                            </>
-                        )}
+                                    className="px-3 flex items-center text-primaryColor text-sm"
+                                >
+                                    <BiPlus size={12} />
+                                    Add
+                                </Button>
+                            </div>
+                        </div>
 
-                        {/* Generated Keywords & Input List */}
+                        {/* AI Keywords Generation (Optional) */}
+                        <div className="flex items-center gap-x-3">
+                            <div className="flex items-center gap-x-3 justify-between w-full">
+                                <div className="flex items-center gap-x-1">
+                                    <Button
+                                        variant={'light'}
+                                        disabled={
+                                            isSubmitting.form ||
+                                            isSubmitting.keywords
+                                        }
+                                        onClick={generateKeywords}
+                                    >
+                                        Generate AI Keywords{' '}
+                                        <RiSparkling2Line />
+                                    </Button>
+                                    <span className="text-xs text-gray-500">
+                                        (Optional - adds up to 15 AI-suggested
+                                        keywords)
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-x-1">
+                                    <p className="text-xs text-primaryColor font-medium">
+                                        {formsInput.keywords.length}/
+                                        {productKeywordsMaximumLength} keywords
+                                    </p>
+                                </div>
+                            </div>
+                            {/* AI Keywords Error */}
+                            <AIResponseError trigger={Boolean(error.ai)} />
+                        </div>
+
+                        {/* Keyword Error Messages */}
+                        <div>
+                            <MinimumCharactersReachedError
+                                trigger={isMinimumCharactersReached(
+                                    formsInput.keyword,
+                                    productKeywordMinimumLength
+                                )}
+                            />
+                            <MaximumCharactersReachedError
+                                trigger={isMaximumCharactersReached(
+                                    formsInput.keyword,
+                                    productKeywordMaximumLength
+                                )}
+                            />
+                            <MaximumLengthReachedError
+                                trigger={
+                                    formsInput.keywords.length >=
+                                    productKeywordsMaximumLength
+                                }
+                            />
+                        </div>
+
+                        {/* Keywords List */}
                         <KeywordsList
                             keywords={formsInput.keywords}
                             isLoading={Boolean(isSubmitting.keywords)}
@@ -549,8 +643,8 @@ function ProductsThresholdDialog({ isOpen, setIsOpen }: BetaLimitsDialogProps) {
                     <DialogTitle>Beta Limits Reached!</DialogTitle>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
-                    You’ve reached the limit of 2 products allowed during our
-                    beta. We’re currently testing things out and will expand
+                    You've reached the limit of 2 products allowed during our
+                    beta. We're currently testing things out and will expand
                     limits soon — stay tuned!
                 </div>
                 <DialogFooter>
