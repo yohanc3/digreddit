@@ -20,7 +20,16 @@ import {
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { Checkbox } from '../ui/checkbox';
-import { useFetch } from '@/lib/frontend/hooks/useFetch';
+import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from '../ui/pagination';
+import { LEADS_PER_PAGE } from '@/lib/frontend/constant/pagination';
 
 const sortingMethods = [
     {
@@ -62,11 +71,29 @@ export default function DashboardHandler({
         showOnlyUninteracted: false,
     });
 
-    const { leads, isLoading } = useLeads(selectedProduct, options);
+    const [currentPage, setCurrentPage] = useState(0);
+
+    const { leads, totalCount, isLoading } = useLeads(
+        selectedProduct,
+        options,
+        currentPage
+    );
+
+    const totalPages = Math.ceil(totalCount / LEADS_PER_PAGE);
 
     function onSelectedProductChange(index: number) {
         setSelectedProduct(fetchedProducts[index]);
+        setCurrentPage(0); // Reset to first page when changing products
     }
+
+    function handlePageChange(page: number) {
+        setCurrentPage(page);
+    }
+
+    // Reset pagination when product or options change
+    useEffect(() => {
+        setCurrentPage(0);
+    }, [selectedProduct?.id, options]);
 
     return (
         <>
@@ -164,13 +191,19 @@ export default function DashboardHandler({
                 </div>
 
                 <div className="p-4 font-semibold text-primarySize text-secondaryColor">
-                    Lead List:
+                    Lead List: {totalCount > 0 && `(${totalCount} total leads)`}
                 </div>
-                <div className="w-full p-4 pt-1 justify-center grid grid-cols-3 gap-2">
+                <div className="w-full p-4 pt-1 justify-center grid grid-cols-3 gap-2 min-h-96">
                     {isLoading ? (
-                        <> Loading...</>
-                    ) : !leads || (!isLoading && leads === null) ? (
-                        <>No leads at the moment.</>
+                        <div className="col-span-3 flex justify-center items-center">
+                            <p className="text-primaryColor">Loading...</p>
+                        </div>
+                    ) : !leads || (!isLoading && leads.length === 0) ? (
+                        <div className="col-span-3 flex justify-center items-center">
+                            <p className="text-primaryColor">
+                                No leads at the moment.
+                            </p>
+                        </div>
                     ) : (
                         leads.map((lead, index) => {
                             return isPostLead(lead) ? (
@@ -187,6 +220,148 @@ export default function DashboardHandler({
                         })
                     )}
                 </div>
+
+                {/* Pagination Component */}
+                {totalPages > 1 && (
+                    <div className="flex justify-center py-6">
+                        <Pagination>
+                            <PaginationContent>
+                                <PaginationItem>
+                                    <PaginationPrevious
+                                        href="#"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            if (currentPage > 0) {
+                                                handlePageChange(
+                                                    currentPage - 1
+                                                );
+                                            }
+                                        }}
+                                        className={
+                                            currentPage === 0
+                                                ? 'pointer-events-none opacity-50 text-primaryColor'
+                                                : 'text-primaryColor hover:text-primaryColor'
+                                        }
+                                    />
+                                </PaginationItem>
+
+                                {/* Show first page */}
+                                {currentPage > 2 && (
+                                    <>
+                                        <PaginationItem>
+                                            <PaginationLink
+                                                href="#"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    handlePageChange(0);
+                                                }}
+                                                className="text-primaryColor hover:text-primaryColor"
+                                            >
+                                                1
+                                            </PaginationLink>
+                                        </PaginationItem>
+                                        {currentPage > 3 && (
+                                            <PaginationItem>
+                                                <PaginationEllipsis className="text-primaryColor" />
+                                            </PaginationItem>
+                                        )}
+                                    </>
+                                )}
+
+                                {/* Show previous page */}
+                                {currentPage > 0 && (
+                                    <PaginationItem>
+                                        <PaginationLink
+                                            href="#"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                handlePageChange(
+                                                    currentPage - 1
+                                                );
+                                            }}
+                                            className="text-primaryColor hover:text-primaryColor"
+                                        >
+                                            {currentPage}
+                                        </PaginationLink>
+                                    </PaginationItem>
+                                )}
+
+                                {/* Current page */}
+                                <PaginationItem>
+                                    <PaginationLink
+                                        href="#"
+                                        isActive
+                                        className="text-primaryColor"
+                                    >
+                                        {currentPage + 1}
+                                    </PaginationLink>
+                                </PaginationItem>
+
+                                {/* Show next page */}
+                                {currentPage < totalPages - 1 && (
+                                    <PaginationItem>
+                                        <PaginationLink
+                                            href="#"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                handlePageChange(
+                                                    currentPage + 1
+                                                );
+                                            }}
+                                            className="text-primaryColor hover:text-primaryColor"
+                                        >
+                                            {currentPage + 2}
+                                        </PaginationLink>
+                                    </PaginationItem>
+                                )}
+
+                                {/* Show last page */}
+                                {currentPage < totalPages - 3 && (
+                                    <>
+                                        {currentPage < totalPages - 4 && (
+                                            <PaginationItem>
+                                                <PaginationEllipsis className="text-primaryColor" />
+                                            </PaginationItem>
+                                        )}
+                                        <PaginationItem>
+                                            <PaginationLink
+                                                href="#"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    handlePageChange(
+                                                        totalPages - 1
+                                                    );
+                                                }}
+                                                className="text-primaryColor hover:text-primaryColor"
+                                            >
+                                                {totalPages}
+                                            </PaginationLink>
+                                        </PaginationItem>
+                                    </>
+                                )}
+
+                                <PaginationItem>
+                                    <PaginationNext
+                                        href="#"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            if (currentPage < totalPages - 1) {
+                                                handlePageChange(
+                                                    currentPage + 1
+                                                );
+                                            }
+                                        }}
+                                        className={
+                                            currentPage === totalPages - 1
+                                                ? 'pointer-events-none opacity-50 text-primaryColor'
+                                                : 'text-primaryColor hover:text-primaryColor'
+                                        }
+                                    />
+                                </PaginationItem>
+                            </PaginationContent>
+                        </Pagination>
+                    </div>
+                )}
             </div>
             <RightSideBarLeadResult
                 productID={selectedProduct?.id}
