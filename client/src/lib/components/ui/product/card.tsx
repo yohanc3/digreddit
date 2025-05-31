@@ -3,38 +3,17 @@ import clsx from 'clsx';
 import { Button } from '../button';
 import { Badge } from '../badge';
 import type { Products } from '@/types/backend/db';
+import EditProductDialog from './editDialog';
 
 interface ProductCardProps {
     leadDetails: Products;
     className?: string;
 }
 
-const industries = [
-    'Estate Planning',
-    'Attorney',
-    'Estate',
-    'Law',
-    'NLBM',
-    'New Law Business Model',
-    'Clio',
-    'WealthCounsel',
-    'KeepSake',
-    'Lorem',
-    'ipsum dolor',
-    'sit',
-    'amet',
-    'consectetur',
-    'adipiscing',
-    'elit',
-    'Sed',
-    'dictum',
-    'amet',
-    'lorem',
-    'elit',
-    'locus',
-];
-
-export default function ProductCard({ leadDetails, className }: ProductCardProps) {
+export default function ProductCard({
+    leadDetails,
+    className,
+}: ProductCardProps) {
     return (
         <div
             className={clsx(
@@ -58,30 +37,38 @@ export default function ProductCard({ leadDetails, className }: ProductCardProps
                     Keywords Selected:
                 </p>
                 <div className="flex flex-wrap gap-1.5 mb-4">
-                    {(leadDetails.keywords as string[]).slice(0, 12).map((item, index) => (
-                        <Badge
-                            key={index}
-                            variant="outline"
-                            className="text-xs py-0.5 px-2 bg-gray-50 border-gray-200 rounded-full"
-                        >
-                            {item}
-                        </Badge>
-                    ))}
+                    {(leadDetails.keywords as string[])
+                        .slice(0, 12)
+                        .map((item, index) => (
+                            <Badge
+                                key={index}
+                                variant="outline"
+                                className="text-xs py-0.5 px-2 bg-gray-50 border-gray-200 rounded-full"
+                            >
+                                {item}
+                            </Badge>
+                        ))}
                     {(leadDetails.keywords as string[]).length > 12 && (
                         <Badge
                             variant="outline"
                             className="text-xs py-0.5 px-2 bg-gray-50 border-gray-200 rounded-full"
                         >
-                            + {(leadDetails.keywords as string[]).length - 12} More
+                            + {(leadDetails.keywords as string[]).length - 12}{' '}
+                            More
                         </Badge>
                     )}
                 </div>
             </div>
 
             {/* Open Details Button */}
-            <Button variant="dark" className="w-full py-2 text-sm">
-                Open Details
-            </Button>
+            <EditProductDialog
+                productDetails={leadDetails}
+                trigger={
+                    <Button variant="dark" className="w-full py-2 text-sm">
+                        Open Details
+                    </Button>
+                }
+            />
         </div>
     );
 }

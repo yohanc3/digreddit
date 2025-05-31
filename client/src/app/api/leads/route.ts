@@ -2,11 +2,14 @@ import { NextResponse } from 'next/server';
 import { auth } from '../../../../auth';
 import { leadsQueries } from '@/db';
 import { NextAuthRequest } from 'next-auth';
+import { LeadFilters } from '@/types/backend/db';
 
 /*
-    Gets all leads given a productID
+    Gets all leads given a productID with pagination support and filters
 
     string productID: product whose leads will be returned
+    number pagesOffset: offset for pagination (default: 0)
+    LeadFilters filters: optional filters to apply
 */
 export const POST = auth(async function POST(req: NextAuthRequest) {
     if (!req.auth)
@@ -14,12 +17,20 @@ export const POST = auth(async function POST(req: NextAuthRequest) {
 
     const body = await req.json();
 
-    const { productID } = body;
+    const { productID, pagesOffset = 0, filters } = body;
 
     try {
-        const allLeads = await leadsQueries.getAllLeadsByProductID(productID);
+        const allLeads = await leadsQueries.getAllLeadsByProductID(
+            productID,
+            pagesOffset,
+            filters
+        );
+        const totalCount = await leadsQueries.getTotalLeadsCountByProductID(
+            productID,
+            filters
+        );
 
-        return NextResponse.json({ allLeads }, { status: 200 });
+        return NextResponse.json({ allLeads, totalCount }, { status: 200 });
     } catch (e) {
         console.error(
             'Error when fetching all leads from product id: ',

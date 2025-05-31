@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import * as schema from './schema';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { count, eq } from 'drizzle-orm';
+import { count, eq, asc, desc, gte, and } from 'drizzle-orm';
 import {
     commentLeads,
     feedback,
@@ -9,9 +9,12 @@ import {
     postLeads,
     products,
 } from './schema';
-import { Payload, Products } from '@/types/backend/db';
+import { Payload, Products, LeadFilters } from '@/types/backend/db';
 
 export const db = drizzle(process.env.DATABASE_URL!, { schema });
+
+// Constants for pagination
+const PAGINATION_LIMIT = 30;
 
 export const productsQueries = {
     getAllProductsByUserID: async (userID: string) => {
@@ -71,33 +74,133 @@ export const productsQueries = {
         const results = await db
             .select({ value: count() })
             .from(products)
-            .where(eq(products.userId, userID))
+            .where(eq(products.userId, userID));
 
         const data = results[0]?.value ?? 0;
-        return data >= 2;;
+        return data >= 2;
     },
 };
 
 export const leadsQueries = {
-    getAllLeadsByProductID: async (productID: string) => {
-        const allPostLeads = await db.query.postLeads.findMany({
-            where: eq(postLeads.productID, productID),
-        });
+    getAllLeadsByProductID: async (
+        productID: string,
+        pagesOffset: number = 0,
+        filters?: LeadFilters
+    ) => {
+        const limit = Math.floor(PAGINATION_LIMIT / 2); // 15 for each type
+        const offset = pagesOffset * limit;
 
-        const allCommentLeads = await db.query.commentLeads.findMany({
-            where: eq(commentLeads.productID, productID),
-        });
+        // Build where conditions
+        const buildWhereConditions = (
+            table: typeof postLeads | typeof commentLeads
+        ) => {
+            const conditions = [eq(table.productID, productID)];
 
+            if (filters?.minRating) {
+                conditions.push(gte(table.rating, filters.minRating));
+            }
+
+            if (filters?.showOnlyUninteracted) {
+                conditions.push(eq(table.isInteracted, false));
+            }
+
+            return and(...conditions);
+        };
+
+        // Build order by clause
+        const getOrderBy = (table: typeof postLeads | typeof commentLeads) => {
+            switch (filters?.sortingMethod) {
+                case 'newest':
+                    return desc(table.createdAt);
+                case 'oldest':
+                    return asc(table.createdAt);
+                case 'most-upvotes':
+                    return desc(table.ups);
+                case 'least-upvotes':
+                    return asc(table.ups);
+                default:
+                    return desc(table.createdAt);
+            }
+        };
+
+        const allPostLeads = await db
+            .select()
+            .from(postLeads)
+            .where(buildWhereConditions(postLeads))
+            .orderBy(getOrderBy(postLeads))
+            .limit(limit)
+            .offset(offset);
+
+        const allCommentLeads = await db
+            .select()
+            .from(commentLeads)
+            .where(buildWhereConditions(commentLeads))
+            .orderBy(getOrderBy(commentLeads))
+            .limit(limit)
+            .offset(offset);
+
+        // Combine and sort the resultsd
         const allSortedLeads = [...allPostLeads, ...allCommentLeads].sort(
             (a, b) => {
-                const firstDate = new Date(a.createdAt);
-                const secondDate = new Date(b.createdAt);
-
-                return firstDate.getTime() - secondDate.getTime();
+                switch (filters?.sortingMethod) {
+                    case 'newest':
+                        return (
+                            new Date(b.createdAt).getTime() -
+                            new Date(a.createdAt).getTime()
+                        );
+                    case 'oldest':
+                        return (
+                            new Date(a.createdAt).getTime() -
+                            new Date(b.createdAt).getTime()
+                        );
+                    case 'most-upvotes':
+                        return b.ups - a.ups;
+                    case 'least-upvotes':
+                        return a.ups - b.ups;
+                    default:
+                        return (
+                            new Date(b.createdAt).getTime() -
+                            new Date(a.createdAt).getTime()
+                        );
+                }
             }
         );
 
         return allSortedLeads;
+    },
+
+    getTotalLeadsCountByProductID: async (
+        productID: string,
+        filters?: LeadFilters
+    ) => {
+        // Build where conditions for counting
+        const buildWhereConditions = (
+            table: typeof postLeads | typeof commentLeads
+        ) => {
+            const conditions = [eq(table.productID, productID)];
+
+            if (filters?.minRating) {
+                conditions.push(gte(table.rating, filters.minRating));
+            }
+
+            if (filters?.showOnlyUninteracted) {
+                conditions.push(eq(table.isInteracted, false));
+            }
+
+            return and(...conditions);
+        };
+
+        const [postLeadsCount] = await db
+            .select({ value: count() })
+            .from(postLeads)
+            .where(buildWhereConditions(postLeads));
+
+        const [commentLeadsCount] = await db
+            .select({ value: count() })
+            .from(commentLeads)
+            .where(buildWhereConditions(commentLeads));
+
+        return (postLeadsCount?.value || 0) + (commentLeadsCount?.value || 0);
     },
 
     updateLeadInteraction: async (
