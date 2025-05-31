@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useFetch } from './useFetch';
 import { CommentLead, PostLead, Products } from '@/types/backend/db';
 import { LeadOptions } from '@/lib/components/dashboard/DashboardHandler';
+import { useDebounce } from 'use-debounce';
 
 export function useLeads(
     selectedProduct: Products | null,
@@ -12,17 +13,31 @@ export function useLeads(
     totalCount: number;
     isLoading: boolean;
 } {
+    // Debounce the options to prevent excessive API calls
+    const [debouncedOptions] = useDebounce(options, 1500);
+
     const { data: result, isLoading } = useQuery({
-        queryKey: ['allLeads', selectedProduct?.id, page],
+        queryKey: ['allLeads', selectedProduct?.id, page, debouncedOptions],
         queryFn: async () => {
             if (!selectedProduct) return { allLeads: [], totalCount: 0 };
 
             try {
+                // Prepare filters for API
+                const filters = debouncedOptions
+                    ? {
+                          minRating: debouncedOptions.minRating,
+                          sortingMethod: debouncedOptions.sortingMethod,
+                          showOnlyUninteracted:
+                              debouncedOptions.showOnlyUninteracted,
+                      }
+                    : undefined;
+
                 const result = await fetch('/api/leads', {
                     method: 'POST',
                     body: JSON.stringify({
                         productID: selectedProduct.id,
                         pagesOffset: page,
+                        filters,
                     }),
                     headers: {
                         'Content-Type': 'application/json',
@@ -49,49 +64,15 @@ export function useLeads(
                 return { allLeads: [], totalCount: 0 };
             }
         },
-        staleTime: 0,
+        staleTime: 30000, // Cache for 30 seconds
+        enabled: !!selectedProduct, // Only run query if selectedProduct exists
     });
 
     if (!result) return { leads: null, totalCount: 0, isLoading };
 
-    let leadsCopy = [...result.allLeads] as CommentLead[] | PostLead[];
-
-    if (options?.minRating) {
-        leadsCopy = leadsCopy.filter(
-            (lead) => lead.rating >= options.minRating
-        );
-    }
-
-    if (options?.sortingMethod) {
-        leadsCopy = leadsCopy.sort(
-            (a: CommentLead | PostLead, b: CommentLead | PostLead) => {
-                if (options.sortingMethod === 'newest') {
-                    const aDate = new Date(a.createdAt);
-                    const bDate = new Date(b.createdAt);
-                    return bDate.getTime() - aDate.getTime();
-                }
-                if (options.sortingMethod === 'oldest') {
-                    const aDate = new Date(a.createdAt);
-                    const bDate = new Date(b.createdAt);
-                    return aDate.getTime() - bDate.getTime();
-                }
-                if (options.sortingMethod === 'most-upvotes') {
-                    return b.ups - a.ups;
-                }
-                if (options.sortingMethod === 'least-upvotes') {
-                    return a.ups - b.ups;
-                }
-                return 0;
-            }
-        );
-    }
-
-    if (options?.showOnlyUninteracted) {
-        leadsCopy = leadsCopy.filter((lead) => !lead.isInteracted);
-    }
-
+    // No need for client-side filtering anymore since it's done in the backend
     return {
-        leads: leadsCopy as CommentLead[] | PostLead[] | null,
+        leads: result.allLeads as CommentLead[] | PostLead[] | null,
         totalCount: result.totalCount,
         isLoading,
     };
