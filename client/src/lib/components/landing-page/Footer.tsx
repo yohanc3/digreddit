@@ -47,6 +47,30 @@ export default function Footer() {
                         </ul>
                     </div>
 
+                    <div>
+                        <h3 className="text-white font-medium mb-4">
+                            Contact us
+                        </h3>
+                        <ul className="space-y-2">
+                            <li>
+                                <Link
+                                    href="mailto:balamyohance@gmail..com"
+                                    className="hover:text-white transition-colors"
+                                >
+                                    Email (balamyohance@gmail.com)
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    href="https://www.reddit.com/user/Hot-Glass8919"
+                                    className="hover:text-white transition-colors"
+                                >
+                                    Reddit (u/Hot-Glass8919)
+                                </Link>
+                            </li>
+                        </ul>
+                    </div>
+
                     {/* Companny Section */}
 
                     {/* <div>
