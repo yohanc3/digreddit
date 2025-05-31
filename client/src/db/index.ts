@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import * as schema from './schema';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { count, eq } from 'drizzle-orm';
+import { count, eq, asc, desc } from 'drizzle-orm';
 import {
     commentLeads,
     feedback,
@@ -12,6 +12,9 @@ import {
 import { Payload, Products } from '@/types/backend/db';
 
 export const db = drizzle(process.env.DATABASE_URL!, { schema });
+
+// Constants for pagination
+const PAGINATION_LIMIT = 30;
 
 export const productsQueries = {
     getAllProductsByUserID: async (userID: string) => {
@@ -71,22 +74,36 @@ export const productsQueries = {
         const results = await db
             .select({ value: count() })
             .from(products)
-            .where(eq(products.userId, userID))
+            .where(eq(products.userId, userID));
 
         const data = results[0]?.value ?? 0;
-        return data >= 2;;
+        return data >= 2;
     },
 };
 
 export const leadsQueries = {
-    getAllLeadsByProductID: async (productID: string) => {
-        const allPostLeads = await db.query.postLeads.findMany({
-            where: eq(postLeads.productID, productID),
-        });
+    getAllLeadsByProductID: async (
+        productID: string,
+        pagesOffset: number = 0
+    ) => {
+        const limit = Math.floor(PAGINATION_LIMIT / 2); // 15 for each type
+        const offset = pagesOffset * limit;
 
-        const allCommentLeads = await db.query.commentLeads.findMany({
-            where: eq(commentLeads.productID, productID),
-        });
+        const allPostLeads = await db
+            .select()
+            .from(postLeads)
+            .where(eq(postLeads.productID, productID))
+            .orderBy(desc(postLeads.createdAt))
+            .limit(limit)
+            .offset(offset);
+
+        const allCommentLeads = await db
+            .select()
+            .from(commentLeads)
+            .where(eq(commentLeads.productID, productID))
+            .orderBy(desc(commentLeads.createdAt))
+            .limit(limit)
+            .offset(offset);
 
         const allSortedLeads = [...allPostLeads, ...allCommentLeads].sort(
             (a, b) => {
@@ -98,6 +115,20 @@ export const leadsQueries = {
         );
 
         return allSortedLeads;
+    },
+
+    getTotalLeadsCountByProductID: async (productID: string) => {
+        const [postLeadsCount] = await db
+            .select({ value: count() })
+            .from(postLeads)
+            .where(eq(postLeads.productID, productID));
+
+        const [commentLeadsCount] = await db
+            .select({ value: count() })
+            .from(commentLeads)
+            .where(eq(commentLeads.productID, productID));
+
+        return (postLeadsCount?.value || 0) + (commentLeadsCount?.value || 0);
     },
 
     updateLeadInteraction: async (
