@@ -4,8 +4,9 @@ import { NextAuthRequest } from 'next-auth';
 import { auth } from '../../../../../auth';
 
 export const GET = auth(async function GET(req: NextAuthRequest) {
-    if (!req.auth || !req.auth.user?.id)
+    if (!req.auth || !req.auth.user?.id) {
         return NextResponse.json({ error: 'Not authorized.' }, { status: 401 });
+    }
 
     const { searchParams } = new URL(req.url);
     const code = searchParams.get('code');
@@ -14,32 +15,46 @@ export const GET = auth(async function GET(req: NextAuthRequest) {
         `${process.env.NEXT_PUBLIC_REDDIT_CLIENT_ID}:${process.env.REDDIT_SECRET}`
     ).toString('base64');
 
-    const tokens = await fetch('https://www.reddit.com/api/v1/access_token', {
-        method: 'POST',
-        headers: {
-            Authorization: `Basic ${basicAuth}`,
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: `grant_type=authorization_code&code=${code}&redirect_uri=${process.env.NEXT_PUBLIC_APP_URL}/callback/reddit`,
-    });
+    try {
+        const tokens = await fetch(
+            'https://www.reddit.com/api/v1/access_token',
+            {
+                method: 'POST',
+                headers: {
+                    Authorization: `Basic ${basicAuth}`,
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `grant_type=authorization_code&code=${code}&redirect_uri=${process.env.NEXT_PUBLIC_APP_URL}/callback/reddit`,
+            }
+        );
 
-    if (!tokens.ok) {
+        if (!tokens.ok) {
+            return NextResponse.json(
+                {
+                    message:
+                        'An error occurred when fetching your Reddit Auth Tokens',
+                },
+                { status: 500 }
+            );
+        }
+
+        const data = await tokens.json();
+
+        //store the reddit refresh token
+        await userQueries.addRedditRefreshToken(
+            data.refresh_token,
+            req.auth.user.id
+        );
+
+        return NextResponse.json({ message: data }, { status: 200 });
+    } catch (error) {
+        console.log('Error fetching Reddit Auth Tokens', error);
         return NextResponse.json(
             {
                 message:
-                    'An error occured when fetching your Reddit Auth Tokens',
+                    'An error occurred when fetching your Reddit Auth Tokens',
             },
-            { status: 400 }
+            { status: 500 }
         );
     }
-
-    const data = await tokens.json();
-
-    //store the reddit refresh token
-    await userQueries.addRedditRefreshToken(
-        data.refresh_token,
-        req.auth.user.id
-    );
-
-    return NextResponse.json({ message: data }, { status: 200 });
 });
