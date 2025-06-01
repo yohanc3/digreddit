@@ -8,7 +8,7 @@ import {
     nonBetaUsers,
     postLeads,
     products,
-    users
+    users,
 } from './schema';
 import { Payload, Products, LeadFilters } from '@/types/backend/db';
 
@@ -81,7 +81,6 @@ export const productsQueries = {
         return data >= 2;
     },
 };
-
 
 export const leadsQueries = {
     getAllLeadsByProductID: async (
@@ -232,25 +231,25 @@ export const nonBetaUsersQueries = {
 };
 
 export const userQueries = {
-    addRedditRefreshToken: async (
-        token: string,
-        userID: string,
-    ) => {
+    addRedditRefreshToken: async (token: string, userID: string) => {
         const [updatedUser] = await db
             .update(users)
             .set({
-                redditRefreshToken: token
+                redditRefreshToken: token,
             })
             .where(eq(users.id, userID))
             .returning();
-        return updatedUser
+        return updatedUser;
     },
-    checkRedditConnection: async (
-        userID: string,
-    ) => {
+    checkRedditConnection: async (userID: string) => {
+        const refreshToken = await userQueries.getRedditRefreshToken(userID);
+
+        return refreshToken ? true : false;
+    },
+    getRedditRefreshToken: async (userID: string) => {
         const result = await db
             .select({
-                redditRefreshToken: users.redditRefreshToken
+                redditRefreshToken: users.redditRefreshToken,
             })
             .from(users)
             .where(eq(users.id, userID));
@@ -258,30 +257,12 @@ export const userQueries = {
         const { redditRefreshToken } = result[0];
 
         if (redditRefreshToken) {
-            return true
+            return redditRefreshToken;
         } else {
-            return false
+            return null;
         }
     },
-    getRedditRefreshToken: async (
-        userID: string,
-    ) => {
-        const result = await db
-            .select({
-                redditRefreshToken: users.redditRefreshToken
-            })
-            .from(users)
-            .where(eq(users.id, userID));
-
-        const { redditRefreshToken } = result[0];
-        
-        if (redditRefreshToken) {
-            return redditRefreshToken
-        } else {
-            return null
-        }
-    }
-}
+};
 
 export const feedbackQueries = {
     createFeedback: async (
