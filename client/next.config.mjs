@@ -9,6 +9,12 @@ const nextConfig = {
                 pathname: '/200',
                 search: '',
             },
+            {
+                protocol: 'https',
+                hostname: 'i.redd.it',
+                port: '',
+                pathname: '/**',
+            },
         ],
     },
     async rewrites() {
