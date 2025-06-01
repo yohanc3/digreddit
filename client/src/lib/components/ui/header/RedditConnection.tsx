@@ -30,7 +30,7 @@ export default function RedditConnection() {
 
     return (
         <button
-            className={`flex ${redditUserData && !isRedditUserDataLoading && 'bg-[#dcffd4a6]'} flex-row gap-x-2 p-1 border rounded-full items-center hover:opacity-100`}
+            className={`flex ${redditUserData && !isRedditUserDataLoading && 'bg-[#dcffd4a6]'} flex-row gap-x-2 py-1 pl-2 pr-3  border rounded-full items-center hover:opacity-100 max-w-2xl ml-2`}
             onClick={() => {
                 if (buttonContent === 'Not Connected')
                     window.location.href = `https://www.reddit.com/api/v1/authorize?client_id=${process.env.NEXT_PUBLIC_REDDIT_CLIENT_ID}&response_type=code&state=random&redirect_uri=http://localhost:3000/callback/reddit&duration=permanent&scope=identity,submit`;
@@ -41,9 +41,9 @@ export default function RedditConnection() {
                 alt="Picture of the author"
                 width={100}
                 height={100}
-                className="h-10 w-10 rounded-full object-cover"
+                className="h-7 w-7 rounded-full object-cover"
             />
-            <div className="font-semibold text-primarySize !text-secondaryColor pr-2">
+            <div className="flex font-semibold text-nowrap text-xs !text-secondaryColor w-auto">
                 {buttonContent}
             </div>
         </button>
