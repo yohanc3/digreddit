@@ -8,6 +8,7 @@ import {
     nonBetaUsers,
     postLeads,
     products,
+    users,
 } from './schema';
 import { Payload, Products, LeadFilters } from '@/types/backend/db';
 
@@ -226,6 +227,40 @@ export const nonBetaUsersQueries = {
             .returning();
 
         return createdNonBetaUserEmail;
+    },
+};
+
+export const userQueries = {
+    addRedditRefreshToken: async (token: string, userID: string) => {
+        const [updatedUser] = await db
+            .update(users)
+            .set({
+                redditRefreshToken: token,
+            })
+            .where(eq(users.id, userID))
+            .returning();
+        return updatedUser;
+    },
+    checkRedditConnection: async (userID: string) => {
+        const refreshToken = await userQueries.getRedditRefreshToken(userID);
+
+        return refreshToken ? true : false;
+    },
+    getRedditRefreshToken: async (userID: string) => {
+        const result = await db
+            .select({
+                redditRefreshToken: users.redditRefreshToken,
+            })
+            .from(users)
+            .where(eq(users.id, userID));
+
+        const { redditRefreshToken } = result[0];
+
+        if (redditRefreshToken) {
+            return redditRefreshToken;
+        } else {
+            return null;
+        }
     },
 };
 
