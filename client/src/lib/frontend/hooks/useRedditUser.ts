@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useFetch } from './useFetch';
 import { userQueries } from '@/db';
+import { getBrowserRedditAccessToken } from '../utils/getRedditOauthToken';
 
 export function useRedditUser() {
     const { apiPost } = useFetch();
@@ -9,9 +10,7 @@ export function useRedditUser() {
             queryKey: ['userRedditDetails'],
             queryFn: async () => {
                 try {
-                    const accessToken = localStorage.getItem(
-                        'reddit_access_token'
-                    );
+                    const accessToken = getBrowserRedditAccessToken();
 
                     const redditUser = await apiPost('api/reddit/me', {
                         accessToken,

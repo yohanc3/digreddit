@@ -8,6 +8,7 @@ import {
     BiChevronDown,
     BiChevronUp,
     BiRightArrowAlt,
+    BiBot,
 } from 'react-icons/bi';
 import clsx from 'clsx';
 import { Button } from '../button';
@@ -22,7 +23,11 @@ import { timeAgo, isPostLead } from '@/util/utils';
 import {
     useUpdateLeadInteraction,
     useUpdateLeadStage,
+    useGenerateAIResponse,
+    usePostComment,
 } from '@/lib/frontend/tanstack/queries';
+import { toast } from '@/hooks/use-toast';
+import { getBrowserRedditAccessToken } from '@/lib/frontend/utils/getRedditOauthToken';
 
 // Helper function to get next stage and button text
 function getNextStageInfo(currentStage: LeadStage): {
@@ -33,7 +38,7 @@ function getNextStageInfo(currentStage: LeadStage): {
         case 'identification':
             return {
                 nextStage: 'initial_outreach',
-                buttonText: 'Move to Initial Outreach',
+                buttonText: 'Post Comment',
             };
         case 'initial_outreach':
             return {
@@ -60,15 +65,81 @@ export function RedditCommentLeadCard({
     const howLongAgo = timeAgo(unixCreatedAt);
     const updateLeadInteraction = useUpdateLeadInteraction();
     const updateLeadStage = useUpdateLeadStage();
+    const generateAIResponse = useGenerateAIResponse();
+    const postComment = usePostComment();
+
+    const [aiResponse, setAiResponse] = useState<string>('');
 
     const { nextStage, buttonText } = getNextStageInfo(leadDetails.stage);
 
-    function handleStageUpdate() {
-        if (nextStage) {
-            updateLeadStage.mutate({
-                leadID: leadDetails.id,
-                stage: nextStage,
-                isPost: false,
+    function handleGenerateResponse() {
+        generateAIResponse.mutate(
+            {
+                leadMessage: leadDetails.body,
+                productID: leadDetails.productID,
+            },
+            {
+                onSuccess: (generatedResponse: string) => {
+                    console.log(
+                        'generatedResponse frontend',
+                        generatedResponse
+                    );
+                    setAiResponse(generatedResponse);
+                },
+            }
+        );
+    }
+
+    async function handlePostComment() {
+        const accessToken = getBrowserRedditAccessToken();
+
+        if (accessToken) {
+            postComment.mutate(
+                {
+                    accessToken: accessToken,
+                    thingID: leadDetails.id,
+                    comment: aiResponse,
+                    isPost: false,
+                },
+                {
+                    onSuccess: () => {
+                        setAiResponse('');
+                        toast({
+                            title: 'Comment posted successfully. Moving lead to next stage.',
+                            description:
+                                'Your comment has been successfully posted. The lead will now be moved to the next stage.',
+                        });
+                        if (nextStage) {
+                            updateLeadStage.mutate(
+                                {
+                                    leadID: leadDetails.id,
+                                    stage: nextStage,
+                                    isPost: false,
+                                },
+                                {
+                                    onError: () => {
+                                        toast({
+                                            title: 'Error',
+                                            description:
+                                                'Failed to move lead to next stage.',
+                                        });
+                                    },
+                                }
+                            );
+                        }
+                    },
+                    onError: () => {
+                        toast({
+                            title: 'Error',
+                            description: 'Failed to post comment',
+                        });
+                    },
+                }
+            );
+        } else {
+            toast({
+                title: 'Error',
+                description: 'Please connect your Reddit account',
             });
         }
     }
@@ -153,6 +224,37 @@ export function RedditCommentLeadCard({
                     </p>
                 </div>
 
+                {/* AI Response Section */}
+                <div className="mt-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-tertiaryColor">
+                            AI Generated Response:
+                        </span>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleGenerateResponse}
+                            disabled={generateAIResponse.isPending}
+                            className="h-7 px-2 text-xs"
+                        >
+                            {generateAIResponse.isPending ? (
+                                'Generating...'
+                            ) : (
+                                <>
+                                    <BiBot size={14} className="mr-1" />
+                                    Generate
+                                </>
+                            )}
+                        </Button>
+                    </div>
+                    <textarea
+                        value={aiResponse}
+                        onChange={(e) => setAiResponse(e.target.value)}
+                        placeholder="AI will generate a response here..."
+                        className="w-full h-20 p-2 text-xs border border-gray-200 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                </div>
+
                 <div className="flex flex-col space-y-2">
                     {/* Stage Transition Button */}
                     {nextStage && (
@@ -160,14 +262,17 @@ export function RedditCommentLeadCard({
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={handleStageUpdate}
+                                onClick={handlePostComment}
                                 className="w-full text-xs"
-                                disabled={updateLeadStage.isPending}
+                                disabled={postComment.isPending}
                             >
-                                {updateLeadStage.isPending
-                                    ? 'Moving...'
-                                    : buttonText}
-                                {!updateLeadStage.isPending && (
+                                {leadDetails.stage === 'identification' &&
+                                !postComment.isPending
+                                    ? 'Post Comment'
+                                    : postComment.isPending
+                                      ? 'Sending...'
+                                      : buttonText}
+                                {!postComment.isPending && (
                                     <BiRightArrowAlt
                                         size={16}
                                         className="ml-1"
@@ -197,15 +302,86 @@ export function RedditPostLeadCard({
     const howLongAgo = timeAgo(unixCreatedAt);
     const updateLeadInteraction = useUpdateLeadInteraction();
     const updateLeadStage = useUpdateLeadStage();
+    const generateAIResponse = useGenerateAIResponse();
+    const postComment = usePostComment();
+
+    const [aiResponse, setAiResponse] = useState<string>('');
 
     const { nextStage, buttonText } = getNextStageInfo(leadDetails.stage);
 
-    function handleStageUpdate() {
-        if (nextStage) {
-            updateLeadStage.mutate({
-                leadID: leadDetails.id,
-                stage: nextStage,
-                isPost: true,
+    function handleMoveToEngagement() {
+        updateLeadStage.mutate({
+            leadID: leadDetails.id,
+            stage: 'engagement',
+            isPost: true,
+        });
+    }
+
+    function handleGenerateResponse() {
+        const contentToAnalyze = `${leadDetails.title} ${leadDetails.body}`;
+        generateAIResponse.mutate(
+            {
+                leadMessage: contentToAnalyze,
+                productID: leadDetails.productID,
+            },
+            {
+                onSuccess: (generatedResponse: string) => {
+                    setAiResponse(generatedResponse);
+                },
+            }
+        );
+    }
+
+    async function handlePostComment() {
+        const accessToken = getBrowserRedditAccessToken();
+
+        if (accessToken) {
+            postComment.mutate(
+                {
+                    accessToken: accessToken,
+                    thingID: leadDetails.id,
+                    comment: aiResponse,
+                    isPost: true,
+                },
+                {
+                    onSuccess: () => {
+                        setAiResponse('');
+                        toast({
+                            title: 'Comment posted successfully. Moving lead to next stage.',
+                            description:
+                                'Your comment has been successfully posted. The lead will now be moved to the next stage.',
+                        });
+                        if (nextStage) {
+                            updateLeadStage.mutate(
+                                {
+                                    leadID: leadDetails.id,
+                                    stage: nextStage,
+                                    isPost: true,
+                                },
+                                {
+                                    onError: () => {
+                                        toast({
+                                            title: 'Error',
+                                            description:
+                                                'Failed to move lead to next stage.',
+                                        });
+                                    },
+                                }
+                            );
+                        }
+                    },
+                    onError: () => {
+                        toast({
+                            title: 'Error',
+                            description: 'Failed to post comment',
+                        });
+                    },
+                }
+            );
+        } else {
+            toast({
+                title: 'Error',
+                description: 'Please connect your Reddit account',
             });
         }
     }
@@ -286,6 +462,37 @@ export function RedditPostLeadCard({
                 </p>
             </div>
 
+            {/* AI Response Section */}
+            <div className="mt-3 space-y-2">
+                <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-tertiaryColor">
+                        AI Generated Response:
+                    </span>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleGenerateResponse}
+                        disabled={generateAIResponse.isPending}
+                        className="h-7 px-2 text-xs"
+                    >
+                        {generateAIResponse.isPending ? (
+                            'Generating...'
+                        ) : (
+                            <>
+                                <BiBot size={14} className="mr-1" />
+                                Generate
+                            </>
+                        )}
+                    </Button>
+                </div>
+                <textarea
+                    value={aiResponse}
+                    onChange={(e) => setAiResponse(e.target.value)}
+                    placeholder="AI will generate a response here..."
+                    className="w-full h-20 p-2 text-xs border border-gray-200 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+            </div>
+
             <div className="flex flex-col space-y-2 ">
                 {/* Stage Transition Button */}
                 {nextStage && (
@@ -293,14 +500,21 @@ export function RedditPostLeadCard({
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={handleStageUpdate}
+                            onClick={
+                                leadDetails.stage === 'initial_outreach'
+                                    ? handleMoveToEngagement
+                                    : handlePostComment
+                            }
                             className="w-full text-xs"
-                            disabled={updateLeadStage.isPending}
+                            disabled={postComment.isPending}
                         >
-                            {updateLeadStage.isPending
-                                ? 'Moving...'
-                                : buttonText}
-                            {!updateLeadStage.isPending && (
+                            {leadDetails.stage === 'identification' &&
+                            !postComment.isPending
+                                ? 'Post Comment'
+                                : postComment.isPending
+                                  ? 'Sending...'
+                                  : buttonText}
+                            {!postComment.isPending && (
                                 <BiRightArrowAlt size={16} className="ml-1" />
                             )}
                         </Button>
