@@ -48,7 +48,7 @@ export const GET = auth(async function GET(req: NextAuthRequest) {
 
         return NextResponse.json({ message: data }, { status: 200 });
     } catch (error) {
-        console.log('Error fetching Reddit Auth Tokens', error);
+        console.error('Error fetching Reddit Auth Tokens', error);
         return NextResponse.json(
             {
                 message:

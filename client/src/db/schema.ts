@@ -72,7 +72,9 @@ export const session = pgTable(
     {
         sessionToken: text().primaryKey().notNull(),
         userId: text().notNull(),
-        expires: timestamp({ mode: 'string' }).notNull(),
+
+        // If this is set to string, an error is thrown
+        expires: timestamp({ mode: 'date' }).notNull(),
     },
     (table) => [
         foreignKey({
