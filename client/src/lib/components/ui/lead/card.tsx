@@ -1,5 +1,5 @@
 'use client';
-import { CommentLead, PostLead } from '@/types/backend/db';
+import { CommentLead, PostLead, LeadStage } from '@/types/backend/db';
 import {
     BiUpvote,
     BiCommentDetail,
@@ -7,6 +7,7 @@ import {
     BiLinkExternal,
     BiChevronDown,
     BiChevronUp,
+    BiRightArrowAlt,
 } from 'react-icons/bi';
 import clsx from 'clsx';
 import { Button } from '../button';
@@ -18,7 +19,33 @@ import {
 import { Badge } from '../badge';
 import { useEffect, useState } from 'react';
 import { timeAgo, isPostLead } from '@/util/utils';
-import { useUpdateLeadInteraction } from '@/lib/frontend/tanstack/queries';
+import {
+    useUpdateLeadInteraction,
+    useUpdateLeadStage,
+} from '@/lib/frontend/tanstack/queries';
+
+// Helper function to get next stage and button text
+function getNextStageInfo(currentStage: LeadStage): {
+    nextStage: LeadStage | null;
+    buttonText: string;
+} {
+    switch (currentStage) {
+        case 'identification':
+            return {
+                nextStage: 'initial_outreach',
+                buttonText: 'Move to Initial Outreach',
+            };
+        case 'initial_outreach':
+            return {
+                nextStage: 'engagement',
+                buttonText: 'Move to Engagement',
+            };
+        case 'engagement':
+            return { nextStage: null, buttonText: 'Final Stage' };
+        default:
+            return { nextStage: null, buttonText: 'Unknown Stage' };
+    }
+}
 
 interface RedditCommentLeadCardProps {
     leadDetails: CommentLead;
@@ -30,10 +57,21 @@ export function RedditCommentLeadCard({
     leadDetails,
 }: RedditCommentLeadCardProps) {
     const unixCreatedAt = new Date(leadDetails.createdAt).getTime();
-
     const howLongAgo = timeAgo(unixCreatedAt);
-
     const updateLeadInteraction = useUpdateLeadInteraction();
+    const updateLeadStage = useUpdateLeadStage();
+
+    const { nextStage, buttonText } = getNextStageInfo(leadDetails.stage);
+
+    function handleStageUpdate() {
+        if (nextStage) {
+            updateLeadStage.mutate({
+                leadID: leadDetails.id,
+                stage: nextStage,
+                isPost: false,
+            });
+        }
+    }
 
     return (
         <div
@@ -60,12 +98,12 @@ export function RedditCommentLeadCard({
                         >
                             <Button
                                 variant={'light'}
-                                onClick={async () => {
+                                onClick={() => {
                                     console.log(
                                         'leadDetails.id',
                                         leadDetails.id
                                     );
-                                    await updateLeadInteraction({
+                                    updateLeadInteraction({
                                         leadID: leadDetails.id,
                                         isPost: false,
                                     });
@@ -115,7 +153,32 @@ export function RedditCommentLeadCard({
                     </p>
                 </div>
 
-                <RedditLeadCardDialog lead={leadDetails} />
+                <div className="flex flex-col space-y-2">
+                    {/* Stage Transition Button */}
+                    {nextStage && (
+                        <div className="mt-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleStageUpdate}
+                                className="w-full text-xs"
+                                disabled={updateLeadStage.isPending}
+                            >
+                                {updateLeadStage.isPending
+                                    ? 'Moving...'
+                                    : buttonText}
+                                {!updateLeadStage.isPending && (
+                                    <BiRightArrowAlt
+                                        size={16}
+                                        className="ml-1"
+                                    />
+                                )}
+                            </Button>
+                        </div>
+                    )}
+
+                    <RedditLeadCardDialog lead={leadDetails} />
+                </div>
             </div>
         </div>
     );
@@ -131,10 +194,21 @@ export function RedditPostLeadCard({
     leadDetails,
 }: RedditPostLeadCardProps) {
     const unixCreatedAt = new Date(leadDetails.createdAt).getTime();
-
     const howLongAgo = timeAgo(unixCreatedAt);
-
     const updateLeadInteraction = useUpdateLeadInteraction();
+    const updateLeadStage = useUpdateLeadStage();
+
+    const { nextStage, buttonText } = getNextStageInfo(leadDetails.stage);
+
+    function handleStageUpdate() {
+        if (nextStage) {
+            updateLeadStage.mutate({
+                leadID: leadDetails.id,
+                stage: nextStage,
+                isPost: true,
+            });
+        }
+    }
 
     return (
         <div
@@ -157,8 +231,8 @@ export function RedditPostLeadCard({
                     <a href={leadDetails.url} target="_blank">
                         <Button
                             variant={'light'}
-                            onClick={async () => {
-                                await updateLeadInteraction({
+                            onClick={() => {
+                                updateLeadInteraction({
                                     leadID: leadDetails.id,
                                     isPost: true,
                                 });
@@ -212,7 +286,29 @@ export function RedditPostLeadCard({
                 </p>
             </div>
 
-            <RedditLeadCardDialog lead={leadDetails} />
+            <div className="flex flex-col space-y-2 ">
+                {/* Stage Transition Button */}
+                {nextStage && (
+                    <div className="mt-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleStageUpdate}
+                            className="w-full text-xs"
+                            disabled={updateLeadStage.isPending}
+                        >
+                            {updateLeadStage.isPending
+                                ? 'Moving...'
+                                : buttonText}
+                            {!updateLeadStage.isPending && (
+                                <BiRightArrowAlt size={16} className="ml-1" />
+                            )}
+                        </Button>
+                    </div>
+                )}
+
+                <RedditLeadCardDialog lead={leadDetails} />
+            </div>
         </div>
     );
 }

@@ -10,7 +10,7 @@ import {
     products,
     users,
 } from './schema';
-import { Payload, Products, LeadFilters } from '@/types/backend/db';
+import { Payload, Products, LeadFilters, LeadStage } from '@/types/backend/db';
 
 export const db = drizzle(process.env.DATABASE_URL!, { schema });
 
@@ -105,6 +105,10 @@ export const leadsQueries = {
                 conditions.push(eq(table.isInteracted, false));
             }
 
+            if (filters?.stage) {
+                conditions.push(eq(table.stage, filters.stage));
+            }
+
             return and(...conditions);
         };
 
@@ -188,6 +192,10 @@ export const leadsQueries = {
                 conditions.push(eq(table.isInteracted, false));
             }
 
+            if (filters?.stage) {
+                conditions.push(eq(table.stage, filters.stage));
+            }
+
             return and(...conditions);
         };
 
@@ -212,6 +220,20 @@ export const leadsQueries = {
         const [updatedLead] = await db
             .update(isPost ? postLeads : commentLeads)
             .set({ isInteracted })
+            .where(eq(isPost ? postLeads.id : commentLeads.id, leadID))
+            .returning();
+
+        return updatedLead;
+    },
+
+    updateLeadStage: async (
+        leadID: string,
+        stage: LeadStage,
+        isPost: boolean
+    ) => {
+        const [updatedLead] = await db
+            .update(isPost ? postLeads : commentLeads)
+            .set({ stage })
             .where(eq(isPost ? postLeads.id : commentLeads.id, leadID))
             .returning();
 

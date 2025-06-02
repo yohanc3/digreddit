@@ -1,44 +1,26 @@
-import { pgTable, foreignKey, serial, text, timestamp, uuid, smallint, integer, boolean, doublePrecision, jsonb, unique } from "drizzle-orm/pg-core"
+import { pgTable, foreignKey, unique, text, integer, boolean, uuid, timestamp, jsonb, serial, smallint, doublePrecision, pgEnum } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
+export const leadStage = pgEnum("lead_stage", ['identification', 'initial_outreach', 'engagement'])
+export const stages = pgEnum("stages", ['identification', 'initial_outreach', 'engagement'])
 
 
-export const feedback = pgTable("Feedback", {
-	id: serial().primaryKey().notNull(),
+export const authenticator = pgTable("Authenticator", {
+	credentialId: text().notNull(),
 	userId: text().notNull(),
-	area: text().notNull(),
-	feedback: text().notNull(),
-	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+	providerAccountId: text().notNull(),
+	credentialPublicKey: text().notNull(),
+	counter: integer().notNull(),
+	credentialDeviceType: text().notNull(),
+	credentialBackedUp: boolean().notNull(),
+	transports: text(),
 }, (table) => [
 	foreignKey({
 			columns: [table.userId],
 			foreignColumns: [users.id],
-			name: "feedback_userID_Users_id_fk"
+			name: "authenticator_userId_Users_id_fk"
 		}).onDelete("cascade"),
-]);
-
-export const postLeads = pgTable("PostLeads", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
-	subreddit: text().notNull(),
-	title: text().notNull(),
-	author: text().notNull(),
-	body: text().notNull(),
-	url: text().notNull(),
-	numComments: smallint().notNull(),
-	subredditSubscribers: integer(),
-	over18: boolean().notNull(),
-	ups: smallint().notNull(),
-	downs: smallint().notNull(),
-	productId: uuid().notNull(),
-	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
-	rating: doublePrecision().notNull(),
-	isInteracted: boolean().default(false),
-}, (table) => [
-	foreignKey({
-			columns: [table.productId],
-			foreignColumns: [products.id],
-			name: "fk_product"
-		}),
+	unique("authenticator_credentialID_unique").on(table.credentialId),
 ]);
 
 export const products = pgTable("Products", {
@@ -54,25 +36,11 @@ export const products = pgTable("Products", {
 	userId: uuid().notNull(),
 });
 
-export const commentLeads = pgTable("CommentLeads", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
-	subreddit: text().notNull(),
-	author: text().notNull(),
-	body: text().notNull(),
-	url: text().notNull(),
-	ups: smallint().notNull(),
-	downs: smallint().notNull(),
-	productId: uuid().notNull(),
+export const nonBetaUsers = pgTable("NonBetaUsers", {
+	id: serial().primaryKey().notNull(),
+	email: text().notNull(),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
-	rating: doublePrecision().notNull(),
-	isInteracted: boolean().default(false),
-}, (table) => [
-	foreignKey({
-			columns: [table.productId],
-			foreignColumns: [products.id],
-			name: "fk_product"
-		}),
-]);
+});
 
 export const session = pgTable("Session", {
 	sessionToken: text().primaryKey().notNull(),
@@ -84,6 +52,42 @@ export const session = pgTable("Session", {
 			foreignColumns: [users.id],
 			name: "session_userId_Users_id_fk"
 		}).onDelete("cascade"),
+]);
+
+export const feedback = pgTable("Feedback", {
+	id: serial().primaryKey().notNull(),
+	userId: text().notNull(),
+	area: text().notNull(),
+	feedback: text().notNull(),
+	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+	attendedTo: boolean().default(false),
+}, (table) => [
+	foreignKey({
+			columns: [table.userId],
+			foreignColumns: [users.id],
+			name: "feedback_userID_Users_id_fk"
+		}).onDelete("cascade"),
+]);
+
+export const commentLeads = pgTable("CommentLeads", {
+	id: text().default(gen_random_uuid()).primaryKey().notNull(),
+	subreddit: text().notNull(),
+	author: text().notNull(),
+	body: text().notNull(),
+	url: text().notNull(),
+	ups: smallint().notNull(),
+	downs: smallint().notNull(),
+	productId: uuid().notNull(),
+	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+	rating: doublePrecision().notNull(),
+	isInteracted: boolean().default(false),
+	stage: stages().default('identification').notNull(),
+}, (table) => [
+	foreignKey({
+			columns: [table.productId],
+			foreignColumns: [products.id],
+			name: "fk_product"
+		}),
 ]);
 
 export const verificationToken = pgTable("VerificationToken", {
@@ -119,28 +123,30 @@ export const users = pgTable("Users", {
 	emailVerified: timestamp({ mode: 'string' }),
 	image: text(),
 	membershipEndsAt: timestamp({ mode: 'string' }).defaultNow(),
+	redditRefreshToken: text(),
 });
 
-export const authenticator = pgTable("Authenticator", {
-	credentialId: text().notNull(),
-	userId: text().notNull(),
-	providerAccountId: text().notNull(),
-	credentialPublicKey: text().notNull(),
-	counter: integer().notNull(),
-	credentialDeviceType: text().notNull(),
-	credentialBackedUp: boolean().notNull(),
-	transports: text(),
+export const postLeads = pgTable("PostLeads", {
+	id: text().default(gen_random_uuid()).primaryKey().notNull(),
+	subreddit: text().notNull(),
+	title: text().notNull(),
+	author: text().notNull(),
+	body: text().notNull(),
+	url: text().notNull(),
+	numComments: smallint().notNull(),
+	subredditSubscribers: integer(),
+	over18: boolean().notNull(),
+	ups: smallint().notNull(),
+	downs: smallint().notNull(),
+	productId: uuid().notNull(),
+	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+	rating: doublePrecision().notNull(),
+	isInteracted: boolean().default(false),
+	stage: stages().default('identification').notNull(),
 }, (table) => [
 	foreignKey({
-			columns: [table.userId],
-			foreignColumns: [users.id],
-			name: "authenticator_userId_Users_id_fk"
-		}).onDelete("cascade"),
-	unique("authenticator_credentialID_unique").on(table.credentialId),
+			columns: [table.productId],
+			foreignColumns: [products.id],
+			name: "fk_product"
+		}),
 ]);
-
-export const nonBetaUsers = pgTable("NonBetaUsers", {
-	id: serial().primaryKey().notNull(),
-	email: text().notNull(),
-	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
-});
