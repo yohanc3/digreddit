@@ -15,8 +15,6 @@ export const POST = auth(async function POST(req: NextAuthRequest) {
     try {
         const body = await req.json();
 
-        console.log('body', body);
-
         if (
             !body.accessToken ||
             !body.thingID ||

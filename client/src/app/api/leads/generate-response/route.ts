@@ -75,8 +75,6 @@ export const POST = auth(async function POST(req: NextAuthRequest) {
 
         const generatedResponse = completion.choices[0].message.content!;
 
-        console.log('generatedResponse', generatedResponse);
-
         return NextResponse.json({ generatedResponse }, { status: 200 });
     } catch (error) {
         console.error('Error generating response:', (error as Error).message);

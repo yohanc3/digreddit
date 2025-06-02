@@ -79,8 +79,6 @@ export async function refreshRedditToken(
         if (onSuccess) {
             const result = await onSuccess(accessToken);
 
-            console.log('result from callback', result);
-
             if (!result.ok) {
                 return {
                     error: 'No result from callback',

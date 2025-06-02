@@ -28,6 +28,7 @@ import {
 } from '@/lib/frontend/tanstack/queries';
 import { toast } from '@/hooks/use-toast';
 import { getBrowserRedditAccessToken } from '@/lib/frontend/utils/getRedditOauthToken';
+import { queryClient } from '@/app/providers';
 
 // Helper function to get next stage and button text
 function getNextStageInfo(currentStage: LeadStage): {
@@ -80,11 +81,35 @@ export function RedditCommentLeadCard({
             },
             {
                 onSuccess: (generatedResponse: string) => {
-                    console.log(
-                        'generatedResponse frontend',
-                        generatedResponse
-                    );
                     setAiResponse(generatedResponse);
+                },
+            }
+        );
+    }
+
+    function handleMoveToEngagement() {
+        updateLeadStage.mutate(
+            {
+                leadID: leadDetails.id,
+                stage: 'engagement',
+                isPost: false,
+            },
+            {
+                onSuccess: () => {
+                    queryClient.invalidateQueries({
+                        queryKey: ['allLeads'],
+                    });
+                    toast({
+                        title: 'Lead moved to engagement.',
+                        description:
+                            'The lead has been moved to the engagement stage.',
+                    });
+                },
+                onError: () => {
+                    toast({
+                        title: 'Error',
+                        description: 'Failed to move lead to engagement.',
+                    });
                 },
             }
         );
@@ -170,10 +195,6 @@ export function RedditCommentLeadCard({
                             <Button
                                 variant={'light'}
                                 onClick={() => {
-                                    console.log(
-                                        'leadDetails.id',
-                                        leadDetails.id
-                                    );
                                     updateLeadInteraction({
                                         leadID: leadDetails.id,
                                         isPost: false,
@@ -195,92 +216,102 @@ export function RedditCommentLeadCard({
             </div>
 
             <div>
-                {/* Reddit Post/Comment Details */}
-                <div className="flex flex-row h-10 gap-x-3 items-center">
-                    <div className="flex flex-row items-center justify-center gap-x-0.5">
-                        <BiUpvote color="#D93900" size={18} />{' '}
-                        <p className="text-tertiarySize text-tertiaryColor">
-                            {' '}
-                            {leadDetails.ups - leadDetails.downs}{' '}
-                        </p>
-                    </div>
-
-                    <div className="flex flex-row items-center justify-center gap-x-1">
-                        <BiTimeFive color="#344054" size={18} />{' '}
-                        <p className="text-tertiarySize text-tertiaryColor">
-                            {' '}
-                            {howLongAgo}{' '}
-                        </p>
-                    </div>
-                </div>
-
                 {/* Card Rating */}
-                <div className="items-center text-xs font-semibold text-tertiaryColor gap-x-1">
-                    <p>
-                        AI Lead Rating:{' '}
-                        <span className="font-bold text-sm">
-                            {leadDetails.rating}
-                        </span>
-                    </p>
-                </div>
-
-                {/* AI Response Section */}
-                <div className="mt-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-tertiaryColor">
-                            AI Generated Response:
-                        </span>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleGenerateResponse}
-                            disabled={generateAIResponse.isPending}
-                            className="h-7 px-2 text-xs"
-                        >
-                            {generateAIResponse.isPending ? (
-                                'Generating...'
-                            ) : (
-                                <>
-                                    <BiBot size={14} className="mr-1" />
-                                    Generate
-                                </>
-                            )}
-                        </Button>
+                <div className="flex flex-row justify-between items-center">
+                    <div className="items-center text-xs font-semibold text-tertiaryColor gap-x-1">
+                        <p>
+                            AI Lead Rating:{' '}
+                            <span className="font-bold text-sm">
+                                {leadDetails.rating}
+                            </span>
+                        </p>
                     </div>
-                    <textarea
-                        value={aiResponse}
-                        onChange={(e) => setAiResponse(e.target.value)}
-                        placeholder="AI will generate a response here..."
-                        className="w-full h-20 p-2 text-xs border border-gray-200 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                    {/* Reddit Post/Comment Details */}
+                    <div className="flex flex-row h-10 gap-x-3 items-center">
+                        <div className="flex flex-row items-center justify-center gap-x-0.5">
+                            <BiUpvote color="#D93900" size={18} />{' '}
+                            <p className="text-tertiarySize text-tertiaryColor">
+                                {' '}
+                                {leadDetails.ups - leadDetails.downs}{' '}
+                            </p>
+                        </div>
+
+                        <div className="flex flex-row items-center justify-center gap-x-1">
+                            <BiTimeFive color="#344054" size={18} />{' '}
+                            <p className="text-tertiarySize text-tertiaryColor">
+                                {' '}
+                                {howLongAgo}{' '}
+                            </p>
+                        </div>
+                    </div>
                 </div>
+                {leadDetails.stage === 'identification' && (
+                    <div>
+                        {/* AI Response Section */}
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-tertiaryColor">
+                                    Initial Outreach Response:
+                                </span>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleGenerateResponse}
+                                    disabled={generateAIResponse.isPending}
+                                    className="h-7 px-2 text-xs"
+                                >
+                                    {generateAIResponse.isPending ? (
+                                        'Generating...'
+                                    ) : (
+                                        <>
+                                            <BiBot size={14} className="mr-1" />
+                                            Generate
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                            <textarea
+                                value={aiResponse}
+                                onChange={(e) => setAiResponse(e.target.value)}
+                                placeholder="Initial outreach response goes here..."
+                                className="w-full h-20 p-2 text-xs border border-gray-200 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                        </div>
+                    </div>
+                )}
 
                 <div className="flex flex-col space-y-2">
                     {/* Stage Transition Button */}
-                    {nextStage && (
-                        <div className="mt-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handlePostComment}
-                                className="w-full text-xs"
-                                disabled={postComment.isPending}
-                            >
-                                {leadDetails.stage === 'identification' &&
-                                !postComment.isPending
-                                    ? 'Post Comment'
-                                    : postComment.isPending
-                                      ? 'Sending...'
-                                      : buttonText}
-                                {!postComment.isPending && (
-                                    <BiRightArrowAlt
-                                        size={16}
-                                        className="ml-1"
-                                    />
-                                )}
-                            </Button>
-                        </div>
-                    )}
+                    {nextStage &&
+                        (leadDetails.stage === 'identification' ||
+                            leadDetails.stage === 'initial_outreach') && (
+                            <div className="mt-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={
+                                        leadDetails.stage === 'initial_outreach'
+                                            ? handleMoveToEngagement
+                                            : handlePostComment
+                                    }
+                                    className="w-full text-xs"
+                                    disabled={postComment.isPending}
+                                >
+                                    {leadDetails.stage === 'identification' &&
+                                    !postComment.isPending
+                                        ? 'Post Comment'
+                                        : postComment.isPending
+                                          ? 'Sending...'
+                                          : buttonText}
+                                    {!postComment.isPending && (
+                                        <BiRightArrowAlt
+                                            size={16}
+                                            className="ml-1"
+                                        />
+                                    )}
+                                </Button>
+                            </div>
+                        )}
 
                     <RedditLeadCardDialog lead={leadDetails} />
                 </div>
@@ -310,11 +341,31 @@ export function RedditPostLeadCard({
     const { nextStage, buttonText } = getNextStageInfo(leadDetails.stage);
 
     function handleMoveToEngagement() {
-        updateLeadStage.mutate({
-            leadID: leadDetails.id,
-            stage: 'engagement',
-            isPost: true,
-        });
+        updateLeadStage.mutate(
+            {
+                leadID: leadDetails.id,
+                stage: 'engagement',
+                isPost: true,
+            },
+            {
+                onSuccess: () => {
+                    queryClient.invalidateQueries({
+                        queryKey: ['allLeads'],
+                    });
+                    toast({
+                        title: 'Lead moved to engagement.',
+                        description:
+                            'The lead has been moved to the engagement stage.',
+                    });
+                },
+                onError: () => {
+                    toast({
+                        title: 'Error',
+                        description: 'Failed to move lead to engagement.',
+                    });
+                },
+            }
+        );
     }
 
     function handleGenerateResponse() {
@@ -412,7 +463,6 @@ export function RedditPostLeadCard({
                                     leadID: leadDetails.id,
                                     isPost: true,
                                 });
-                                console.log('leadDetails.id', leadDetails.id);
                             }}
                         >
                             Open <BiLinkExternal size={18} />
@@ -423,7 +473,7 @@ export function RedditPostLeadCard({
 
             {/* Card Body */}
             <div className="flex flex-col h-28">
-                <div className="text-mediumSize font-semibold line-clamp-2">
+                <div className="text-lg/6 font-semibold line-clamp-2">
                     {leadDetails.title}
                 </div>
 
@@ -432,94 +482,110 @@ export function RedditPostLeadCard({
                 </div>
             </div>
 
-            {/* Reddit Post/Comment Details */}
-            <div className="flex flex-row h-10 gap-x-3 items-center">
-                <div className="flex flex-row items-center justify-center gap-x-0.5">
-                    <BiUpvote color="#D93900" size={18} />{' '}
-                    <p className="text-tertiarySize text-tertiaryColor"> 2 </p>
-                </div>
-
-                <div className="flex flex-row items-center justify-center gap-x-0.5">
-                    <BiCommentDetail color="#344054" size={18} />{' '}
-                    <p className="text-tertiarySize text-tertiaryColor"> 2 </p>
-                </div>
-                <div className="flex flex-row items-center justify-center gap-x-1">
-                    <BiTimeFive color="#344054" size={18} />{' '}
-                    <p className="text-tertiarySize text-tertiaryColor">
-                        {' '}
-                        {howLongAgo}{' '}
+            <div className="flex flex-row justify-between items-center">
+                {/* Card Rating */}
+                <div className="items-center text-xs font-semibold text-tertiaryColor gap-x-1">
+                    <p>
+                        AI Lead Rating:{' '}
+                        <span className="font-bold text-sm">
+                            {leadDetails.rating}
+                        </span>
                     </p>
                 </div>
-            </div>
+                {/* Reddit Post/Comment Details */}
+                <div className="flex flex-row h-10 gap-x-3 items-center">
+                    <div className="flex flex-row items-center justify-center gap-x-0.5">
+                        <BiUpvote color="#D93900" size={18} />{' '}
+                        <p className="text-tertiarySize text-tertiaryColor">
+                            {' '}
+                            2{' '}
+                        </p>
+                    </div>
 
-            {/* Card Rating */}
-            <div className="items-center text-xs font-semibold text-tertiaryColor gap-x-1">
-                <p>
-                    AI Lead Rating:{' '}
-                    <span className="font-bold text-sm">
-                        {leadDetails.rating}
-                    </span>
-                </p>
+                    <div className="flex flex-row items-center justify-center gap-x-0.5">
+                        <BiCommentDetail color="#344054" size={18} />{' '}
+                        <p className="text-tertiarySize text-tertiaryColor">
+                            {' '}
+                            2{' '}
+                        </p>
+                    </div>
+                    <div className="flex flex-row items-center justify-center gap-x-1">
+                        <BiTimeFive color="#344054" size={18} />{' '}
+                        <p className="text-tertiarySize text-tertiaryColor">
+                            {' '}
+                            {howLongAgo}{' '}
+                        </p>
+                    </div>
+                </div>
             </div>
 
             {/* AI Response Section */}
-            <div className="mt-3 space-y-2">
-                <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-tertiaryColor">
-                        AI Generated Response:
-                    </span>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleGenerateResponse}
-                        disabled={generateAIResponse.isPending}
-                        className="h-7 px-2 text-xs"
-                    >
-                        {generateAIResponse.isPending ? (
-                            'Generating...'
-                        ) : (
-                            <>
-                                <BiBot size={14} className="mr-1" />
-                                Generate
-                            </>
-                        )}
-                    </Button>
+            {leadDetails.stage === 'identification' && (
+                <div>
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium text-tertiaryColor">
+                                Initial Outreach Response:
+                            </span>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleGenerateResponse}
+                                disabled={generateAIResponse.isPending}
+                                className="h-7 px-2 text-xs"
+                            >
+                                {generateAIResponse.isPending ? (
+                                    'Generating...'
+                                ) : (
+                                    <>
+                                        <BiBot size={14} className="mr-1" />
+                                        Generate
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                        <textarea
+                            value={aiResponse}
+                            onChange={(e) => setAiResponse(e.target.value)}
+                            placeholder="Initial outreach response goes here..."
+                            className="w-full h-20 p-2 text-xs border border-gray-200 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                    </div>
                 </div>
-                <textarea
-                    value={aiResponse}
-                    onChange={(e) => setAiResponse(e.target.value)}
-                    placeholder="AI will generate a response here..."
-                    className="w-full h-20 p-2 text-xs border border-gray-200 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-            </div>
+            )}
 
             <div className="flex flex-col space-y-2 ">
                 {/* Stage Transition Button */}
-                {nextStage && (
-                    <div className="mt-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={
-                                leadDetails.stage === 'initial_outreach'
-                                    ? handleMoveToEngagement
-                                    : handlePostComment
-                            }
-                            className="w-full text-xs"
-                            disabled={postComment.isPending}
-                        >
-                            {leadDetails.stage === 'identification' &&
-                            !postComment.isPending
-                                ? 'Post Comment'
-                                : postComment.isPending
-                                  ? 'Sending...'
-                                  : buttonText}
-                            {!postComment.isPending && (
-                                <BiRightArrowAlt size={16} className="ml-1" />
-                            )}
-                        </Button>
-                    </div>
-                )}
+                {nextStage &&
+                    (leadDetails.stage === 'identification' ||
+                        leadDetails.stage === 'initial_outreach') && (
+                        <div className="mt-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={
+                                    leadDetails.stage === 'initial_outreach'
+                                        ? handleMoveToEngagement
+                                        : handlePostComment
+                                }
+                                className="w-full text-xs"
+                                disabled={postComment.isPending}
+                            >
+                                {leadDetails.stage === 'identification' &&
+                                !postComment.isPending
+                                    ? 'Post Comment'
+                                    : postComment.isPending
+                                      ? 'Sending...'
+                                      : buttonText}
+                                {!postComment.isPending && (
+                                    <BiRightArrowAlt
+                                        size={16}
+                                        className="ml-1"
+                                    />
+                                )}
+                            </Button>
+                        </div>
+                    )}
 
                 <RedditLeadCardDialog lead={leadDetails} />
             </div>
