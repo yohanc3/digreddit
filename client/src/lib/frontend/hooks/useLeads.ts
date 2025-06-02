@@ -30,6 +30,7 @@ export function useLeads(
                           sortingMethod: debouncedOptions.sortingMethod,
                           showOnlyUninteracted:
                               debouncedOptions.showOnlyUninteracted,
+                          stage: debouncedOptions.stage,
                       }
                     : undefined;
 
