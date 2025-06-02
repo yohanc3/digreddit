@@ -62,19 +62,68 @@ export function useUpdateLeadStage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['allLeads'] });
+        },
+    });
+}
 
-            toast({
-                title: 'Success',
-                description: 'Lead stage updated successfully',
+export function useGenerateAIResponse() {
+    const { apiPost } = useFetch();
+
+    return useMutation({
+        mutationFn: async ({
+            leadMessage,
+            productID,
+        }: {
+            leadMessage: string;
+            productID: string;
+        }) => {
+            const response = await apiPost('api/leads/generate-response', {
+                leadMessage,
+                productID,
             });
+            return response.generatedResponse;
         },
         onError: (error) => {
-            console.error('Error updating lead stage:', error);
+            console.error('Error generating AI response:', error);
             toast({
                 title: 'Error',
-                description: 'Failed to update lead stage',
+                description: 'Failed to generate AI response',
                 variant: 'destructive',
             });
+        },
+    });
+}
+
+export function usePostComment() {
+    const { apiPost } = useFetch();
+
+    return useMutation({
+        mutationFn: async ({
+            accessToken,
+            thingID,
+            comment,
+            isPost,
+        }: {
+            accessToken: string;
+            thingID: string;
+            comment: string;
+            isPost: boolean;
+        }) => {
+            const response = await apiPost('api/reddit/comment', {
+                accessToken,
+                isPost,
+                thingID,
+                comment,
+            });
+
+            if (response.accessToken) {
+                localStorage.setItem(
+                    'reddit_access_token',
+                    response.accessToken
+                );
+            }
+
+            return response.comment;
         },
     });
 }

@@ -86,13 +86,6 @@ export function Feedback() {
                     <form
                         onSubmit={async (e) => {
                             e.preventDefault();
-                            const area = formData.area;
-                            const feedback = formData.feedback;
-
-                            console.log('Submitted feedback:', {
-                                area,
-                                feedback,
-                            });
 
                             await submitFeedback(formData);
                         }}
@@ -104,7 +97,6 @@ export function Feedback() {
                                 </Label>
                                 <Select
                                     onValueChange={(value) => {
-                                        console.log('Selected area:', value);
                                         setFormData({
                                             ...formData,
                                             area: value,
