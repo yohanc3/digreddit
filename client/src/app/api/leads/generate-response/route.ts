@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { NextAuthRequest } from 'next-auth';
 import { auth } from '../../../../../auth';
-import { openai } from '@/lib/backend/ai/connection';
+import { geminiAI, openai } from '@/lib/backend/ai/connection';
 import { db } from '@/db';
 import { eq } from 'drizzle-orm';
 import { products } from '@/db/schema';
@@ -59,21 +59,15 @@ export const POST = auth(async function POST(req: NextAuthRequest) {
         }
         const productDescription = product.description;
 
-        const completion = await openai.chat.completions.create({
-            messages: [
-                {
-                    role: 'system',
-                    content: generateResponsePrompt(productDescription),
-                },
-                {
-                    role: 'user',
-                    content: `Potential lead message: ${leadMessage}`,
-                },
-            ],
-            model: 'deepseek-reasoner',
+        const completion = await geminiAI.models.generateContent({
+            model: 'gemini-2.0-flash',
+            config: {
+                systemInstruction: generateResponsePrompt(productDescription),
+            },
+            contents: `Potential lead message: ${leadMessage}`,
         });
 
-        const generatedResponse = completion.choices[0].message.content!;
+        const generatedResponse = completion.text;
 
         return NextResponse.json({ generatedResponse }, { status: 200 });
     } catch (error) {

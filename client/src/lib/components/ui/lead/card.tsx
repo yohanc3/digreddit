@@ -210,7 +210,7 @@ export function RedditCommentLeadCard({
                 {/* Card Body */}
                 <div className="flex flex-col pt-4 h-28">
                     <div className="text-tertiarySize font-medium text-tertiaryColor text-justify h-12">
-                        {leadDetails.body.substring(0, 200) + '...'}
+                        {leadDetails.body.substring(0, 300) + '...'}
                     </div>
                 </div>
             </div>
@@ -312,10 +312,15 @@ export function RedditCommentLeadCard({
                                 </Button>
                             </div>
                         )}
-
-                    <RedditLeadCardDialog lead={leadDetails} />
                 </div>
             </div>
+
+            <RedditLeadCardDialog
+                lead={leadDetails}
+                generateAIResponse={generateAIResponse}
+                postComment={postComment}
+                updateLeadStage={updateLeadStage}
+            />
         </div>
     );
 }
@@ -586,20 +591,35 @@ export function RedditPostLeadCard({
                             </Button>
                         </div>
                     )}
-
-                <RedditLeadCardDialog lead={leadDetails} />
             </div>
+
+            <RedditLeadCardDialog
+                lead={leadDetails}
+                generateAIResponse={generateAIResponse}
+                postComment={postComment}
+                updateLeadStage={updateLeadStage}
+            />
         </div>
     );
 }
 
 interface RedditLeadCardDialogProps {
     lead: CommentLead | PostLead;
+    generateAIResponse: any;
+    postComment: any;
+    updateLeadStage: any;
 }
 
-function RedditLeadCardDialog({ lead }: RedditLeadCardDialogProps) {
+function RedditLeadCardDialog({
+    lead,
+    generateAIResponse,
+    postComment,
+    updateLeadStage,
+}: RedditLeadCardDialogProps) {
     const [showRedditDescription, setShowRedditDescription] =
         useState<boolean>(false);
+    const [aiResponse, setAiResponse] = useState<string>('');
+    const [isOpen, setIsOpen] = useState<boolean>(false);
 
     const isPost = isPostLead(lead);
     const unixCreatedAt = new Date(lead.createdAt).getTime();
@@ -615,8 +635,84 @@ function RedditLeadCardDialog({ lead }: RedditLeadCardDialogProps) {
         }
     }, [lead.body]);
 
+    function handleGenerateResponse() {
+        const contentToAnalyze = isPost
+            ? `${(lead as PostLead).title} ${lead.body}`
+            : lead.body;
+
+        generateAIResponse.mutate(
+            {
+                leadMessage: contentToAnalyze,
+                productID: lead.productID,
+            },
+            {
+                onSuccess: (generatedResponse: string) => {
+                    setAiResponse(generatedResponse);
+                },
+            }
+        );
+    }
+
+    async function handlePostComment() {
+        const accessToken = getBrowserRedditAccessToken();
+
+        if (accessToken) {
+            postComment.mutate(
+                {
+                    accessToken: accessToken,
+                    thingID: lead.id,
+                    comment: aiResponse,
+                    isPost: isPost,
+                },
+                {
+                    onSuccess: () => {
+                        setAiResponse('');
+                        setIsOpen(false);
+                        toast({
+                            title: 'Comment posted successfully. Moving lead to next stage.',
+                            description:
+                                'Your comment has been successfully posted. The lead will now be moved to the next stage.',
+                        });
+                        updateLeadStage.mutate(
+                            {
+                                leadID: lead.id,
+                                stage: 'initial_outreach',
+                                isPost: isPost,
+                            },
+                            {
+                                onSuccess: () => {
+                                    queryClient.invalidateQueries({
+                                        queryKey: ['allLeads'],
+                                    });
+                                },
+                                onError: () => {
+                                    toast({
+                                        title: 'Error',
+                                        description:
+                                            'Failed to move lead to next stage.',
+                                    });
+                                },
+                            }
+                        );
+                    },
+                    onError: () => {
+                        toast({
+                            title: 'Error',
+                            description: 'Failed to post comment',
+                        });
+                    },
+                }
+            );
+        } else {
+            toast({
+                title: 'Error',
+                description: 'Please connect your Reddit account',
+            });
+        }
+    }
+
     return (
-        <Dialog>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
                 <Button variant="dark" className="w-full py-2 text-sm">
                     Open Details
@@ -703,6 +799,65 @@ function RedditLeadCardDialog({ lead }: RedditLeadCardDialogProps) {
                             </div>
                         )}
                     </div>
+
+                    {/* AI Response Section - Only show for identification stage */}
+                    {lead.stage === 'identification' && (
+                        <div className="space-y-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-secondaryColor">
+                                    Initial Outreach Response:
+                                </span>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleGenerateResponse}
+                                    disabled={generateAIResponse.isPending}
+                                    className="h-8 px-3 text-sm"
+                                >
+                                    {generateAIResponse.isPending ? (
+                                        'Generating...'
+                                    ) : (
+                                        <>
+                                            <BiBot size={16} className="mr-1" />
+                                            Generate AI Response
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                            <textarea
+                                value={aiResponse}
+                                onChange={(e) => setAiResponse(e.target.value)}
+                                placeholder="Type up an initial outreach response, or let AI generate one for you! Feel free to edit it before posting."
+                                className="w-full h-60 p-3 text-sm border border-gray-200 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                            {aiResponse && (
+                                <div className="flex justify-end">
+                                    <Button
+                                        variant="light"
+                                        size="sm"
+                                        onClick={handlePostComment}
+                                        disabled={
+                                            postComment.isPending ||
+                                            !aiResponse.trim()
+                                        }
+                                        className="px-4 py-2"
+                                    >
+                                        {postComment.isPending ? (
+                                            'Posting...'
+                                        ) : (
+                                            <>
+                                                Post Comment & Move to Outreach
+                                                <BiRightArrowAlt
+                                                    size={16}
+                                                    className="ml-1"
+                                                />
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     <div className="mt-auto">
                         {/* Post Stats */}
