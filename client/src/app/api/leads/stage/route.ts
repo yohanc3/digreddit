@@ -22,7 +22,7 @@ export const PUT = auth(async function PUT(req: NextAuthRequest) {
     // Validate required fields
     if (!leadID || !stage || typeof isPost !== 'boolean') {
         return NextResponse.json(
-            { error: 'Missing required fields: leadID, stage, isPost' },
+            { error: 'Missing required fields' },
             { status: 400 }
         );
     }
@@ -33,6 +33,7 @@ export const PUT = auth(async function PUT(req: NextAuthRequest) {
         'initial_outreach',
         'engagement',
     ];
+
     if (!validStages.includes(stage)) {
         return NextResponse.json(
             {
