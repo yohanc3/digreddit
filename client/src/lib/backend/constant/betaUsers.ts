@@ -42,4 +42,5 @@ export const betaUsersEmails = [
     'logan.digredditbeta@gmail.com',
     'gauravdollar712@gmail.com',
     'shivamuni57@gmail.com',
+    'amykramer989@gmail.com',
 ];
