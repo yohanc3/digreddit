@@ -43,4 +43,5 @@ export const betaUsersEmails = [
     'gauravdollar712@gmail.com',
     'shivamuni57@gmail.com',
     'amykramer989@gmail.com',
+    'toenilework@gmail.com',
 ];
