@@ -2,6 +2,7 @@ import { queryClient } from '@/app/providers';
 import { toast } from '@/hooks/use-toast';
 import { useMutation } from '@tanstack/react-query';
 import { useFetch } from '../hooks/useFetch';
+import { useQueryClient } from '@tanstack/react-query';
 
 export function useUpdateLeadInteraction() {
     const { apiPost } = useFetch();
@@ -37,4 +38,43 @@ export function useUpdateLeadInteraction() {
     });
 
     return updateLeadInteraction;
+}
+
+export function useUpdateLeadStage() {
+    const { apiPut } = useFetch();
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({
+            leadID,
+            stage,
+            isPost,
+        }: {
+            leadID: string;
+            stage: 'identification' | 'initial_outreach' | 'engagement';
+            isPost: boolean;
+        }) => {
+            return await apiPut('api/leads/stage', {
+                leadID,
+                stage,
+                isPost,
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['allLeads'] });
+
+            toast({
+                title: 'Success',
+                description: 'Lead stage updated successfully',
+            });
+        },
+        onError: (error) => {
+            console.error('Error updating lead stage:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to update lead stage',
+                variant: 'destructive',
+            });
+        },
+    });
 }

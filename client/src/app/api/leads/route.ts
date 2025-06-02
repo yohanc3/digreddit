@@ -25,6 +25,7 @@ export const POST = auth(async function POST(req: NextAuthRequest) {
             pagesOffset,
             filters
         );
+
         const totalCount = await leadsQueries.getTotalLeadsCountByProductID(
             productID,
             filters

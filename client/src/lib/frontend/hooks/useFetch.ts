@@ -42,9 +42,10 @@ export function useFetch() {
             });
 
             if (!result.ok) {
-                const res = await result.json()
+                const res = await result.json();
                 throw new Error(
-                    res?.error || `POST ${route} failed with status ${result.status}`
+                    res?.error ||
+                        `POST ${route} failed with status ${result.status}`
                 );
             }
 
@@ -55,8 +56,39 @@ export function useFetch() {
         }
     }
 
+    async function apiPut(
+        route: string,
+        body: Record<string, unknown>,
+        headers?: Record<string, string>
+    ) {
+        try {
+            const result = await fetch(`${APP_URL}/${route}`, {
+                method: 'PUT',
+                body: JSON.stringify(body),
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...headers,
+                },
+            });
+
+            if (!result.ok) {
+                const res = await result.json();
+                throw new Error(
+                    res?.error ||
+                        `PUT ${route} failed with status ${result.status}`
+                );
+            }
+
+            return await result.json();
+        } catch (error) {
+            console.error('PUT request failed:', error);
+            throw error;
+        }
+    }
+
     return {
         apiGet,
         apiPost,
+        apiPut,
     };
 }
