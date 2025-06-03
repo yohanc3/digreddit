@@ -1,6 +1,6 @@
-import OpenAI from 'openai';
 import postgres from 'postgres';
 import { Comment, Post } from './types';
+import { GoogleGenAI } from '@google/genai';
 
 export interface ProductInput {
 	id: string;
@@ -14,14 +14,13 @@ export interface SimilarityResponse {
 export async function calculateSimilarity(
 	bodyText: string,
 	products: ProductInput[],
-	openaiKey: string
+	geminiAPIKey: string
 ): Promise<SimilarityResponse | null> {
-	const openai = new OpenAI({
-		baseURL: 'https://api.deepseek.com',
-		apiKey: openaiKey,
+	const gemini = new GoogleGenAI({
+		apiKey: geminiAPIKey,
 	});
 
-	const productDetails = products.map((product) => `User ID: ${product.id}\nProduct Description: "${product.description}"`).join('\n\n');
+	const productDetails = products.map((product) => `Product ID: ${product.id}\nProduct Description: "${product.description}"`).join('\n\n');
 
 	const promptContent = `You are an expert lead generation assistant for DigReddt. Your goal is to find relevant leads for businesses by comparing social media content (posts/comments) to their product/service descriptions.
 
@@ -35,7 +34,7 @@ ${productDetails}
 
 Please evaluate how similar the social media content is to *each* product description. Rate the similarity as a decimal number between 0.0 (not at all similar or relevant as a lead) and 10.0 (highly similar and a strong potential lead).
 
-Return your response *only* as a single JSON object. Each key in the JSON object must be the ID, and its corresponding value must be the similarity score (a decimal number). Do not include any other text, explanations, or formatting outside of this JSON object.
+Return your response *only* as a single JSON object in text, meaning you should return a string that is a JSON object. Each key in the JSON object must be the ID, and its corresponding value must be the similarity score (a decimal number). Do not include any other text, explanations, or formatting outside of this JSON object.
 
 Example response format:
 {
@@ -45,19 +44,14 @@ Example response format:
 }`;
 
 	try {
-		const completion = await openai.chat.completions.create({
-			messages: [
-				{ role: 'system', content: 'You are a helpful assistant specialized in JSON outputs.' },
-				{ role: 'user', content: promptContent },
-			],
-			model: 'deepseek-chat',
-			response_format: {
-				type: 'json_object',
-			},
+		const completion = await gemini.models.generateContent({
+			model: 'gemma-3n-e4b-it',
+			contents: promptContent,
 		});
 
-		if (completion.choices[0]?.message?.content) {
-			const result = JSON.parse(completion.choices[0].message.content);
+		if (completion.text) {
+			const result = JSON.parse(completion.text.replace(/```json\n|```/g, ''));
+
 			console.log(`Result: ${JSON.stringify(result, null, 2)}`);
 			return result as SimilarityResponse;
 		}
