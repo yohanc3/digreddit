@@ -20,6 +20,7 @@ import { getProducts, ProductInput } from './utils';
 export interface Env {
 	SECURITY_KEY: string;
 	GEMINI_API_KEY: string;
+	DEEPSEEK_API_KEY: string;
 	HYPERDRIVE: Hyperdrive;
 }
 
@@ -94,7 +95,7 @@ export default {
 			return new Response(JSON.stringify({ error: `No products found for keywords: ${keywords.join(', ')}` }), { status: 404 });
 		}
 
-		const similarity: SimilarityResponse | null = await calculateSimilarity(contentEntry!.body, products, env.GEMINI_API_KEY);
+		const similarity: SimilarityResponse | null = await calculateSimilarity(contentEntry!.body, products, env.DEEPSEEK_API_KEY);
 
 		if (similarity === null) {
 			return new Response(JSON.stringify({ error: 'Failed to calculate similarity.' }), { status: 500 });
