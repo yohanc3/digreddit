@@ -1,6 +1,7 @@
-import OpenAI from 'openai';
 import postgres from 'postgres';
 import { Comment, Post } from './types';
+import { GoogleGenAI } from '@google/genai';
+import openai from 'openai';
 
 export interface ProductInput {
 	id: string;
@@ -14,12 +15,13 @@ export interface SimilarityResponse {
 export async function calculateSimilarity(
 	bodyText: string,
 	products: ProductInput[],
-	openaiKey: string
+	geminiAPIKey: string
 ): Promise<SimilarityResponse | null> {
-	const openai = new OpenAI({
-		baseURL: 'https://api.deepseek.com',
-		apiKey: openaiKey,
+	const gemini = new GoogleGenAI({
+		apiKey: geminiAPIKey,
 	});
+
+	const time = Date.now();
 
 	const productDetails = products.map((product) => `User ID: ${product.id}\nProduct Description: "${product.description}"`).join('\n\n');
 
@@ -38,28 +40,37 @@ Please evaluate how similar the social media content is to *each* product descri
 Return your response *only* as a single JSON object. Each key in the JSON object must be the ID, and its corresponding value must be the similarity score (a decimal number). Do not include any other text, explanations, or formatting outside of this JSON object.
 
 Example response format:
+\`\`\`json
 {
   "id_1": 7.5,
   "id_abc": 9.2,
   "id_42": 3.0
-}`;
+}
+\`\`\`
+`;
 
 	try {
-		const completion = await openai.chat.completions.create({
-			messages: [
-				{ role: 'system', content: 'You are a helpful assistant specialized in JSON outputs.' },
-				{ role: 'user', content: promptContent },
-			],
-			model: 'deepseek-chat',
-			response_format: {
-				type: 'json_object',
-			},
+		// const completion = await openai.chat.completions.create({
+		// 	messages: [
+		// 		{ role: 'system', content: 'You are a helpful assistant specialized in JSON outputs.' },
+		// 		{ role: 'user', content: promptContent },
+		// 	],
+		// 	model: 'deepseek-chat',
+		// 	response_format: {
+		// 		type: 'json_object',
+		// 	},
+		// });
+
+		const completion = await gemini.models.generateContent({
+			model: 'gemini-1.5-flash-8b',
+			contents: promptContent,
 		});
 
-		if (completion.choices[0]?.message?.content) {
-			const result = JSON.parse(completion.choices[0].message.content);
+		if (completion.text) {
+			const result = JSON.parse(completion.text.replace(/```json\n|```/g, ''));
 			console.log(`Result: ${JSON.stringify(result, null, 2)}`);
-			return result as SimilarityResponse;
+			console.log(`Time taken: ${Date.now() - time}ms`);
+			// return result as SimilarityResponse;
 		}
 
 		console.error('No content in completion response.');
