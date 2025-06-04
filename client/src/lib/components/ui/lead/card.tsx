@@ -9,6 +9,8 @@ import {
     BiChevronUp,
     BiRightArrowAlt,
     BiBot,
+    BiCheckCircle,
+    BiXCircle,
 } from 'react-icons/bi';
 import clsx from 'clsx';
 import { Button } from '../button';
@@ -115,6 +117,34 @@ export function RedditCommentLeadCard({
         );
     }
 
+    function handleMoveToSkipped() {
+        updateLeadStage.mutate(
+            {
+                leadID: leadDetails.id,
+                stage: 'skipped',
+                isPost: false,
+            },
+            {
+                onSuccess: () => {
+                    queryClient.invalidateQueries({
+                        queryKey: ['allLeads'],
+                    });
+                    toast({
+                        title: 'Lead is Skipped.',
+                        description:
+                            'The lead has been Skipped.',
+                    });
+                },
+                onError: () => {
+                    toast({
+                        title: 'Error',
+                        description: 'Failed to move lead to skipped stage.',
+                    });
+                },
+            }
+        );
+    }
+
     async function handlePostComment() {
         const accessToken = getBrowserRedditAccessToken();
 
@@ -187,7 +217,12 @@ export function RedditCommentLeadCard({
                             by: {leadDetails.author}
                         </div>
                     </div>
-                    <div>
+                    <div className='flex flex-row items-center space-x-2'>
+                        <div
+                            onMouseDown={handleMoveToSkipped}
+                            className='text-tertiarySize !text-tertiaryColor hover:underline cursor-pointer'>
+                            Skip
+                        </div>
                         <a
                             href={`https://www.reddit.com${leadDetails.url}`}
                             target="_blank"
@@ -298,11 +333,11 @@ export function RedditCommentLeadCard({
                                     disabled={postComment.isPending}
                                 >
                                     {leadDetails.stage === 'identification' &&
-                                    !postComment.isPending
+                                        !postComment.isPending
                                         ? 'Post Comment'
                                         : postComment.isPending
-                                          ? 'Sending...'
-                                          : buttonText}
+                                            ? 'Sending...'
+                                            : buttonText}
                                     {!postComment.isPending && (
                                         <BiRightArrowAlt
                                             size={16}
@@ -367,6 +402,34 @@ export function RedditPostLeadCard({
                     toast({
                         title: 'Error',
                         description: 'Failed to move lead to engagement.',
+                    });
+                },
+            }
+        );
+    }
+
+    function handleMoveToSkipped() {
+        updateLeadStage.mutate(
+            {
+                leadID: leadDetails.id,
+                stage: 'skipped',
+                isPost: true,
+            },
+            {
+                onSuccess: () => {
+                    queryClient.invalidateQueries({
+                        queryKey: ['allLeads'],
+                    });
+                    toast({
+                        title: 'Lead is Skipped.',
+                        description:
+                            'The lead has been Skipped.',
+                    });
+                },
+                onError: () => {
+                    toast({
+                        title: 'Error',
+                        description: 'Failed to move lead to skipped stage.',
                     });
                 },
             }
@@ -459,7 +522,12 @@ export function RedditPostLeadCard({
                         by: {leadDetails.author}
                     </div>
                 </div>
-                <div>
+                <div className='flex flex-row items-center space-x-2'>
+                    <div
+                        onMouseDown={handleMoveToSkipped}
+                        className='text-tertiarySize !text-tertiaryColor hover:underline cursor-pointer'>
+                        Skip
+                    </div>
                     <a href={leadDetails.url} target="_blank">
                         <Button
                             variant={'light'}
@@ -577,11 +645,11 @@ export function RedditPostLeadCard({
                                 disabled={postComment.isPending}
                             >
                                 {leadDetails.stage === 'identification' &&
-                                !postComment.isPending
+                                    !postComment.isPending
                                     ? 'Post Comment'
                                     : postComment.isPending
-                                      ? 'Sending...'
-                                      : buttonText}
+                                        ? 'Sending...'
+                                        : buttonText}
                                 {!postComment.isPending && (
                                     <BiRightArrowAlt
                                         size={16}

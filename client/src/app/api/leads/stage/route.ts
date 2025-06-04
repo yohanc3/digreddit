@@ -32,6 +32,7 @@ export const PUT = auth(async function PUT(req: NextAuthRequest) {
         'identification',
         'initial_outreach',
         'engagement',
+        'skipped'
     ];
 
     if (!validStages.includes(stage)) {
