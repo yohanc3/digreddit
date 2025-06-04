@@ -21,8 +21,6 @@ export async function calculateSimilarity(
 		apiKey: geminiAPIKey,
 	});
 
-	const time = Date.now();
-
 	const productDetails = products.map((product) => `User ID: ${product.id}\nProduct Description: "${product.description}"`).join('\n\n');
 
 	const promptContent = `You are an expert lead generation assistant for DigReddt. Your goal is to find relevant leads for businesses by comparing social media content (posts/comments) to their product/service descriptions.
@@ -50,17 +48,6 @@ Example response format:
 `;
 
 	try {
-		// const completion = await openai.chat.completions.create({
-		// 	messages: [
-		// 		{ role: 'system', content: 'You are a helpful assistant specialized in JSON outputs.' },
-		// 		{ role: 'user', content: promptContent },
-		// 	],
-		// 	model: 'deepseek-chat',
-		// 	response_format: {
-		// 		type: 'json_object',
-		// 	},
-		// });
-
 		const completion = await gemini.models.generateContent({
 			model: 'gemini-1.5-flash-8b',
 			contents: promptContent,
@@ -69,8 +56,7 @@ Example response format:
 		if (completion.text) {
 			const result = JSON.parse(completion.text.replace(/```json\n|```/g, ''));
 			console.log(`Result: ${JSON.stringify(result, null, 2)}`);
-			console.log(`Time taken: ${Date.now() - time}ms`);
-			// return result as SimilarityResponse;
+			return result as SimilarityResponse;
 		}
 
 		console.error('No content in completion response.');

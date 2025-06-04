@@ -20,7 +20,6 @@ import { getProducts, ProductInput } from './utils';
 export interface Env {
 	SECURITY_KEY: string;
 	GEMINI_API_KEY: string;
-	DEEPSEEK_API_KEY: string;
 	HYPERDRIVE: Hyperdrive;
 }
 
