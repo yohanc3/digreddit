@@ -4,6 +4,7 @@ import { auth } from '../../../../../auth';
 import { redirect } from 'next/navigation';
 import { UserDropdown } from '@/lib/components/avatar-dropdown';
 import { FullLogo } from '../../logo';
+import RedditConnection from './RedditConnection';
 
 interface NavBarProps {
     className?: string;
@@ -31,10 +32,13 @@ export default async function NavBar({ className }: NavBarProps) {
 
                 {/* Temporary Profile */}
                 <div className="flex flex-row items-center gap-x-2">
-                    <UserDropdown user={session.user} />
-                    <p className="text-primarySize text-secondaryColor font-semibold">
-                        {session.user?.name || ''}
-                    </p>
+                    <RedditConnection />
+                    <div className="flex flex-row items-center gap-x-2">
+                        <UserDropdown user={session.user} />
+                        <p className="text-primarySize text-secondaryColor font-semibold">
+                            {session.user?.name || ''}
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>

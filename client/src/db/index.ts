@@ -8,8 +8,9 @@ import {
     nonBetaUsers,
     postLeads,
     products,
+    users,
 } from './schema';
-import { Payload, Products, LeadFilters } from '@/types/backend/db';
+import { Payload, Products, LeadFilters, LeadStage } from '@/types/backend/db';
 
 export const db = drizzle(process.env.DATABASE_URL!, { schema });
 
@@ -104,6 +105,10 @@ export const leadsQueries = {
                 conditions.push(eq(table.isInteracted, false));
             }
 
+            if (filters?.stage) {
+                conditions.push(eq(table.stage, filters.stage));
+            }
+
             return and(...conditions);
         };
 
@@ -187,6 +192,10 @@ export const leadsQueries = {
                 conditions.push(eq(table.isInteracted, false));
             }
 
+            if (filters?.stage) {
+                conditions.push(eq(table.stage, filters.stage));
+            }
+
             return and(...conditions);
         };
 
@@ -216,6 +225,20 @@ export const leadsQueries = {
 
         return updatedLead;
     },
+
+    updateLeadStage: async (
+        leadID: string,
+        stage: LeadStage,
+        isPost: boolean
+    ) => {
+        const [updatedLead] = await db
+            .update(isPost ? postLeads : commentLeads)
+            .set({ stage })
+            .where(eq(isPost ? postLeads.id : commentLeads.id, leadID))
+            .returning();
+
+        return updatedLead;
+    },
 };
 
 export const nonBetaUsersQueries = {
@@ -226,6 +249,40 @@ export const nonBetaUsersQueries = {
             .returning();
 
         return createdNonBetaUserEmail;
+    },
+};
+
+export const userQueries = {
+    addRedditRefreshToken: async (token: string, userID: string) => {
+        const [updatedUser] = await db
+            .update(users)
+            .set({
+                redditRefreshToken: token,
+            })
+            .where(eq(users.id, userID))
+            .returning();
+        return updatedUser;
+    },
+    checkRedditConnection: async (userID: string) => {
+        const refreshToken = await userQueries.getRedditRefreshToken(userID);
+
+        return refreshToken ? true : false;
+    },
+    getRedditRefreshToken: async (userID: string) => {
+        const result = await db
+            .select({
+                redditRefreshToken: users.redditRefreshToken,
+            })
+            .from(users)
+            .where(eq(users.id, userID));
+
+        const { redditRefreshToken } = result[0];
+
+        if (redditRefreshToken) {
+            return redditRefreshToken;
+        } else {
+            return null;
+        }
     },
 };
 
