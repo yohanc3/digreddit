@@ -29,6 +29,7 @@ import {
 import { toast } from '@/hooks/use-toast';
 import { getBrowserRedditAccessToken } from '@/lib/frontend/utils/getRedditOauthToken';
 import { queryClient } from '@/app/providers';
+import { useRedditUser } from '@/lib/frontend/hooks/useRedditUser';
 
 // Helper function to get next stage and button text
 function getNextStageInfo(currentStage: LeadStage): {
@@ -68,12 +69,25 @@ export function RedditCommentLeadCard({
     const updateLeadStage = useUpdateLeadStage();
     const generateAIResponse = useGenerateAIResponse();
     const postComment = usePostComment();
+    const { redditUserData, isRedditUserDataLoading } = useRedditUser();
 
     const [aiResponse, setAiResponse] = useState<string>('');
 
     const { nextStage, buttonText } = getNextStageInfo(leadDetails.stage);
 
+    // Determine if connected to Reddit
+    const isConnectedToReddit = !isRedditUserDataLoading && !!redditUserData;
+
     function handleGenerateResponse() {
+        if (!isConnectedToReddit) {
+            toast({
+                title: 'Reddit Connection Required',
+                description:
+                    'Please connect your Reddit account first by clicking the Reddit button in the navbar.',
+            });
+            return;
+        }
+
         generateAIResponse.mutate(
             {
                 leadMessage: leadDetails.body,
@@ -116,6 +130,15 @@ export function RedditCommentLeadCard({
     }
 
     async function handlePostComment() {
+        if (!isConnectedToReddit) {
+            toast({
+                title: 'Reddit Connection Required',
+                description:
+                    'Please connect your Reddit account first by clicking the Reddit button in the navbar.',
+            });
+            return;
+        }
+
         const accessToken = getBrowserRedditAccessToken();
 
         if (accessToken) {
@@ -161,11 +184,6 @@ export function RedditCommentLeadCard({
                     },
                 }
             );
-        } else {
-            toast({
-                title: 'Error',
-                description: 'Please connect your Reddit account',
-            });
         }
     }
 
@@ -246,9 +264,15 @@ export function RedditCommentLeadCard({
                     </div>
                 </div>
                 {leadDetails.stage === 'identification' && (
-                    <div>
+                    <div className="relative group">
                         {/* AI Response Section */}
-                        <div className="space-y-2">
+                        <div
+                            className={clsx(
+                                'space-y-2 mt-2 transition-all duration-200',
+                                !isConnectedToReddit &&
+                                    'opacity-60 cursor-not-allowed'
+                            )}
+                        >
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-medium text-tertiaryColor">
                                     Initial Outreach Response:
@@ -257,7 +281,10 @@ export function RedditCommentLeadCard({
                                     variant="outline"
                                     size="sm"
                                     onClick={handleGenerateResponse}
-                                    disabled={generateAIResponse.isPending}
+                                    disabled={
+                                        !isConnectedToReddit ||
+                                        generateAIResponse.isPending
+                                    }
                                     className="h-7 px-2 text-xs"
                                 >
                                     {generateAIResponse.isPending ? (
@@ -273,10 +300,38 @@ export function RedditCommentLeadCard({
                             <textarea
                                 value={aiResponse}
                                 onChange={(e) => setAiResponse(e.target.value)}
-                                placeholder="Initial outreach response goes here..."
-                                className="w-full h-20 p-2 text-xs border border-gray-200 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder={
+                                    isConnectedToReddit
+                                        ? 'Initial outreach response goes here...'
+                                        : 'Connect to Reddit to enable this feature...'
+                                }
+                                disabled={!isConnectedToReddit}
+                                className={clsx(
+                                    'w-full h-20 p-2 text-xs border rounded-md resize-none focus:ring-2 focus:border-transparent',
+                                    isConnectedToReddit
+                                        ? 'border-gray-200 focus:ring-blue-500 bg-white'
+                                        : 'border-red-200 bg-red-50 text-gray-400 cursor-not-allowed'
+                                )}
                             />
                         </div>
+
+                        {/* Tooltip for disabled state */}
+                        {!isConnectedToReddit && (
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-72 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                                <div className="bg-gray-800 text-white text-xs rounded-lg p-2 shadow-lg">
+                                    <div className="font-medium mb-1">
+                                        🔗 Reddit Connection Required
+                                    </div>
+                                    <div className="text-gray-200">
+                                        Connect your Reddit account by clicking
+                                        the Reddit button in the navigation bar.
+                                    </div>
+
+                                    {/* Tooltip Arrow */}
+                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-800"></div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -295,7 +350,12 @@ export function RedditCommentLeadCard({
                                             : handlePostComment
                                     }
                                     className="w-full text-xs"
-                                    disabled={postComment.isPending}
+                                    disabled={
+                                        postComment.isPending ||
+                                        (leadDetails.stage ===
+                                            'identification' &&
+                                            !isConnectedToReddit)
+                                    }
                                 >
                                     {leadDetails.stage === 'identification' &&
                                     !postComment.isPending
@@ -340,10 +400,14 @@ export function RedditPostLeadCard({
     const updateLeadStage = useUpdateLeadStage();
     const generateAIResponse = useGenerateAIResponse();
     const postComment = usePostComment();
+    const { redditUserData, isRedditUserDataLoading } = useRedditUser();
 
     const [aiResponse, setAiResponse] = useState<string>('');
 
     const { nextStage, buttonText } = getNextStageInfo(leadDetails.stage);
+
+    // Determine if connected to Reddit
+    const isConnectedToReddit = !isRedditUserDataLoading && !!redditUserData;
 
     function handleMoveToEngagement() {
         updateLeadStage.mutate(
@@ -374,6 +438,15 @@ export function RedditPostLeadCard({
     }
 
     function handleGenerateResponse() {
+        if (!isConnectedToReddit) {
+            toast({
+                title: 'Reddit Connection Required',
+                description:
+                    'Please connect your Reddit account first by clicking the Reddit button in the navbar.',
+            });
+            return;
+        }
+
         const contentToAnalyze = `${leadDetails.title} ${leadDetails.body}`;
         generateAIResponse.mutate(
             {
@@ -389,6 +462,15 @@ export function RedditPostLeadCard({
     }
 
     async function handlePostComment() {
+        if (!isConnectedToReddit) {
+            toast({
+                title: 'Reddit Connection Required',
+                description:
+                    'Please connect your Reddit account first by clicking the Reddit button in the navbar.',
+            });
+            return;
+        }
+
         const accessToken = getBrowserRedditAccessToken();
 
         if (accessToken) {
@@ -434,11 +516,6 @@ export function RedditPostLeadCard({
                     },
                 }
             );
-        } else {
-            toast({
-                title: 'Error',
-                description: 'Please connect your Reddit account',
-            });
         }
     }
 
@@ -526,8 +603,14 @@ export function RedditPostLeadCard({
 
             {/* AI Response Section */}
             {leadDetails.stage === 'identification' && (
-                <div>
-                    <div className="space-y-2">
+                <div className="relative group">
+                    <div
+                        className={clsx(
+                            'space-y-2 mt-2 transition-all duration-200',
+                            !isConnectedToReddit &&
+                                'opacity-60 cursor-not-allowed'
+                        )}
+                    >
                         <div className="flex items-center justify-between">
                             <span className="text-xs font-medium text-tertiaryColor">
                                 Initial Outreach Response:
@@ -536,7 +619,10 @@ export function RedditPostLeadCard({
                                 variant="outline"
                                 size="sm"
                                 onClick={handleGenerateResponse}
-                                disabled={generateAIResponse.isPending}
+                                disabled={
+                                    !isConnectedToReddit ||
+                                    generateAIResponse.isPending
+                                }
                                 className="h-7 px-2 text-xs"
                             >
                                 {generateAIResponse.isPending ? (
@@ -552,10 +638,38 @@ export function RedditPostLeadCard({
                         <textarea
                             value={aiResponse}
                             onChange={(e) => setAiResponse(e.target.value)}
-                            placeholder="Initial outreach response goes here..."
-                            className="w-full h-20 p-2 text-xs border border-gray-200 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder={
+                                isConnectedToReddit
+                                    ? 'Initial outreach response goes here...'
+                                    : 'Connect to Reddit to enable this feature...'
+                            }
+                            disabled={!isConnectedToReddit}
+                            className={clsx(
+                                'w-full h-20 p-2 text-xs border rounded-md resize-none focus:ring-2 focus:border-transparent',
+                                isConnectedToReddit
+                                    ? 'border-gray-200 focus:ring-blue-500 bg-white'
+                                    : 'border-red-200 bg-red-50 text-gray-400 cursor-not-allowed'
+                            )}
                         />
                     </div>
+
+                    {/* Tooltip for disabled state */}
+                    {!isConnectedToReddit && (
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-72 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                            <div className="bg-gray-800 text-white text-xs rounded-lg p-2 shadow-lg">
+                                <div className="font-medium mb-1">
+                                    🔗 Reddit Connection Required
+                                </div>
+                                <div className="text-gray-200">
+                                    Connect your Reddit account by clicking the
+                                    Reddit button in the navigation bar.
+                                </div>
+
+                                {/* Tooltip Arrow */}
+                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-800"></div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -574,7 +688,11 @@ export function RedditPostLeadCard({
                                         : handlePostComment
                                 }
                                 className="w-full text-xs"
-                                disabled={postComment.isPending}
+                                disabled={
+                                    postComment.isPending ||
+                                    (leadDetails.stage === 'identification' &&
+                                        !isConnectedToReddit)
+                                }
                             >
                                 {leadDetails.stage === 'identification' &&
                                 !postComment.isPending
@@ -627,6 +745,10 @@ function RedditLeadCardDialog({
     const upvotes = lead.ups - lead.downs;
 
     const updateLeadInteraction = useUpdateLeadInteraction();
+    const { redditUserData, isRedditUserDataLoading } = useRedditUser();
+
+    // Determine if connected to Reddit
+    const isConnectedToReddit = !isRedditUserDataLoading && !!redditUserData;
 
     // If the body is less than 240 words, show the full description
     useEffect(() => {
@@ -636,6 +758,15 @@ function RedditLeadCardDialog({
     }, [lead.body]);
 
     function handleGenerateResponse() {
+        if (!isConnectedToReddit) {
+            toast({
+                title: 'Reddit Connection Required',
+                description:
+                    'Please connect your Reddit account first by clicking the Reddit button in the navbar.',
+            });
+            return;
+        }
+
         const contentToAnalyze = isPost
             ? `${(lead as PostLead).title} ${lead.body}`
             : lead.body;
@@ -654,6 +785,15 @@ function RedditLeadCardDialog({
     }
 
     async function handlePostComment() {
+        if (!isConnectedToReddit) {
+            toast({
+                title: 'Reddit Connection Required',
+                description:
+                    'Please connect your Reddit account first by clicking the Reddit button in the navbar.',
+            });
+            return;
+        }
+
         const accessToken = getBrowserRedditAccessToken();
 
         if (accessToken) {
@@ -703,11 +843,6 @@ function RedditLeadCardDialog({
                     },
                 }
             );
-        } else {
-            toast({
-                title: 'Error',
-                description: 'Please connect your Reddit account',
-            });
         }
     }
 
@@ -802,58 +937,107 @@ function RedditLeadCardDialog({
 
                     {/* AI Response Section - Only show for identification stage */}
                     {lead.stage === 'identification' && (
-                        <div className="space-y-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium text-secondaryColor">
-                                    Initial Outreach Response:
-                                </span>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleGenerateResponse}
-                                    disabled={generateAIResponse.isPending}
-                                    className="h-8 px-3 text-sm"
-                                >
-                                    {generateAIResponse.isPending ? (
-                                        'Generating...'
-                                    ) : (
-                                        <>
-                                            <BiBot size={16} className="mr-1" />
-                                            Generate AI Response
-                                        </>
-                                    )}
-                                </Button>
-                            </div>
-                            <textarea
-                                value={aiResponse}
-                                onChange={(e) => setAiResponse(e.target.value)}
-                                placeholder="Type up an initial outreach response, or let AI generate one for you! Feel free to edit it before posting."
-                                className="w-full h-60 p-3 text-sm border border-gray-200 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                            {aiResponse && (
-                                <div className="flex justify-end">
+                        <div className="relative group">
+                            <div
+                                className={clsx(
+                                    'space-y-4 p-4 border rounded-lg transition-all duration-200',
+                                    isConnectedToReddit
+                                        ? 'border-gray-200 bg-gray-50'
+                                        : 'border-red-200 bg-red-50 opacity-60 cursor-not-allowed'
+                                )}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium text-secondaryColor">
+                                        Initial Outreach Response:
+                                    </span>
                                     <Button
-                                        variant="light"
+                                        variant="outline"
                                         size="sm"
-                                        onClick={handlePostComment}
+                                        onClick={handleGenerateResponse}
                                         disabled={
-                                            postComment.isPending ||
-                                            !aiResponse.trim()
+                                            !isConnectedToReddit ||
+                                            generateAIResponse.isPending
                                         }
-                                        className="px-4 py-2"
+                                        className="h-8 px-3 text-sm"
                                     >
-                                        {postComment.isPending ? (
-                                            'Posting...'
+                                        {generateAIResponse.isPending ? (
+                                            'Generating...'
                                         ) : (
                                             <>
-                                                Post Comment & Move to Outreach
-                                                <BiRightArrowAlt
+                                                <BiBot
                                                     size={16}
-                                                    className="ml-1"
+                                                    className="mr-1"
                                                 />
+                                                Generate AI Response
                                             </>
                                         )}
                                     </Button>
+                                </div>
+
+                                <textarea
+                                    value={aiResponse}
+                                    onChange={(e) =>
+                                        setAiResponse(e.target.value)
+                                    }
+                                    placeholder={
+                                        isConnectedToReddit
+                                            ? 'Type up an initial outreach response, or let AI generate one for you! Feel free to edit it before posting.'
+                                            : 'Connect to Reddit to enable this feature...'
+                                    }
+                                    disabled={!isConnectedToReddit}
+                                    className={clsx(
+                                        'w-full h-60 p-3 text-sm border rounded-md resize-none focus:ring-2 focus:border-transparent',
+                                        isConnectedToReddit
+                                            ? 'border-gray-200 focus:ring-blue-500 bg-white'
+                                            : 'border-red-200 bg-red-50 text-gray-400 cursor-not-allowed'
+                                    )}
+                                />
+                                {aiResponse && isConnectedToReddit && (
+                                    <div className="flex justify-end">
+                                        <Button
+                                            variant="light"
+                                            size="sm"
+                                            onClick={handlePostComment}
+                                            disabled={
+                                                !isConnectedToReddit ||
+                                                postComment.isPending ||
+                                                !aiResponse.trim()
+                                            }
+                                            className="px-4 py-2"
+                                        >
+                                            {postComment.isPending ? (
+                                                'Posting...'
+                                            ) : (
+                                                <>
+                                                    Post Comment & Move to
+                                                    Outreach
+                                                    <BiRightArrowAlt
+                                                        size={16}
+                                                        className="ml-1"
+                                                    />
+                                                </>
+                                            )}
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Tooltip for disabled state */}
+                            {!isConnectedToReddit && (
+                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-80 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                                    <div className="bg-gray-800 text-white text-sm rounded-lg p-3 shadow-lg">
+                                        <div className="font-medium mb-1">
+                                            🔗 Reddit Connection Required
+                                        </div>
+                                        <div className="text-gray-200">
+                                            Connect your Reddit account by
+                                            clicking the Reddit button in the
+                                            navbar to use AI response features.
+                                        </div>
+
+                                        {/* Tooltip Arrow */}
+                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-800"></div>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -889,7 +1073,7 @@ function RedditLeadCardDialog({
                                             Comments
                                         </p>
                                         <p className="text-xl font-semibold text-secondaryColor">
-                                            {lead.numComments}
+                                            {(lead as PostLead).numComments}
                                         </p>
                                     </div>
                                 </div>
