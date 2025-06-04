@@ -52,6 +52,8 @@ function getNextStageInfo(currentStage: LeadStage): {
             return { nextStage: null, buttonText: 'Unknown Stage' };
     }
 }
+import { useUpdateLeadInteraction } from '@/lib/frontend/tanstack/queries';
+import { getBrowserRedditAccessToken } from '@/lib/frontend/utils/getRedditOauthToken';
 
 interface RedditCommentLeadCardProps {
     leadDetails: CommentLead;
@@ -620,6 +622,8 @@ function RedditLeadCardDialog({
         useState<boolean>(false);
     const [aiResponse, setAiResponse] = useState<string>('');
     const [isOpen, setIsOpen] = useState<boolean>(false);
+    const [isConnectedToReddit, setIsConnectedToReddit] =
+        useState<boolean>(false);
 
     const isPost = isPostLead(lead);
     const unixCreatedAt = new Date(lead.createdAt).getTime();
@@ -627,6 +631,12 @@ function RedditLeadCardDialog({
     const upvotes = lead.ups - lead.downs;
 
     const updateLeadInteraction = useUpdateLeadInteraction();
+
+    // Check Reddit connection status
+    useEffect(() => {
+        const accessToken = getBrowserRedditAccessToken();
+        setIsConnectedToReddit(!!accessToken);
+    }, []);
 
     // If the body is less than 240 words, show the full description
     useEffect(() => {
@@ -859,6 +869,20 @@ function RedditLeadCardDialog({
                         </div>
                     )}
 
+                    {/* Reddit Connection Notice */}
+                    {!isConnectedToReddit && (
+                        <div className="space-y-4 p-4 border border-red-200 rounded-lg bg-red-50">
+                            <div className="text-sm font-medium text-red-700">
+                                ⚠️ Reddit Connection Required
+                            </div>
+                            <div className="text-xs text-red-600">
+                                To interact with leads and post comments, please
+                                connect your Reddit account first by clicking
+                                the Reddit button in the navbar.
+                            </div>
+                        </div>
+                    )}
+
                     <div className="mt-auto">
                         {/* Post Stats */}
                         <div className="grid grid-cols-3 gap-3 my-2">
@@ -889,7 +913,7 @@ function RedditLeadCardDialog({
                                             Comments
                                         </p>
                                         <p className="text-xl font-semibold text-secondaryColor">
-                                            {lead.numComments}
+                                            {(lead as PostLead).numComments}
                                         </p>
                                     </div>
                                 </div>
