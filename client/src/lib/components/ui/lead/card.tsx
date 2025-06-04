@@ -52,8 +52,6 @@ function getNextStageInfo(currentStage: LeadStage): {
             return { nextStage: null, buttonText: 'Unknown Stage' };
     }
 }
-import { useUpdateLeadInteraction } from '@/lib/frontend/tanstack/queries';
-import { getBrowserRedditAccessToken } from '@/lib/frontend/utils/getRedditOauthToken';
 
 interface RedditCommentLeadCardProps {
     leadDetails: CommentLead;
