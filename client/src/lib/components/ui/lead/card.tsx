@@ -1,5 +1,5 @@
 'use client';
-import { CommentLead, PostLead } from '@/types/backend/db';
+import { CommentLead, PostLead, LeadStage } from '@/types/backend/db';
 import {
     BiUpvote,
     BiCommentDetail,
@@ -7,6 +7,8 @@ import {
     BiLinkExternal,
     BiChevronDown,
     BiChevronUp,
+    BiRightArrowAlt,
+    BiBot,
 } from 'react-icons/bi';
 import clsx from 'clsx';
 import { Button } from '../button';
@@ -18,7 +20,39 @@ import {
 import { Badge } from '../badge';
 import { useEffect, useState } from 'react';
 import { timeAgo, isPostLead } from '@/util/utils';
-import { useUpdateLeadInteraction } from '@/lib/frontend/tanstack/queries';
+import {
+    useUpdateLeadInteraction,
+    useUpdateLeadStage,
+    useGenerateAIResponse,
+    usePostComment,
+} from '@/lib/frontend/tanstack/queries';
+import { toast } from '@/hooks/use-toast';
+import { getBrowserRedditAccessToken } from '@/lib/frontend/utils/getRedditOauthToken';
+import { queryClient } from '@/app/providers';
+import { useRedditUser } from '@/lib/frontend/hooks/useRedditUser';
+
+// Helper function to get next stage and button text
+function getNextStageInfo(currentStage: LeadStage): {
+    nextStage: LeadStage | null;
+    buttonText: string;
+} {
+    switch (currentStage) {
+        case 'identification':
+            return {
+                nextStage: 'initial_outreach',
+                buttonText: 'Post Comment',
+            };
+        case 'initial_outreach':
+            return {
+                nextStage: 'engagement',
+                buttonText: 'Move to Engagement',
+            };
+        case 'engagement':
+            return { nextStage: null, buttonText: 'Final Stage' };
+        default:
+            return { nextStage: null, buttonText: 'Unknown Stage' };
+    }
+}
 
 interface RedditCommentLeadCardProps {
     leadDetails: CommentLead;
@@ -30,10 +64,128 @@ export function RedditCommentLeadCard({
     leadDetails,
 }: RedditCommentLeadCardProps) {
     const unixCreatedAt = new Date(leadDetails.createdAt).getTime();
-
     const howLongAgo = timeAgo(unixCreatedAt);
-
     const updateLeadInteraction = useUpdateLeadInteraction();
+    const updateLeadStage = useUpdateLeadStage();
+    const generateAIResponse = useGenerateAIResponse();
+    const postComment = usePostComment();
+    const { redditUserData, isRedditUserDataLoading } = useRedditUser();
+
+    const [aiResponse, setAiResponse] = useState<string>('');
+
+    const { nextStage, buttonText } = getNextStageInfo(leadDetails.stage);
+
+    // Determine if connected to Reddit
+    const isConnectedToReddit = !isRedditUserDataLoading && !!redditUserData;
+
+    function handleGenerateResponse() {
+        if (!isConnectedToReddit) {
+            toast({
+                title: 'Reddit Connection Required',
+                description:
+                    'Please connect your Reddit account first by clicking the Reddit button in the navbar.',
+            });
+            return;
+        }
+
+        generateAIResponse.mutate(
+            {
+                leadMessage: leadDetails.body,
+                productID: leadDetails.productID,
+            },
+            {
+                onSuccess: (generatedResponse: string) => {
+                    setAiResponse(generatedResponse);
+                },
+            }
+        );
+    }
+
+    function handleMoveToEngagement() {
+        updateLeadStage.mutate(
+            {
+                leadID: leadDetails.id,
+                stage: 'engagement',
+                isPost: false,
+            },
+            {
+                onSuccess: () => {
+                    queryClient.invalidateQueries({
+                        queryKey: ['allLeads'],
+                    });
+                    toast({
+                        title: 'Lead moved to engagement.',
+                        description:
+                            'The lead has been moved to the engagement stage.',
+                    });
+                },
+                onError: () => {
+                    toast({
+                        title: 'Error',
+                        description: 'Failed to move lead to engagement.',
+                    });
+                },
+            }
+        );
+    }
+
+    async function handlePostComment() {
+        if (!isConnectedToReddit) {
+            toast({
+                title: 'Reddit Connection Required',
+                description:
+                    'Please connect your Reddit account first by clicking the Reddit button in the navbar.',
+            });
+            return;
+        }
+
+        const accessToken = getBrowserRedditAccessToken();
+
+        if (accessToken) {
+            postComment.mutate(
+                {
+                    accessToken: accessToken,
+                    thingID: leadDetails.id,
+                    comment: aiResponse,
+                    isPost: false,
+                },
+                {
+                    onSuccess: () => {
+                        setAiResponse('');
+                        toast({
+                            title: 'Comment posted successfully. Moving lead to next stage.',
+                            description:
+                                'Your comment has been successfully posted. The lead will now be moved to the next stage.',
+                        });
+                        if (nextStage) {
+                            updateLeadStage.mutate(
+                                {
+                                    leadID: leadDetails.id,
+                                    stage: nextStage,
+                                    isPost: false,
+                                },
+                                {
+                                    onError: () => {
+                                        toast({
+                                            title: 'Error',
+                                            description:
+                                                'Failed to move lead to next stage.',
+                                        });
+                                    },
+                                }
+                            );
+                        }
+                    },
+                    onError: () => {
+                        toast({
+                            title: 'Error',
+                            description: 'Failed to post comment',
+                        });
+                    },
+                }
+            );
+        }
+    }
 
     return (
         <div
@@ -60,12 +212,8 @@ export function RedditCommentLeadCard({
                         >
                             <Button
                                 variant={'light'}
-                                onClick={async () => {
-                                    console.log(
-                                        'leadDetails.id',
-                                        leadDetails.id
-                                    );
-                                    await updateLeadInteraction({
+                                onClick={() => {
+                                    updateLeadInteraction({
                                         leadID: leadDetails.id,
                                         isPost: false,
                                     });
@@ -80,43 +228,159 @@ export function RedditCommentLeadCard({
                 {/* Card Body */}
                 <div className="flex flex-col pt-4 h-28">
                     <div className="text-tertiarySize font-medium text-tertiaryColor text-justify h-12">
-                        {leadDetails.body.substring(0, 200) + '...'}
+                        {leadDetails.body.substring(0, 300) + '...'}
                     </div>
                 </div>
             </div>
 
             <div>
-                {/* Reddit Post/Comment Details */}
-                <div className="flex flex-row h-10 gap-x-3 items-center">
-                    <div className="flex flex-row items-center justify-center gap-x-0.5">
-                        <BiUpvote color="#D93900" size={18} />{' '}
-                        <p className="text-tertiarySize text-tertiaryColor">
-                            {' '}
-                            {leadDetails.ups - leadDetails.downs}{' '}
-                        </p>
-                    </div>
-
-                    <div className="flex flex-row items-center justify-center gap-x-1">
-                        <BiTimeFive color="#344054" size={18} />{' '}
-                        <p className="text-tertiarySize text-tertiaryColor">
-                            {' '}
-                            {howLongAgo}{' '}
-                        </p>
-                    </div>
-                </div>
-
                 {/* Card Rating */}
-                <div className="items-center text-xs font-semibold text-tertiaryColor gap-x-1">
-                    <p>
-                        AI Lead Rating:{' '}
-                        <span className="font-bold text-sm">
-                            {leadDetails.rating}
-                        </span>
-                    </p>
-                </div>
+                <div className="flex flex-row justify-between items-center">
+                    <div className="items-center text-xs font-semibold text-tertiaryColor gap-x-1">
+                        <p>
+                            AI Lead Rating:{' '}
+                            <span className="font-bold text-sm">
+                                {leadDetails.rating}
+                            </span>
+                        </p>
+                    </div>
+                    {/* Reddit Post/Comment Details */}
+                    <div className="flex flex-row h-10 gap-x-3 items-center">
+                        <div className="flex flex-row items-center justify-center gap-x-0.5">
+                            <BiUpvote color="#D93900" size={18} />{' '}
+                            <p className="text-tertiarySize text-tertiaryColor">
+                                {' '}
+                                {leadDetails.ups - leadDetails.downs}{' '}
+                            </p>
+                        </div>
 
-                <RedditLeadCardDialog lead={leadDetails} />
+                        <div className="flex flex-row items-center justify-center gap-x-1">
+                            <BiTimeFive color="#344054" size={18} />{' '}
+                            <p className="text-tertiarySize text-tertiaryColor">
+                                {' '}
+                                {howLongAgo}{' '}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                {leadDetails.stage === 'identification' && (
+                    <div className="relative group">
+                        {/* AI Response Section */}
+                        <div
+                            className={clsx(
+                                'space-y-2 mt-2 transition-all duration-200',
+                                !isConnectedToReddit &&
+                                    'opacity-60 cursor-not-allowed'
+                            )}
+                        >
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-tertiaryColor">
+                                    Initial Outreach Response:
+                                </span>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleGenerateResponse}
+                                    disabled={
+                                        !isConnectedToReddit ||
+                                        generateAIResponse.isPending
+                                    }
+                                    className="h-7 px-2 text-xs"
+                                >
+                                    {generateAIResponse.isPending ? (
+                                        'Generating...'
+                                    ) : (
+                                        <>
+                                            <BiBot size={14} className="mr-1" />
+                                            Generate
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                            <textarea
+                                value={aiResponse}
+                                onChange={(e) => setAiResponse(e.target.value)}
+                                placeholder={
+                                    isConnectedToReddit
+                                        ? 'Initial outreach response goes here...'
+                                        : 'Connect to Reddit to enable this feature...'
+                                }
+                                disabled={!isConnectedToReddit}
+                                className={clsx(
+                                    'w-full h-20 p-2 text-xs border rounded-md resize-none focus:ring-2 focus:border-transparent',
+                                    isConnectedToReddit
+                                        ? 'border-gray-200 focus:ring-blue-500 bg-white'
+                                        : 'border-red-200 bg-red-50 text-gray-400 cursor-not-allowed'
+                                )}
+                            />
+                        </div>
+
+                        {/* Tooltip for disabled state */}
+                        {!isConnectedToReddit && (
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-72 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                                <div className="bg-gray-800 text-white text-xs rounded-lg p-2 shadow-lg">
+                                    <div className="font-medium mb-1">
+                                        🔗 Reddit Connection Required
+                                    </div>
+                                    <div className="text-gray-200">
+                                        Connect your Reddit account by clicking
+                                        the Reddit button in the navigation bar.
+                                    </div>
+
+                                    {/* Tooltip Arrow */}
+                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-800"></div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                <div className="flex flex-col space-y-2">
+                    {/* Stage Transition Button */}
+                    {nextStage &&
+                        (leadDetails.stage === 'identification' ||
+                            leadDetails.stage === 'initial_outreach') && (
+                            <div className="mt-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={
+                                        leadDetails.stage === 'initial_outreach'
+                                            ? handleMoveToEngagement
+                                            : handlePostComment
+                                    }
+                                    className="w-full text-xs"
+                                    disabled={
+                                        postComment.isPending ||
+                                        (leadDetails.stage ===
+                                            'identification' &&
+                                            !isConnectedToReddit)
+                                    }
+                                >
+                                    {leadDetails.stage === 'identification' &&
+                                    !postComment.isPending
+                                        ? 'Post Comment'
+                                        : postComment.isPending
+                                          ? 'Sending...'
+                                          : buttonText}
+                                    {!postComment.isPending && (
+                                        <BiRightArrowAlt
+                                            size={16}
+                                            className="ml-1"
+                                        />
+                                    )}
+                                </Button>
+                            </div>
+                        )}
+                </div>
             </div>
+
+            <RedditLeadCardDialog
+                lead={leadDetails}
+                generateAIResponse={generateAIResponse}
+                postComment={postComment}
+                updateLeadStage={updateLeadStage}
+            />
         </div>
     );
 }
@@ -131,10 +395,129 @@ export function RedditPostLeadCard({
     leadDetails,
 }: RedditPostLeadCardProps) {
     const unixCreatedAt = new Date(leadDetails.createdAt).getTime();
-
     const howLongAgo = timeAgo(unixCreatedAt);
-
     const updateLeadInteraction = useUpdateLeadInteraction();
+    const updateLeadStage = useUpdateLeadStage();
+    const generateAIResponse = useGenerateAIResponse();
+    const postComment = usePostComment();
+    const { redditUserData, isRedditUserDataLoading } = useRedditUser();
+
+    const [aiResponse, setAiResponse] = useState<string>('');
+
+    const { nextStage, buttonText } = getNextStageInfo(leadDetails.stage);
+
+    // Determine if connected to Reddit
+    const isConnectedToReddit = !isRedditUserDataLoading && !!redditUserData;
+
+    function handleMoveToEngagement() {
+        updateLeadStage.mutate(
+            {
+                leadID: leadDetails.id,
+                stage: 'engagement',
+                isPost: true,
+            },
+            {
+                onSuccess: () => {
+                    queryClient.invalidateQueries({
+                        queryKey: ['allLeads'],
+                    });
+                    toast({
+                        title: 'Lead moved to engagement.',
+                        description:
+                            'The lead has been moved to the engagement stage.',
+                    });
+                },
+                onError: () => {
+                    toast({
+                        title: 'Error',
+                        description: 'Failed to move lead to engagement.',
+                    });
+                },
+            }
+        );
+    }
+
+    function handleGenerateResponse() {
+        if (!isConnectedToReddit) {
+            toast({
+                title: 'Reddit Connection Required',
+                description:
+                    'Please connect your Reddit account first by clicking the Reddit button in the navbar.',
+            });
+            return;
+        }
+
+        const contentToAnalyze = `${leadDetails.title} ${leadDetails.body}`;
+        generateAIResponse.mutate(
+            {
+                leadMessage: contentToAnalyze,
+                productID: leadDetails.productID,
+            },
+            {
+                onSuccess: (generatedResponse: string) => {
+                    setAiResponse(generatedResponse);
+                },
+            }
+        );
+    }
+
+    async function handlePostComment() {
+        if (!isConnectedToReddit) {
+            toast({
+                title: 'Reddit Connection Required',
+                description:
+                    'Please connect your Reddit account first by clicking the Reddit button in the navbar.',
+            });
+            return;
+        }
+
+        const accessToken = getBrowserRedditAccessToken();
+
+        if (accessToken) {
+            postComment.mutate(
+                {
+                    accessToken: accessToken,
+                    thingID: leadDetails.id,
+                    comment: aiResponse,
+                    isPost: true,
+                },
+                {
+                    onSuccess: () => {
+                        setAiResponse('');
+                        toast({
+                            title: 'Comment posted successfully. Moving lead to next stage.',
+                            description:
+                                'Your comment has been successfully posted. The lead will now be moved to the next stage.',
+                        });
+                        if (nextStage) {
+                            updateLeadStage.mutate(
+                                {
+                                    leadID: leadDetails.id,
+                                    stage: nextStage,
+                                    isPost: true,
+                                },
+                                {
+                                    onError: () => {
+                                        toast({
+                                            title: 'Error',
+                                            description:
+                                                'Failed to move lead to next stage.',
+                                        });
+                                    },
+                                }
+                            );
+                        }
+                    },
+                    onError: () => {
+                        toast({
+                            title: 'Error',
+                            description: 'Failed to post comment',
+                        });
+                    },
+                }
+            );
+        }
+    }
 
     return (
         <div
@@ -157,12 +540,11 @@ export function RedditPostLeadCard({
                     <a href={leadDetails.url} target="_blank">
                         <Button
                             variant={'light'}
-                            onClick={async () => {
-                                await updateLeadInteraction({
+                            onClick={() => {
+                                updateLeadInteraction({
                                     leadID: leadDetails.id,
                                     isPost: true,
                                 });
-                                console.log('leadDetails.id', leadDetails.id);
                             }}
                         >
                             Open <BiLinkExternal size={18} />
@@ -173,7 +555,7 @@ export function RedditPostLeadCard({
 
             {/* Card Body */}
             <div className="flex flex-col h-28">
-                <div className="text-mediumSize font-semibold line-clamp-2">
+                <div className="text-lg/6 font-semibold line-clamp-2">
                     {leadDetails.title}
                 </div>
 
@@ -182,48 +564,180 @@ export function RedditPostLeadCard({
                 </div>
             </div>
 
-            {/* Reddit Post/Comment Details */}
-            <div className="flex flex-row h-10 gap-x-3 items-center">
-                <div className="flex flex-row items-center justify-center gap-x-0.5">
-                    <BiUpvote color="#D93900" size={18} />{' '}
-                    <p className="text-tertiarySize text-tertiaryColor"> 2 </p>
-                </div>
-
-                <div className="flex flex-row items-center justify-center gap-x-0.5">
-                    <BiCommentDetail color="#344054" size={18} />{' '}
-                    <p className="text-tertiarySize text-tertiaryColor"> 2 </p>
-                </div>
-                <div className="flex flex-row items-center justify-center gap-x-1">
-                    <BiTimeFive color="#344054" size={18} />{' '}
-                    <p className="text-tertiarySize text-tertiaryColor">
-                        {' '}
-                        {howLongAgo}{' '}
+            <div className="flex flex-row justify-between items-center">
+                {/* Card Rating */}
+                <div className="items-center text-xs font-semibold text-tertiaryColor gap-x-1">
+                    <p>
+                        AI Lead Rating:{' '}
+                        <span className="font-bold text-sm">
+                            {leadDetails.rating}
+                        </span>
                     </p>
                 </div>
+                {/* Reddit Post/Comment Details */}
+                <div className="flex flex-row h-10 gap-x-3 items-center">
+                    <div className="flex flex-row items-center justify-center gap-x-0.5">
+                        <BiUpvote color="#D93900" size={18} />{' '}
+                        <p className="text-tertiarySize text-tertiaryColor">
+                            {' '}
+                            2{' '}
+                        </p>
+                    </div>
+
+                    <div className="flex flex-row items-center justify-center gap-x-0.5">
+                        <BiCommentDetail color="#344054" size={18} />{' '}
+                        <p className="text-tertiarySize text-tertiaryColor">
+                            {' '}
+                            2{' '}
+                        </p>
+                    </div>
+                    <div className="flex flex-row items-center justify-center gap-x-1">
+                        <BiTimeFive color="#344054" size={18} />{' '}
+                        <p className="text-tertiarySize text-tertiaryColor">
+                            {' '}
+                            {howLongAgo}{' '}
+                        </p>
+                    </div>
+                </div>
             </div>
 
-            {/* Card Rating */}
-            <div className="items-center text-xs font-semibold text-tertiaryColor gap-x-1">
-                <p>
-                    AI Lead Rating:{' '}
-                    <span className="font-bold text-sm">
-                        {leadDetails.rating}
-                    </span>
-                </p>
+            {/* AI Response Section */}
+            {leadDetails.stage === 'identification' && (
+                <div className="relative group">
+                    <div
+                        className={clsx(
+                            'space-y-2 mt-2 transition-all duration-200',
+                            !isConnectedToReddit &&
+                                'opacity-60 cursor-not-allowed'
+                        )}
+                    >
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium text-tertiaryColor">
+                                Initial Outreach Response:
+                            </span>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleGenerateResponse}
+                                disabled={
+                                    !isConnectedToReddit ||
+                                    generateAIResponse.isPending
+                                }
+                                className="h-7 px-2 text-xs"
+                            >
+                                {generateAIResponse.isPending ? (
+                                    'Generating...'
+                                ) : (
+                                    <>
+                                        <BiBot size={14} className="mr-1" />
+                                        Generate
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                        <textarea
+                            value={aiResponse}
+                            onChange={(e) => setAiResponse(e.target.value)}
+                            placeholder={
+                                isConnectedToReddit
+                                    ? 'Initial outreach response goes here...'
+                                    : 'Connect to Reddit to enable this feature...'
+                            }
+                            disabled={!isConnectedToReddit}
+                            className={clsx(
+                                'w-full h-20 p-2 text-xs border rounded-md resize-none focus:ring-2 focus:border-transparent',
+                                isConnectedToReddit
+                                    ? 'border-gray-200 focus:ring-blue-500 bg-white'
+                                    : 'border-red-200 bg-red-50 text-gray-400 cursor-not-allowed'
+                            )}
+                        />
+                    </div>
+
+                    {/* Tooltip for disabled state */}
+                    {!isConnectedToReddit && (
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-72 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                            <div className="bg-gray-800 text-white text-xs rounded-lg p-2 shadow-lg">
+                                <div className="font-medium mb-1">
+                                    🔗 Reddit Connection Required
+                                </div>
+                                <div className="text-gray-200">
+                                    Connect your Reddit account by clicking the
+                                    Reddit button in the navigation bar.
+                                </div>
+
+                                {/* Tooltip Arrow */}
+                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-800"></div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            <div className="flex flex-col space-y-2 ">
+                {/* Stage Transition Button */}
+                {nextStage &&
+                    (leadDetails.stage === 'identification' ||
+                        leadDetails.stage === 'initial_outreach') && (
+                        <div className="mt-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={
+                                    leadDetails.stage === 'initial_outreach'
+                                        ? handleMoveToEngagement
+                                        : handlePostComment
+                                }
+                                className="w-full text-xs"
+                                disabled={
+                                    postComment.isPending ||
+                                    (leadDetails.stage === 'identification' &&
+                                        !isConnectedToReddit)
+                                }
+                            >
+                                {leadDetails.stage === 'identification' &&
+                                !postComment.isPending
+                                    ? 'Post Comment'
+                                    : postComment.isPending
+                                      ? 'Sending...'
+                                      : buttonText}
+                                {!postComment.isPending && (
+                                    <BiRightArrowAlt
+                                        size={16}
+                                        className="ml-1"
+                                    />
+                                )}
+                            </Button>
+                        </div>
+                    )}
             </div>
 
-            <RedditLeadCardDialog lead={leadDetails} />
+            <RedditLeadCardDialog
+                lead={leadDetails}
+                generateAIResponse={generateAIResponse}
+                postComment={postComment}
+                updateLeadStage={updateLeadStage}
+            />
         </div>
     );
 }
 
 interface RedditLeadCardDialogProps {
     lead: CommentLead | PostLead;
+    generateAIResponse: any;
+    postComment: any;
+    updateLeadStage: any;
 }
 
-function RedditLeadCardDialog({ lead }: RedditLeadCardDialogProps) {
+function RedditLeadCardDialog({
+    lead,
+    generateAIResponse,
+    postComment,
+    updateLeadStage,
+}: RedditLeadCardDialogProps) {
     const [showRedditDescription, setShowRedditDescription] =
         useState<boolean>(false);
+    const [aiResponse, setAiResponse] = useState<string>('');
+    const [isOpen, setIsOpen] = useState<boolean>(false);
 
     const isPost = isPostLead(lead);
     const unixCreatedAt = new Date(lead.createdAt).getTime();
@@ -231,6 +745,10 @@ function RedditLeadCardDialog({ lead }: RedditLeadCardDialogProps) {
     const upvotes = lead.ups - lead.downs;
 
     const updateLeadInteraction = useUpdateLeadInteraction();
+    const { redditUserData, isRedditUserDataLoading } = useRedditUser();
+
+    // Determine if connected to Reddit
+    const isConnectedToReddit = !isRedditUserDataLoading && !!redditUserData;
 
     // If the body is less than 240 words, show the full description
     useEffect(() => {
@@ -239,8 +757,97 @@ function RedditLeadCardDialog({ lead }: RedditLeadCardDialogProps) {
         }
     }, [lead.body]);
 
+    function handleGenerateResponse() {
+        if (!isConnectedToReddit) {
+            toast({
+                title: 'Reddit Connection Required',
+                description:
+                    'Please connect your Reddit account first by clicking the Reddit button in the navbar.',
+            });
+            return;
+        }
+
+        const contentToAnalyze = isPost
+            ? `${(lead as PostLead).title} ${lead.body}`
+            : lead.body;
+
+        generateAIResponse.mutate(
+            {
+                leadMessage: contentToAnalyze,
+                productID: lead.productID,
+            },
+            {
+                onSuccess: (generatedResponse: string) => {
+                    setAiResponse(generatedResponse);
+                },
+            }
+        );
+    }
+
+    async function handlePostComment() {
+        if (!isConnectedToReddit) {
+            toast({
+                title: 'Reddit Connection Required',
+                description:
+                    'Please connect your Reddit account first by clicking the Reddit button in the navbar.',
+            });
+            return;
+        }
+
+        const accessToken = getBrowserRedditAccessToken();
+
+        if (accessToken) {
+            postComment.mutate(
+                {
+                    accessToken: accessToken,
+                    thingID: lead.id,
+                    comment: aiResponse,
+                    isPost: isPost,
+                },
+                {
+                    onSuccess: () => {
+                        setAiResponse('');
+                        setIsOpen(false);
+                        toast({
+                            title: 'Comment posted successfully. Moving lead to next stage.',
+                            description:
+                                'Your comment has been successfully posted. The lead will now be moved to the next stage.',
+                        });
+                        updateLeadStage.mutate(
+                            {
+                                leadID: lead.id,
+                                stage: 'initial_outreach',
+                                isPost: isPost,
+                            },
+                            {
+                                onSuccess: () => {
+                                    queryClient.invalidateQueries({
+                                        queryKey: ['allLeads'],
+                                    });
+                                },
+                                onError: () => {
+                                    toast({
+                                        title: 'Error',
+                                        description:
+                                            'Failed to move lead to next stage.',
+                                    });
+                                },
+                            }
+                        );
+                    },
+                    onError: () => {
+                        toast({
+                            title: 'Error',
+                            description: 'Failed to post comment',
+                        });
+                    },
+                }
+            );
+        }
+    }
+
     return (
-        <Dialog>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
                 <Button variant="dark" className="w-full py-2 text-sm">
                     Open Details
@@ -328,6 +935,114 @@ function RedditLeadCardDialog({ lead }: RedditLeadCardDialogProps) {
                         )}
                     </div>
 
+                    {/* AI Response Section - Only show for identification stage */}
+                    {lead.stage === 'identification' && (
+                        <div className="relative group">
+                            <div
+                                className={clsx(
+                                    'space-y-4 p-4 border rounded-lg transition-all duration-200',
+                                    isConnectedToReddit
+                                        ? 'border-gray-200 bg-gray-50'
+                                        : 'border-red-200 bg-red-50 opacity-60 cursor-not-allowed'
+                                )}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium text-secondaryColor">
+                                        Initial Outreach Response:
+                                    </span>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleGenerateResponse}
+                                        disabled={
+                                            !isConnectedToReddit ||
+                                            generateAIResponse.isPending
+                                        }
+                                        className="h-8 px-3 text-sm"
+                                    >
+                                        {generateAIResponse.isPending ? (
+                                            'Generating...'
+                                        ) : (
+                                            <>
+                                                <BiBot
+                                                    size={16}
+                                                    className="mr-1"
+                                                />
+                                                Generate AI Response
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
+
+                                <textarea
+                                    value={aiResponse}
+                                    onChange={(e) =>
+                                        setAiResponse(e.target.value)
+                                    }
+                                    placeholder={
+                                        isConnectedToReddit
+                                            ? 'Type up an initial outreach response, or let AI generate one for you! Feel free to edit it before posting.'
+                                            : 'Connect to Reddit to enable this feature...'
+                                    }
+                                    disabled={!isConnectedToReddit}
+                                    className={clsx(
+                                        'w-full h-60 p-3 text-sm border rounded-md resize-none focus:ring-2 focus:border-transparent',
+                                        isConnectedToReddit
+                                            ? 'border-gray-200 focus:ring-blue-500 bg-white'
+                                            : 'border-red-200 bg-red-50 text-gray-400 cursor-not-allowed'
+                                    )}
+                                />
+                                {aiResponse && isConnectedToReddit && (
+                                    <div className="flex justify-end">
+                                        <Button
+                                            variant="light"
+                                            size="sm"
+                                            onClick={handlePostComment}
+                                            disabled={
+                                                !isConnectedToReddit ||
+                                                postComment.isPending ||
+                                                !aiResponse.trim()
+                                            }
+                                            className="px-4 py-2"
+                                        >
+                                            {postComment.isPending ? (
+                                                'Posting...'
+                                            ) : (
+                                                <>
+                                                    Post Comment & Move to
+                                                    Outreach
+                                                    <BiRightArrowAlt
+                                                        size={16}
+                                                        className="ml-1"
+                                                    />
+                                                </>
+                                            )}
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Tooltip for disabled state */}
+                            {!isConnectedToReddit && (
+                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-80 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                                    <div className="bg-gray-800 text-white text-sm rounded-lg p-3 shadow-lg">
+                                        <div className="font-medium mb-1">
+                                            🔗 Reddit Connection Required
+                                        </div>
+                                        <div className="text-gray-200">
+                                            Connect your Reddit account by
+                                            clicking the Reddit button in the
+                                            navbar to use AI response features.
+                                        </div>
+
+                                        {/* Tooltip Arrow */}
+                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-800"></div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     <div className="mt-auto">
                         {/* Post Stats */}
                         <div className="grid grid-cols-3 gap-3 my-2">
@@ -358,7 +1073,7 @@ function RedditLeadCardDialog({ lead }: RedditLeadCardDialogProps) {
                                             Comments
                                         </p>
                                         <p className="text-xl font-semibold text-secondaryColor">
-                                            {lead.numComments}
+                                            {(lead as PostLead).numComments}
                                         </p>
                                     </div>
                                 </div>

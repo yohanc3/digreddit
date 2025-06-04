@@ -1,17 +1,52 @@
 import {
     pgTable,
     foreignKey,
-    uuid,
-    text,
-    smallint,
-    timestamp,
-    boolean,
-    integer,
-    jsonb,
     unique,
-    doublePrecision,
+    text,
+    integer,
+    boolean,
+    uuid,
+    timestamp,
+    jsonb,
     serial,
+    smallint,
+    doublePrecision,
+    pgEnum,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+
+export const leadStage = pgEnum('lead_stage', [
+    'identification',
+    'initial_outreach',
+    'engagement',
+]);
+export const stages = pgEnum('stages', [
+    'identification',
+    'initial_outreach',
+    'engagement',
+]);
+
+export const authenticator = pgTable(
+    'Authenticator',
+    {
+        credentialId: text().notNull(),
+        userId: text().notNull(),
+        providerAccountId: text().notNull(),
+        credentialPublicKey: text().notNull(),
+        counter: integer().notNull(),
+        credentialDeviceType: text().notNull(),
+        credentialBackedUp: boolean().notNull(),
+        transports: text(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.userId],
+            foreignColumns: [users.id],
+            name: 'authenticator_userId_Users_id_fk',
+        }).onDelete('cascade'),
+        unique('authenticator_credentialID_unique').on(table.credentialId),
+    ]
+);
 
 export const products = pgTable('Products', {
     id: uuid().defaultRandom().primaryKey().notNull(),
@@ -26,63 +61,19 @@ export const products = pgTable('Products', {
     userId: uuid().notNull(),
 });
 
-export const commentLeads = pgTable(
-    'CommentLeads',
-    {
-        id: uuid().defaultRandom().primaryKey().notNull(),
-        subreddit: text().notNull(),
-        author: text().notNull(),
-        body: text().notNull(),
-        url: text().notNull(),
-        ups: smallint().notNull(),
-        downs: smallint().notNull(),
-        productID: uuid().notNull(),
-        createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
-        rating: doublePrecision().notNull(),
-        isInteracted: boolean().default(false),
-    },
-    (table) => [
-        foreignKey({
-            columns: [table.productID],
-            foreignColumns: [products.id],
-            name: 'fk_product',
-        }),
-    ]
-);
-
-export const postLeads = pgTable(
-    'PostLeads',
-    {
-        id: uuid().defaultRandom().primaryKey().notNull(),
-        subreddit: text().notNull(),
-        title: text().notNull(),
-        author: text().notNull(),
-        body: text().notNull(),
-        url: text().notNull(),
-        numComments: smallint().notNull(),
-        subredditSubscribers: integer(),
-        over18: boolean().notNull(),
-        ups: smallint().notNull(),
-        downs: smallint().notNull(),
-        productID: uuid().notNull(),
-        createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
-        rating: doublePrecision().notNull(),
-        isInteracted: boolean().default(false),
-    },
-    (table) => [
-        foreignKey({
-            columns: [table.productID],
-            foreignColumns: [products.id],
-            name: 'fk_product',
-        }),
-    ]
-);
+export const nonBetaUsers = pgTable('NonBetaUsers', {
+    id: serial().primaryKey().notNull(),
+    email: text().notNull(),
+    createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+});
 
 export const session = pgTable(
     'Session',
     {
         sessionToken: text().primaryKey().notNull(),
         userId: text().notNull(),
+
+        // If this is set to string, an error is thrown
         expires: timestamp({ mode: 'date' }).notNull(),
     },
     (table) => [
@@ -91,6 +82,53 @@ export const session = pgTable(
             foreignColumns: [users.id],
             name: 'session_userId_Users_id_fk',
         }).onDelete('cascade'),
+    ]
+);
+
+export const feedback = pgTable(
+    'Feedback',
+    {
+        id: serial().primaryKey().notNull(),
+        userId: text().notNull(),
+        area: text().notNull(),
+        feedback: text().notNull(),
+        createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+        attendedTo: boolean().default(false),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.userId],
+            foreignColumns: [users.id],
+            name: 'feedback_userID_Users_id_fk',
+        }).onDelete('cascade'),
+    ]
+);
+
+export const commentLeads = pgTable(
+    'CommentLeads',
+    {
+        id: text()
+            .default(sql`gen_random_uuid()`)
+            .primaryKey()
+            .notNull(),
+        subreddit: text().notNull(),
+        author: text().notNull(),
+        body: text().notNull(),
+        url: text().notNull(),
+        ups: smallint().notNull(),
+        downs: smallint().notNull(),
+        productID: uuid().notNull(),
+        createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+        rating: doublePrecision().notNull(),
+        isInteracted: boolean().default(false),
+        stage: stages().default('identification').notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.productID],
+            foreignColumns: [products.id],
+            name: 'fk_product',
+        }),
     ]
 );
 
@@ -131,50 +169,37 @@ export const users = pgTable('Users', {
     emailVerified: timestamp({ mode: 'string' }),
     image: text(),
     membershipEndsAt: timestamp({ mode: 'string' }).defaultNow(),
+    redditRefreshToken: text(),
 });
 
-export const authenticator = pgTable(
-    'Authenticator',
+export const postLeads = pgTable(
+    'PostLeads',
     {
-        credentialId: text().notNull(),
-        userId: text().notNull(),
-        providerAccountId: text().notNull(),
-        credentialPublicKey: text().notNull(),
-        counter: integer().notNull(),
-        credentialDeviceType: text().notNull(),
-        credentialBackedUp: boolean().notNull(),
-        transports: text(),
-    },
-    (table) => [
-        foreignKey({
-            columns: [table.userId],
-            foreignColumns: [users.id],
-            name: 'authenticator_userId_Users_id_fk',
-        }).onDelete('cascade'),
-        unique('authenticator_credentialID_unique').on(table.credentialId),
-    ]
-);
-
-export const nonBetaUsers = pgTable('NonBetaUsers', {
-    id: serial().primaryKey().notNull(),
-    email: text().notNull(),
-    createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
-});
-
-export const feedback = pgTable(
-    'Feedback',
-    {
-        id: serial().primaryKey().notNull(),
-        userId: text().notNull(),
-        area: text().notNull(),
-        feedback: text().notNull(),
+        id: text()
+            .default(sql`gen_random_uuid()`)
+            .primaryKey()
+            .notNull(),
+        subreddit: text().notNull(),
+        title: text().notNull(),
+        author: text().notNull(),
+        body: text().notNull(),
+        url: text().notNull(),
+        numComments: smallint().notNull(),
+        subredditSubscribers: integer(),
+        over18: boolean().notNull(),
+        ups: smallint().notNull(),
+        downs: smallint().notNull(),
+        productID: uuid().notNull(),
         createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+        rating: doublePrecision().notNull(),
+        isInteracted: boolean().default(false),
+        stage: stages().default('identification').notNull(),
     },
     (table) => [
         foreignKey({
-            columns: [table.userId],
-            foreignColumns: [users.id],
-            name: 'feedback_userID_Users_id_fk',
-        }).onDelete('cascade'),
+            columns: [table.productID],
+            foreignColumns: [products.id],
+            name: 'fk_product',
+        }),
     ]
 );

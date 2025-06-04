@@ -57,7 +57,10 @@ export function UserDropdown({ user }: { user: User }) {
                 </DropdownMenuItem>
                 <DropdownMenuItem
                     className="py-3 text-gray-800 hover:bg-gray-100 focus:bg-gray-100 cursor-pointer"
-                    onClick={() => signOut({ redirectTo: '/' })}
+                    onClick={() => {
+                        signOut({ redirectTo: '/' })
+                        localStorage.removeItem('reddit_access_token')
+                    }}
                 >
                     <button type="submit">Sign Out</button>
                 </DropdownMenuItem>
