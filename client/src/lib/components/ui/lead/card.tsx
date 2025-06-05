@@ -456,6 +456,7 @@ export function RedditCommentLeadCard({
                 generateAIResponse={generateAIResponse}
                 postComment={postComment}
                 updateLeadStage={updateLeadStage}
+                selectedProduct={selectedProduct}
             />
         </div>
     );
