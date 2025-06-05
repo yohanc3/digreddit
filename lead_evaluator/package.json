@@ -17,7 +17,6 @@
 	},
 	"dependencies": {
 		"@google/genai": "^1.4.0",
-		"openai": "^4.100.0",
 		"postgres": "^3.4.5"
 	}
 }
