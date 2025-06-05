@@ -66,12 +66,24 @@ interface RedditCommentLeadCardProps {
     leadDetails: CommentLead;
     className?: string;
     selectedProduct: Products | null;
+    isDialogOpen: boolean;
+    onOpenDialog: () => void;
+    onCloseDialog: () => void;
+    aiResponse: string;
+    onSetAiResponse: (response: string) => void;
+    onClearAiResponse: () => void;
 }
 
 export function RedditCommentLeadCard({
     className,
     leadDetails,
     selectedProduct,
+    isDialogOpen,
+    onOpenDialog,
+    onCloseDialog,
+    aiResponse,
+    onSetAiResponse,
+    onClearAiResponse,
 }: RedditCommentLeadCardProps) {
     const unixCreatedAt = new Date(leadDetails.createdAt).getTime();
     const howLongAgo = timeAgo(unixCreatedAt);
@@ -80,8 +92,6 @@ export function RedditCommentLeadCard({
     const generateAIResponse = useGenerateAIResponse();
     const postComment = usePostComment();
     const { redditUserData, isRedditUserDataLoading } = useRedditUser();
-
-    const [aiResponse, setAiResponse] = useState<string>('');
 
     const { nextStage, buttonText } = getNextStageInfo(leadDetails.stage);
 
@@ -107,7 +117,7 @@ export function RedditCommentLeadCard({
             },
             {
                 onSuccess: (generatedResponse: string) => {
-                    setAiResponse(generatedResponse);
+                    onSetAiResponse(generatedResponse);
                 },
             }
         );
@@ -213,7 +223,7 @@ export function RedditCommentLeadCard({
                 },
                 {
                     onSuccess: () => {
-                        setAiResponse('');
+                        onClearAiResponse();
                         toast({
                             title: 'Comment posted successfully. Moving lead to next stage.',
                             description:
@@ -372,7 +382,9 @@ export function RedditCommentLeadCard({
                             </div>
                             <textarea
                                 value={aiResponse}
-                                onChange={(e) => setAiResponse(e.target.value)}
+                                onChange={(e) =>
+                                    onSetAiResponse(e.target.value)
+                                }
                                 placeholder={
                                     isConnectedToReddit
                                         ? 'Initial outreach response goes here...'
@@ -457,6 +469,13 @@ export function RedditCommentLeadCard({
                 postComment={postComment}
                 updateLeadStage={updateLeadStage}
                 selectedProduct={selectedProduct}
+                isOpen={isDialogOpen}
+                onOpenChange={(open: boolean) =>
+                    open ? onOpenDialog() : onCloseDialog()
+                }
+                aiResponse={aiResponse}
+                onSetAiResponse={onSetAiResponse}
+                onClearAiResponse={onClearAiResponse}
             />
         </div>
     );
@@ -466,12 +485,24 @@ interface RedditPostLeadCardProps {
     leadDetails: PostLead;
     className?: string;
     selectedProduct: Products | null;
+    isDialogOpen: boolean;
+    onOpenDialog: () => void;
+    onCloseDialog: () => void;
+    aiResponse: string;
+    onSetAiResponse: (response: string) => void;
+    onClearAiResponse: () => void;
 }
 
 export function RedditPostLeadCard({
     className,
     leadDetails,
     selectedProduct,
+    isDialogOpen,
+    onOpenDialog,
+    onCloseDialog,
+    aiResponse,
+    onSetAiResponse,
+    onClearAiResponse,
 }: RedditPostLeadCardProps) {
     const unixCreatedAt = new Date(leadDetails.createdAt).getTime();
     const howLongAgo = timeAgo(unixCreatedAt);
@@ -480,8 +511,6 @@ export function RedditPostLeadCard({
     const generateAIResponse = useGenerateAIResponse();
     const postComment = usePostComment();
     const { redditUserData, isRedditUserDataLoading } = useRedditUser();
-
-    const [aiResponse, setAiResponse] = useState<string>('');
 
     const { nextStage, buttonText } = getNextStageInfo(leadDetails.stage);
 
@@ -586,7 +615,7 @@ export function RedditPostLeadCard({
             },
             {
                 onSuccess: (generatedResponse: string) => {
-                    setAiResponse(generatedResponse);
+                    onSetAiResponse(generatedResponse);
                 },
             }
         );
@@ -614,7 +643,7 @@ export function RedditPostLeadCard({
                 },
                 {
                     onSuccess: () => {
-                        setAiResponse('');
+                        onClearAiResponse();
                         toast({
                             title: 'Comment posted successfully. Moving lead to next stage.',
                             description:
@@ -779,7 +808,7 @@ export function RedditPostLeadCard({
                         </div>
                         <textarea
                             value={aiResponse}
-                            onChange={(e) => setAiResponse(e.target.value)}
+                            onChange={(e) => onSetAiResponse(e.target.value)}
                             placeholder={
                                 isConnectedToReddit
                                     ? 'Initial outreach response goes here...'
@@ -862,6 +891,13 @@ export function RedditPostLeadCard({
                 postComment={postComment}
                 updateLeadStage={updateLeadStage}
                 selectedProduct={selectedProduct}
+                isOpen={isDialogOpen}
+                onOpenChange={(open: boolean) =>
+                    open ? onOpenDialog() : onCloseDialog()
+                }
+                aiResponse={aiResponse}
+                onSetAiResponse={onSetAiResponse}
+                onClearAiResponse={onClearAiResponse}
             />
         </div>
     );
@@ -873,6 +909,11 @@ interface RedditLeadCardDialogProps {
     postComment: any;
     updateLeadStage: any;
     selectedProduct: Products | null;
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    aiResponse: string;
+    onSetAiResponse: (response: string) => void;
+    onClearAiResponse: () => void;
 }
 
 function RedditLeadCardDialog({
@@ -881,11 +922,16 @@ function RedditLeadCardDialog({
     postComment,
     updateLeadStage,
     selectedProduct,
+    isOpen,
+    onOpenChange,
+    aiResponse,
+    onSetAiResponse,
+    onClearAiResponse,
 }: RedditLeadCardDialogProps) {
     const [showRedditDescription, setShowRedditDescription] =
         useState<boolean>(false);
-    const [aiResponse, setAiResponse] = useState<string>('');
-    const [isOpen, setIsOpen] = useState<boolean>(false);
+    const [isConnectedToReddit, setIsConnectedToReddit] =
+        useState<boolean>(false);
 
     const isPost = isPostLead(lead);
     const unixCreatedAt = new Date(lead.createdAt).getTime();
@@ -895,9 +941,6 @@ function RedditLeadCardDialog({
     const updateLeadInteraction = useUpdateLeadInteraction();
     const { redditUserData, isRedditUserDataLoading } = useRedditUser();
 
-    // Determine if connected to Reddit
-    const isConnectedToReddit = !isRedditUserDataLoading && !!redditUserData;
-
     const { refetchAllLeads } = useLeads(selectedProduct);
 
     // If the body is less than 240 words, show the full description
@@ -906,6 +949,11 @@ function RedditLeadCardDialog({
             setShowRedditDescription(true);
         }
     }, [lead.body]);
+
+    // Determine if connected to Reddit
+    useEffect(() => {
+        setIsConnectedToReddit(!isRedditUserDataLoading && !!redditUserData);
+    }, [isRedditUserDataLoading, redditUserData]);
 
     function handleGenerateResponse() {
         if (!isConnectedToReddit) {
@@ -928,7 +976,7 @@ function RedditLeadCardDialog({
             },
             {
                 onSuccess: (generatedResponse: string) => {
-                    setAiResponse(generatedResponse);
+                    onSetAiResponse(generatedResponse);
                 },
             }
         );
@@ -956,8 +1004,7 @@ function RedditLeadCardDialog({
                 },
                 {
                     onSuccess: () => {
-                        setAiResponse('');
-                        setIsOpen(false);
+                        onClearAiResponse();
                         toast({
                             title: 'Comment posted successfully. Moving lead to next stage.',
                             description:
@@ -995,7 +1042,7 @@ function RedditLeadCardDialog({
     }
 
     return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogTrigger asChild>
                 <Button variant="dark" className="w-full py-2 text-sm">
                     Open Details
@@ -1126,7 +1173,7 @@ function RedditLeadCardDialog({
                                 <textarea
                                     value={aiResponse}
                                     onChange={(e) =>
-                                        setAiResponse(e.target.value)
+                                        onSetAiResponse(e.target.value)
                                     }
                                     placeholder={
                                         isConnectedToReddit
@@ -1251,8 +1298,8 @@ function RedditLeadCardDialog({
                                 <Button
                                     variant="dark"
                                     className="w-36 h-9 text-sm"
-                                    onClick={async () => {
-                                        await updateLeadInteraction({
+                                    onClick={() => {
+                                        updateLeadInteraction({
                                             leadID: lead.id,
                                             isPost,
                                         });

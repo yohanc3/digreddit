@@ -101,6 +101,12 @@ export default function DashboardHandler({
         stage: 'identification',
     });
 
+    // State for dialog and AI responses, keyed by lead ID
+    const [openDialogLeadId, setOpenDialogLeadId] = useState<string | null>(
+        null
+    );
+    const [aiResponses, setAiResponses] = useState<Record<string, string>>({});
+
     const { leads, totalCount, isLoading } = useLeads(
         selectedProduct,
         options,
@@ -108,6 +114,30 @@ export default function DashboardHandler({
     );
 
     const totalPages = Math.ceil(totalCount / LEADS_PER_PAGE);
+
+    // Handler functions for dialog and AI responses
+    function handleOpenDialog(leadId: string) {
+        setOpenDialogLeadId(leadId);
+    }
+
+    function handleCloseDialog() {
+        setOpenDialogLeadId(null);
+    }
+
+    function handleSetAiResponse(leadId: string, response: string) {
+        setAiResponses((prev) => ({
+            ...prev,
+            [leadId]: response,
+        }));
+    }
+
+    function handleClearAiResponse(leadId: string) {
+        setAiResponses((prev) => {
+            const newResponses = { ...prev };
+            delete newResponses[leadId];
+            return newResponses;
+        });
+    }
 
     function onSelectedProductChange(index: number) {
         setSelectedProduct(fetchedProducts[index]);
@@ -409,14 +439,38 @@ export default function DashboardHandler({
                             return isPostLead(lead) ? (
                                 <RedditPostLeadCard
                                     leadDetails={lead as PostLead}
-                                    key={index}
+                                    key={lead.id}
                                     selectedProduct={selectedProduct}
+                                    isDialogOpen={openDialogLeadId === lead.id}
+                                    onOpenDialog={() =>
+                                        handleOpenDialog(lead.id)
+                                    }
+                                    onCloseDialog={handleCloseDialog}
+                                    aiResponse={aiResponses[lead.id] || ''}
+                                    onSetAiResponse={(response: string) =>
+                                        handleSetAiResponse(lead.id, response)
+                                    }
+                                    onClearAiResponse={() =>
+                                        handleClearAiResponse(lead.id)
+                                    }
                                 />
                             ) : (
                                 <RedditCommentLeadCard
                                     leadDetails={lead as CommentLead}
-                                    key={index}
+                                    key={lead.id}
                                     selectedProduct={selectedProduct}
+                                    isDialogOpen={openDialogLeadId === lead.id}
+                                    onOpenDialog={() =>
+                                        handleOpenDialog(lead.id)
+                                    }
+                                    onCloseDialog={handleCloseDialog}
+                                    aiResponse={aiResponses[lead.id] || ''}
+                                    onSetAiResponse={(response: string) =>
+                                        handleSetAiResponse(lead.id, response)
+                                    }
+                                    onClearAiResponse={() =>
+                                        handleClearAiResponse(lead.id)
+                                    }
                                 />
                             );
                         })
