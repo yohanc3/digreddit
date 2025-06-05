@@ -51,7 +51,7 @@ export function useUpdateLeadStage() {
             isPost,
         }: {
             leadID: string;
-            stage: 'identification' | 'initial_outreach' | 'engagement';
+            stage: 'identification' | 'initial_outreach' | 'engagement' | 'skipped';
             isPost: boolean;
         }) => {
             return await apiPut('api/leads/stage', {

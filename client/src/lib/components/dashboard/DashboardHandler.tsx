@@ -71,6 +71,7 @@ interface StagePagination {
     identification: number;
     initial_outreach: number;
     engagement: number;
+    skipped: number;
 }
 
 export default function DashboardHandler({
@@ -90,6 +91,7 @@ export default function DashboardHandler({
         identification: 0,
         initial_outreach: 0,
         engagement: 0,
+        skipped: 0,
     });
 
     const [options, setOptions] = useState<LeadOptions>({
@@ -114,6 +116,7 @@ export default function DashboardHandler({
             identification: 0,
             initial_outreach: 0,
             engagement: 0,
+            skipped: 0,
         });
     }
 
@@ -139,6 +142,7 @@ export default function DashboardHandler({
             identification: 0,
             initial_outreach: 0,
             engagement: 0,
+            skipped: 0,
         });
     }, [
         selectedProduct?.id,
@@ -155,6 +159,8 @@ export default function DashboardHandler({
                 return 'Initial Outreach';
             case 'engagement':
                 return 'Engagement';
+            case 'skipped':
+                return 'Skipped';
             default:
                 return stage;
         }
@@ -370,6 +376,13 @@ export default function DashboardHandler({
                                         }
                                     >
                                         Engagement
+                                    </MenubarItem>
+                                    <MenubarItem
+                                        onClick={() =>
+                                            handleStageChange('skipped')
+                                        }
+                                    >
+                                        Skipped
                                     </MenubarItem>
                                 </MenubarContent>
                             </MenubarMenu>
