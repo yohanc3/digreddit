@@ -410,11 +410,13 @@ export default function DashboardHandler({
                                 <RedditPostLeadCard
                                     leadDetails={lead as PostLead}
                                     key={index}
+                                    selectedProduct={selectedProduct}
                                 />
                             ) : (
                                 <RedditCommentLeadCard
                                     leadDetails={lead as CommentLead}
                                     key={index}
+                                    selectedProduct={selectedProduct}
                                 />
                             );
                         })
