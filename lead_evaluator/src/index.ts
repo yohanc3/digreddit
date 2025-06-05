@@ -19,7 +19,7 @@ import { getProducts, ProductInput } from './utils';
 
 export interface Env {
 	SECURITY_KEY: string;
-	DEEPSEEK_API_KEY: string;
+	GEMINI_API_KEY: string;
 	HYPERDRIVE: Hyperdrive;
 }
 
@@ -94,7 +94,7 @@ export default {
 			return new Response(JSON.stringify({ error: `No products found for keywords: ${keywords.join(', ')}` }), { status: 404 });
 		}
 
-		const similarity: SimilarityResponse | null = await calculateSimilarity(contentEntry!.body, products, env.DEEPSEEK_API_KEY);
+		const similarity: SimilarityResponse | null = await calculateSimilarity(contentEntry!.body, products, env.GEMINI_API_KEY);
 
 		if (similarity === null) {
 			return new Response(JSON.stringify({ error: 'Failed to calculate similarity.' }), { status: 500 });
@@ -111,7 +111,7 @@ export default {
 		}
 
 		if (pushLeadsReturn.message === 'all') {
-			return new Response(JSON.stringify({ message: 'Successfully pushed all leads.' }), { status: 200 });
+			return new Response(JSON.stringify({ message: 'Successfully pushed all leads.', similarity }), { status: 200 });
 		} else if (pushLeadsReturn.message === 'some') {
 			return new Response(JSON.stringify({ message: 'Failed to push (some) leads.' }), { status: 500 });
 		}
