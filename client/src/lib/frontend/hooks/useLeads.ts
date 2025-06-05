@@ -12,12 +12,17 @@ export function useLeads(
     leads: CommentLead[] | PostLead[] | null;
     totalCount: number;
     isLoading: boolean;
+    refetchAllLeads: () => void;
 } {
     // Debounce the options to prevent excessive API calls
     const [debouncedOptions] = useDebounce(options, 1500);
     const { apiPost } = useFetch();
 
-    const { data: result, isLoading } = useQuery({
+    const {
+        data: result,
+        isLoading,
+        refetch: refetchAllLeads,
+    } = useQuery({
         queryKey: ['allLeads', selectedProduct?.id, page, debouncedOptions],
         queryFn: async () => {
             if (!selectedProduct) return { allLeads: [], totalCount: 0 };
@@ -63,12 +68,14 @@ export function useLeads(
         enabled: !!selectedProduct, // Only run query if selectedProduct exists
     });
 
-    if (!result) return { leads: null, totalCount: 0, isLoading };
+    if (!result)
+        return { leads: null, totalCount: 0, isLoading, refetchAllLeads };
 
     // No need for client-side filtering anymore since it's done in the backend
     return {
         leads: result.allLeads as CommentLead[] | PostLead[] | null,
         totalCount: result.totalCount,
+        refetchAllLeads,
         isLoading,
     };
 }
