@@ -11,7 +11,7 @@ export type Products = InferSelectModel<typeof products>;
 export type Payload<T> = Omit<T, 'id' | 'createdAt' | 'updatedAt'>;
 
 // Lead stage type
-export type LeadStage = 'identification' | 'initial_outreach' | 'engagement';
+export type LeadStage = 'identification' | 'initial_outreach' | 'engagement' | 'skipped';
 
 // Lead Filters Interface
 export interface LeadFilters {
