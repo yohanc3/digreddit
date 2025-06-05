@@ -1,5 +1,5 @@
 'use client';
-import { CommentLead, PostLead, LeadStage } from '@/types/backend/db';
+import { CommentLead, PostLead, LeadStage, Products } from '@/types/backend/db';
 import {
     BiUpvote,
     BiCommentDetail,
@@ -32,6 +32,7 @@ import { toast } from '@/hooks/use-toast';
 import { getBrowserRedditAccessToken } from '@/lib/frontend/utils/getRedditOauthToken';
 import { queryClient } from '@/app/providers';
 import { useRedditUser } from '@/lib/frontend/hooks/useRedditUser';
+import { useLeads } from '@/lib/frontend/hooks/useLeads';
 
 // Helper function to get next stage and button text
 function getNextStageInfo(currentStage: LeadStage): {
@@ -40,6 +41,11 @@ function getNextStageInfo(currentStage: LeadStage): {
 } {
     switch (currentStage) {
         case 'identification':
+            return {
+                nextStage: 'initial_outreach',
+                buttonText: 'Post Comment',
+            };
+        case 'skipped':
             return {
                 nextStage: 'initial_outreach',
                 buttonText: 'Post Comment',
@@ -59,11 +65,13 @@ function getNextStageInfo(currentStage: LeadStage): {
 interface RedditCommentLeadCardProps {
     leadDetails: CommentLead;
     className?: string;
+    selectedProduct: Products | null;
 }
 
 export function RedditCommentLeadCard({
     className,
     leadDetails,
+    selectedProduct,
 }: RedditCommentLeadCardProps) {
     const unixCreatedAt = new Date(leadDetails.createdAt).getTime();
     const howLongAgo = timeAgo(unixCreatedAt);
@@ -79,6 +87,8 @@ export function RedditCommentLeadCard({
 
     // Determine if connected to Reddit
     const isConnectedToReddit = !isRedditUserDataLoading && !!redditUserData;
+
+    const { refetchAllLeads } = useLeads(selectedProduct);
 
     function handleGenerateResponse() {
         if (!isConnectedToReddit) {
@@ -112,9 +122,7 @@ export function RedditCommentLeadCard({
             },
             {
                 onSuccess: () => {
-                    queryClient.invalidateQueries({
-                        queryKey: ['allLeads'],
-                    });
+                    refetchAllLeads();
                     toast({
                         title: 'Lead moved to engagement.',
                         description:
@@ -140,19 +148,43 @@ export function RedditCommentLeadCard({
             },
             {
                 onSuccess: () => {
-                    queryClient.invalidateQueries({
-                        queryKey: ['allLeads'],
-                    });
+                    refetchAllLeads();
                     toast({
                         title: 'Lead is Skipped.',
-                        description:
-                            'The lead has been Skipped.',
+                        description: 'The lead has been Skipped.',
                     });
                 },
                 onError: () => {
                     toast({
                         title: 'Error',
                         description: 'Failed to move lead to skipped stage.',
+                    });
+                },
+            }
+        );
+    }
+
+    function handleMoveToIdentification() {
+        updateLeadStage.mutate(
+            {
+                leadID: leadDetails.id,
+                stage: 'identification',
+                isPost: false,
+            },
+            {
+                onSuccess: () => {
+                    refetchAllLeads();
+                    toast({
+                        title: 'Lead moved back to identification.',
+                        description:
+                            'The lead has been moved back to the identification stage.',
+                    });
+                },
+                onError: () => {
+                    toast({
+                        title: 'Error',
+                        description:
+                            'Failed to move lead to identification stage.',
                     });
                 },
             }
@@ -185,7 +217,7 @@ export function RedditCommentLeadCard({
                         toast({
                             title: 'Comment posted successfully. Moving lead to next stage.',
                             description:
-                                'Your comment has been successfully posted. The lead will now be moved to the next stage.',
+                                'Your comment has been successfully posted. The lead will now be moved to the initial outreach stage.',
                         });
                         if (nextStage) {
                             updateLeadStage.mutate(
@@ -235,11 +267,16 @@ export function RedditCommentLeadCard({
                             by: {leadDetails.author}
                         </div>
                     </div>
-                    <div className='flex flex-row items-center space-x-2'>
+                    <div className="flex flex-row items-center space-x-2">
                         <div
-                            onMouseDown={handleMoveToSkipped}
-                            className='text-tertiarySize !text-tertiaryColor hover:underline cursor-pointer'>
-                            Skip
+                            onMouseDown={
+                                leadDetails.stage === 'skipped'
+                                    ? handleMoveToIdentification
+                                    : handleMoveToSkipped
+                            }
+                            className="text-tertiarySize !text-tertiaryColor hover:underline cursor-pointer"
+                        >
+                            {leadDetails.stage === 'skipped' ? 'Undo' : 'Skip'}
                         </div>
                         <a
                             href={`https://www.reddit.com${leadDetails.url}`}
@@ -298,7 +335,8 @@ export function RedditCommentLeadCard({
                         </div>
                     </div>
                 </div>
-                {leadDetails.stage === 'identification' && (
+                {(leadDetails.stage === 'identification' ||
+                    leadDetails.stage === 'skipped') && (
                     <div className="relative group">
                         {/* AI Response Section */}
                         <div
@@ -374,6 +412,7 @@ export function RedditCommentLeadCard({
                     {/* Stage Transition Button */}
                     {nextStage &&
                         (leadDetails.stage === 'identification' ||
+                            leadDetails.stage === 'skipped' ||
                             leadDetails.stage === 'initial_outreach') && (
                             <div className="mt-2">
                                 <Button
@@ -387,17 +426,19 @@ export function RedditCommentLeadCard({
                                     className="w-full text-xs"
                                     disabled={
                                         postComment.isPending ||
-                                        (leadDetails.stage ===
-                                            'identification' &&
+                                        ((leadDetails.stage ===
+                                            'identification' ||
+                                            leadDetails.stage === 'skipped') &&
                                             !isConnectedToReddit)
                                     }
                                 >
-                                    {leadDetails.stage === 'identification' &&
-                                        !postComment.isPending
+                                    {(leadDetails.stage === 'identification' ||
+                                        leadDetails.stage === 'skipped') &&
+                                    !postComment.isPending
                                         ? 'Post Comment'
                                         : postComment.isPending
-                                            ? 'Sending...'
-                                            : buttonText}
+                                          ? 'Sending...'
+                                          : buttonText}
                                     {!postComment.isPending && (
                                         <BiRightArrowAlt
                                             size={16}
@@ -423,11 +464,13 @@ export function RedditCommentLeadCard({
 interface RedditPostLeadCardProps {
     leadDetails: PostLead;
     className?: string;
+    selectedProduct: Products | null;
 }
 
 export function RedditPostLeadCard({
     className,
     leadDetails,
+    selectedProduct,
 }: RedditPostLeadCardProps) {
     const unixCreatedAt = new Date(leadDetails.createdAt).getTime();
     const howLongAgo = timeAgo(unixCreatedAt);
@@ -444,6 +487,8 @@ export function RedditPostLeadCard({
     // Determine if connected to Reddit
     const isConnectedToReddit = !isRedditUserDataLoading && !!redditUserData;
 
+    const { refetchAllLeads } = useLeads(selectedProduct);
+
     function handleMoveToEngagement() {
         updateLeadStage.mutate(
             {
@@ -453,9 +498,7 @@ export function RedditPostLeadCard({
             },
             {
                 onSuccess: () => {
-                    queryClient.invalidateQueries({
-                        queryKey: ['allLeads'],
-                    });
+                    refetchAllLeads();
                     toast({
                         title: 'Lead moved to engagement.',
                         description:
@@ -481,19 +524,43 @@ export function RedditPostLeadCard({
             },
             {
                 onSuccess: () => {
-                    queryClient.invalidateQueries({
-                        queryKey: ['allLeads'],
-                    });
+                    refetchAllLeads();
                     toast({
                         title: 'Lead is Skipped.',
-                        description:
-                            'The lead has been Skipped.',
+                        description: 'The lead has been Skipped.',
                     });
                 },
                 onError: () => {
                     toast({
                         title: 'Error',
                         description: 'Failed to move lead to skipped stage.',
+                    });
+                },
+            }
+        );
+    }
+
+    function handleMoveToIdentification() {
+        updateLeadStage.mutate(
+            {
+                leadID: leadDetails.id,
+                stage: 'identification',
+                isPost: true,
+            },
+            {
+                onSuccess: () => {
+                    refetchAllLeads();
+                    toast({
+                        title: 'Lead moved back to identification.',
+                        description:
+                            'The lead has been moved back to the identification stage.',
+                    });
+                },
+                onError: () => {
+                    toast({
+                        title: 'Error',
+                        description:
+                            'Failed to move lead to identification stage.',
                     });
                 },
             }
@@ -550,7 +617,7 @@ export function RedditPostLeadCard({
                         toast({
                             title: 'Comment posted successfully. Moving lead to next stage.',
                             description:
-                                'Your comment has been successfully posted. The lead will now be moved to the next stage.',
+                                'Your comment has been successfully posted. The lead will now be moved to the initial outreach stage.',
                         });
                         if (nextStage) {
                             updateLeadStage.mutate(
@@ -599,11 +666,16 @@ export function RedditPostLeadCard({
                         by: {leadDetails.author}
                     </div>
                 </div>
-                <div className='flex flex-row items-center space-x-2'>
+                <div className="flex flex-row items-center space-x-2">
                     <div
-                        onMouseDown={handleMoveToSkipped}
-                        className='text-tertiarySize !text-tertiaryColor hover:underline cursor-pointer'>
-                        Skip
+                        onMouseDown={
+                            leadDetails.stage === 'skipped'
+                                ? handleMoveToIdentification
+                                : handleMoveToSkipped
+                        }
+                        className="text-tertiarySize !text-tertiaryColor hover:underline cursor-pointer"
+                    >
+                        {leadDetails.stage === 'skipped' ? 'Undo' : 'Skip'}
                     </div>
                     <a href={leadDetails.url} target="_blank">
                         <Button
@@ -670,7 +742,8 @@ export function RedditPostLeadCard({
             </div>
 
             {/* AI Response Section */}
-            {leadDetails.stage === 'identification' && (
+            {(leadDetails.stage === 'identification' ||
+                leadDetails.stage === 'skipped') && (
                 <div className="relative group">
                     <div
                         className={clsx(
@@ -745,6 +818,7 @@ export function RedditPostLeadCard({
                 {/* Stage Transition Button */}
                 {nextStage &&
                     (leadDetails.stage === 'identification' ||
+                        leadDetails.stage === 'skipped' ||
                         leadDetails.stage === 'initial_outreach') && (
                         <div className="mt-2">
                             <Button
@@ -758,16 +832,18 @@ export function RedditPostLeadCard({
                                 className="w-full text-xs"
                                 disabled={
                                     postComment.isPending ||
-                                    (leadDetails.stage === 'identification' &&
+                                    ((leadDetails.stage === 'identification' ||
+                                        leadDetails.stage === 'skipped') &&
                                         !isConnectedToReddit)
                                 }
                             >
-                                {leadDetails.stage === 'identification' &&
-                                    !postComment.isPending
+                                {(leadDetails.stage === 'identification' ||
+                                    leadDetails.stage === 'skipped') &&
+                                !postComment.isPending
                                     ? 'Post Comment'
                                     : postComment.isPending
-                                        ? 'Sending...'
-                                        : buttonText}
+                                      ? 'Sending...'
+                                      : buttonText}
                                 {!postComment.isPending && (
                                     <BiRightArrowAlt
                                         size={16}
@@ -784,6 +860,7 @@ export function RedditPostLeadCard({
                 generateAIResponse={generateAIResponse}
                 postComment={postComment}
                 updateLeadStage={updateLeadStage}
+                selectedProduct={selectedProduct}
             />
         </div>
     );
@@ -794,6 +871,7 @@ interface RedditLeadCardDialogProps {
     generateAIResponse: any;
     postComment: any;
     updateLeadStage: any;
+    selectedProduct: Products | null;
 }
 
 function RedditLeadCardDialog({
@@ -801,6 +879,7 @@ function RedditLeadCardDialog({
     generateAIResponse,
     postComment,
     updateLeadStage,
+    selectedProduct,
 }: RedditLeadCardDialogProps) {
     const [showRedditDescription, setShowRedditDescription] =
         useState<boolean>(false);
@@ -817,6 +896,8 @@ function RedditLeadCardDialog({
 
     // Determine if connected to Reddit
     const isConnectedToReddit = !isRedditUserDataLoading && !!redditUserData;
+
+    const { refetchAllLeads } = useLeads(selectedProduct);
 
     // If the body is less than 240 words, show the full description
     useEffect(() => {
@@ -879,7 +960,7 @@ function RedditLeadCardDialog({
                         toast({
                             title: 'Comment posted successfully. Moving lead to next stage.',
                             description:
-                                'Your comment has been successfully posted. The lead will now be moved to the next stage.',
+                                'Your comment has been successfully posted. The lead will now be moved to the initial outreach stage.',
                         });
                         updateLeadStage.mutate(
                             {
@@ -889,9 +970,7 @@ function RedditLeadCardDialog({
                             },
                             {
                                 onSuccess: () => {
-                                    queryClient.invalidateQueries({
-                                        queryKey: ['allLeads'],
-                                    });
+                                    refetchAllLeads();
                                 },
                                 onError: () => {
                                     toast({
@@ -1004,7 +1083,8 @@ function RedditLeadCardDialog({
                     </div>
 
                     {/* AI Response Section - Only show for identification stage */}
-                    {lead.stage === 'identification' && (
+                    {(lead.stage === 'identification' ||
+                        lead.stage === 'skipped') && (
                         <div className="relative group">
                             <div
                                 className={clsx(
