@@ -8,18 +8,9 @@ import {
 } from '../ui/lead/sidebar';
 import { RedditCommentLeadCard, RedditPostLeadCard } from '../ui/lead/card';
 import ProductConfig from '../ui/lead/productConfig';
+import LeadFiltersConfig from '../ui/lead/leadFiltersConfig';
 import { isPostLead } from '@/util/utils';
 import { useLeads } from '@/lib/frontend/hooks/useLeads';
-import {
-    Select,
-    SelectItem,
-    SelectContent,
-    SelectTrigger,
-    SelectValue,
-} from '../ui/select';
-import { Label } from '../ui/label';
-import { Input } from '../ui/input';
-import { Checkbox } from '../ui/checkbox';
 import {
     Pagination,
     PaginationContent,
@@ -209,95 +200,12 @@ export default function DashboardHandler({
                     className="border-b border-light"
                 />
 
-                <div className="flex border-b border-light">
-                    <div className="flex flex-col p-4 gap-y-2 justify-center border-r border-light w-1/3">
-                        <Label className="text-primarySize">
-                            Minimum lead rating
-                        </Label>
-                        <Input
-                            type="number"
-                            min={5}
-                            max={10}
-                            value={options.minRating}
-                            step={1}
-                            className="w-24"
-                            onChange={(e) => {
-                                const value = parseInt(e.target.value);
-                                if (
-                                    !isNaN(value) &&
-                                    value >= 1 &&
-                                    value <= 10
-                                ) {
-                                    setOptions({
-                                        ...options,
-                                        minRating: value as
-                                            | 5
-                                            | 6
-                                            | 7
-                                            | 8
-                                            | 9
-                                            | 10,
-                                    });
-                                }
-                            }}
-                        />
-                    </div>
-                    <div className="flex flex-col p-4 gap-y-2 justify-center border-r border-light w-1/4">
-                        <Label className="text-primarySize">
-                            Sorting method
-                        </Label>
-
-                        <Select
-                            value={options.sortingMethod}
-                            onValueChange={(value) => {
-                                setOptions({
-                                    ...options,
-                                    sortingMethod: value as
-                                        | 'newest'
-                                        | 'oldest'
-                                        | 'most-upvotes'
-                                        | 'least-upvotes',
-                                });
-                            }}
-                        >
-                            <SelectContent>
-                                {sortingMethods.map((method) => (
-                                    <SelectItem
-                                        key={method.value}
-                                        value={method.value}
-                                    >
-                                        {method.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a sorting method" />
-                            </SelectTrigger>
-                        </Select>
-                    </div>
-                    <div className="flex flex-col px-4 gap-y-2 justify-center border-r border-light">
-                        <div className="flex items-center gap-x-2">
-                            <Checkbox
-                                checked={options.showOnlyUninteracted}
-                                onCheckedChange={() => {
-                                    setOptions({
-                                        ...options,
-                                        showOnlyUninteracted:
-                                            !options.showOnlyUninteracted,
-                                    });
-                                }}
-                            />
-                            <Label className="text-primarySize">
-                                Show only leads you have not interacted with
-                            </Label>
-                        </div>
-                        <Label className="text-xs text-muted-foreground ">
-                            To interact with a lead, simply open the original
-                            comment/post through the "Open" or "View Comment"
-                            button.
-                        </Label>
-                    </div>
-                </div>
+                <LeadFiltersConfig
+                    options={options}
+                    setOptions={setOptions}
+                    sortingMethods={sortingMethods}
+                    className="border-b border-light"
+                />
 
                 <div className="flex justify-between items-center p-4">
                     <div className="font-semibold text-primarySize text-secondaryColor">
