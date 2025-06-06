@@ -60,16 +60,22 @@ export default class UserController {
                 return response.status(500).send({ error: 'Invalid request body.' })
             }
 
+            const isPost = body.isPost
             const contentEntry = body.contentEntry
 
             for (const content of contentEntry) {
+
+                if(isPost && content.over18) {
+                    console.log('Post is over 18, skipping')
+                    continue
+                }
+
                 const ahoCorasickMatches = ahoCorasick.matchInText(
                     content.title + ' ' + content.body
                 )
 
                 const keywords = ahoCorasickMatches.map((match: any) => match.keyword)
 
-                const isPost = body.isPost
 
                 if (keywords.length === 0) {
                     console.log('No keywords matched in the given content')
