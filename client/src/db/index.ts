@@ -212,20 +212,6 @@ export const leadsQueries = {
         return (postLeadsCount?.value || 0) + (commentLeadsCount?.value || 0);
     },
 
-    updateLeadInteraction: async (
-        leadID: string,
-        isInteracted: boolean,
-        isPost: boolean
-    ) => {
-        const [updatedLead] = await db
-            .update(isPost ? postLeads : commentLeads)
-            .set({ isInteracted })
-            .where(eq(isPost ? postLeads.id : commentLeads.id, leadID))
-            .returning();
-
-        return updatedLead;
-    },
-
     updateLeadStage: async (
         leadID: string,
         stage: LeadStage,
