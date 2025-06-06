@@ -14,7 +14,7 @@ export interface SimilarityResponse {
 export async function calculateSimilarity(
 	bodyText: string,
 	products: ProductInput[],
-	geminiAPIKey: string
+	llamaAPIKey: string
 ): Promise<SimilarityResponse | null> {
 	const productDetails = products.map((product) => `User ID: ${product.id}\nProduct Description: "${product.description}"`).join('\n\n');
 
@@ -76,7 +76,7 @@ ${bodyText}
 
 	try {
 		const openai = new OpenAI({
-			apiKey: geminiAPIKey,
+			apiKey: llamaAPIKey,
 			baseURL: 'https://api.llama.com/compat/v1/',
 		});
 
