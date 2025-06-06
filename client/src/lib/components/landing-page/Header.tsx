@@ -1,70 +1,84 @@
-import LightButton from '../button/light';
-import Link from 'next/link';
-import { FullLogo } from '../logo';
-import { Session } from 'next-auth';
-import SignIn from '../signin';
+'use client';
 
-export default async function Header({
-    session,
-    showNav = true,
-}: {
+import { Button } from '@/lib/components/ui/button';
+import { Menu, Search } from 'lucide-react';
+import Link from 'next/link';
+import { Session } from 'next-auth';
+import { signIn } from 'next-auth/react';
+
+interface HeaderProps {
     session: Session | null;
-    showNav?: boolean;
-}) {
+}
+
+export default function Header({ session }: HeaderProps) {
     return (
-        <header className="container mx-auto py-6 px-4 flex justify-around items-center">
-            <div className="flex items-center gap-2">
-                <FullLogo />
-            </div>
-            {showNav && (
-                <nav className="hidden md:flex justify-center items-center gap-x-16">
+        <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+            <div className="container mx-auto flex h-16 items-center justify-between px-4">
+                <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xl font-bold bg-gradient-to-r from-[#576F72] to-[#344054] bg-clip-text text-transparent">
+                            DigReddit
+                        </span>
+                    </div>
+                </div>
+                <nav className="hidden md:flex items-center gap-8">
                     <Link
                         href="#how-it-works"
-                        className="text-md font-semibold hover:text-[#576F72] transition-colors"
+                        className="text-sm font-medium hover:text-[#576F72] transition-colors"
                     >
                         How It Works
                     </Link>
                     <Link
                         href="#who-its-for"
-                        className="text-md font-semibold hover:text-[#576F72] transition-colors"
+                        className="text-sm font-medium hover:text-[#576F72] transition-colors"
                     >
                         Who It's For
                     </Link>
                     <Link
                         href="#faq"
-                        className="text-md font-semibold hover:text-[#576F72] transition-colors"
+                        className="text-sm font-medium hover:text-[#576F72] transition-colors"
                     >
                         FAQ
                     </Link>
                     <Link
                         href="#contact"
-                        className="text-md font-semibold hover:text-[#576F72] transition-colors"
+                        className="text-sm font-medium hover:text-[#576F72] transition-colors"
                     >
                         Contact
                     </Link>
                 </nav>
-            )}
-            <SignIn session={session} />
-            <LightButton title="Menu" className="md:hidden">
-                <>
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-6 w-6"
-                    >
-                        <line x1="4" x2="20" y1="12" y2="12" />
-                        <line x1="4" x2="20" y1="6" y2="6" />
-                        <line x1="4" x2="20" y1="18" y2="18" />
-                    </svg>
-                </>
-            </LightButton>
+
+                <div className="flex items-center gap-4">
+                    {session ? (
+                        <Button
+                            variant="outline"
+                            className="bg-gradient-to-r from-[#576F72] to-[#344054] hover:from-[#4a5f62] hover:to-[#2d3648] text-white"
+                        >
+                            <Link
+                                href="/dashboard"
+                                className="hidden md:block text-sm font-medium hover:text-[#576F72] transition-colors"
+                            >
+                                Dashboard
+                            </Link>
+                        </Button>
+                    ) : (
+                        <Button
+                            onClick={() =>
+                                signIn('google', { redirectTo: '/dashboard' })
+                            }
+                            className="hidden md:block text-sm font-medium hover:text-[#576F72] transition-colors bg-gradient-to-r from-[#576F72] to-[#344054] hover:from-[#4a5f62] hover:to-[#2d3648] text-white"
+                        >
+                            Get Started
+                        </Button>
+                    )}
+                    {/* <Button className="bg-gradient-to-r from-[#576F72] to-[#344054] hover:from-[#4a5f62] hover:to-[#2d3648] text-white">
+                        Get Started
+                    </Button> */}
+                    <Button variant="ghost" size="icon" className="md:hidden">
+                        <Menu className="h-5 w-5" />
+                    </Button>
+                </div>
+            </div>
         </header>
     );
 }
