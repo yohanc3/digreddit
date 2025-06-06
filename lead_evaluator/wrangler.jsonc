@@ -16,6 +16,7 @@
 	"vars": {
 		"SECURITY_KEY": "dangerous step new hunter",
 		"GEMINI_API_KEY": "AIzaSyA1Upn_GFWx1ijRjR1kYvsCKBOPIyTOe7o",
+		"LLAMA_API_KEY": "LLM|1232813518252976|beKfKoMkrS5RCQ94pPTtHBOfp5k"
 	},
 	"hyperdrive": [
 		{
