@@ -8,9 +8,10 @@ import { signIn } from 'next-auth/react';
 
 interface HeaderProps {
     session: Session | null;
+    showNav?: boolean;
 }
 
-export default function Header({ session }: HeaderProps) {
+export default function Header({ session, showNav = false }: HeaderProps) {
     return (
         <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
             <div className="container mx-auto flex h-16 items-center justify-between px-4">
