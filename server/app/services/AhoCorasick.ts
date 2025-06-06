@@ -12,7 +12,7 @@ export default class DynamicAhoCorasick {
     }
 
     public matchInText(text: string) {
-        return this.matcher.matchInText(text)
+        return this.matcher.matchInText(text.toLowerCase())
     }
 
     public static getInstance() {
@@ -28,7 +28,7 @@ export default class DynamicAhoCorasick {
         const query = `
                 SELECT array_agg(product_keywords.keyword) AS keywords_array
                 FROM (
-                    SELECT jsonb_array_elements_text(keywords) AS keyword
+                    SELECT lower(jsonb_array_elements_text(keywords)) AS keyword
                     FROM "Products"
                     WHERE keywords IS NOT NULL
                 ) AS product_keywords
@@ -41,7 +41,6 @@ export default class DynamicAhoCorasick {
             const result = await db.rawQuery(query, [this.instance.keywords])
 
             // expected output of result.rows: rows:  [ { keywords_array: [ 'yohance', 'lol' ] } ] or [ { keywords_array: null } ]
-
             const keywordsArray = result.rows[0].keywords_array
 
             if (!keywordsArray) return
@@ -69,19 +68,20 @@ export default class DynamicAhoCorasick {
                         SELECT array_agg(input_keywords.keyword) AS keywords_array
                         FROM input_keywords
                         WHERE input_keywords.keyword NOT IN (
-                            SELECT DISTINCT jsonb_array_elements_text(keywords) AS keyword
+                            SELECT DISTINCT lower(jsonb_array_elements_text(keywords)) AS keyword
                             FROM "Products"
                             WHERE keywords IS NOT NULL
                         );
-            
-            `
+                          `
             /*
             Output example: [{ keywords_array: [ 'estate planning', 'lawyers', 'different keyword' ] }]
             */
             const result = await db.rawQuery(query, [this.instance.keywords])
-            const keywordsArray = result.rows[0].keywords_array
+            let keywordsArray = result.rows[0].keywords_array
 
             if (!keywordsArray) return
+
+            keywordsArray = keywordsArray.map((keyword: string) => keyword.toLowerCase())
 
             const deleteSet = new Set(keywordsArray)
 
@@ -91,7 +91,6 @@ export default class DynamicAhoCorasick {
             }
 
             // Filter out the keywords not in the db from the keywords instance.
-
             this.instance.keywords = this.instance.keywords.filter((word) => !deleteSet.has(word))
         } catch (e) {
             console.error('Error when deleting keywords from aho corasick algo: ', e)
@@ -103,14 +102,12 @@ export default class DynamicAhoCorasick {
             this.instance = new DynamicAhoCorasick()
         }
 
-        const DBKeywords = (await db.from('Products').select('keywords')).flatMap(
-            (result) => result.keywords
-        )
+        const DBKeywords: string[] = (await db.from('Products').select('keywords')).flatMap((result) => result.keywords).map((keyword) => keyword.toLowerCase())
 
         this.instance.matcher = new DynamicAhoCorasickModule(DBKeywords)
         this.instance.keywords = [...DBKeywords]
 
-	console.log("initial keywords: ", DBKeywords);
+        console.log('initial keywords: ', DBKeywords)
 
         // Run the adding and removing keywords from the AhoCora every 5 minutes
         const interval = 60 * 5 * 1000
