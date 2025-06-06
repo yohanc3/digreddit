@@ -1,6 +1,6 @@
 import postgres from 'postgres';
 import { Comment, Post } from './types';
-import { GoogleGenAI } from '@google/genai';
+import { OpenAI } from 'openai';
 
 export interface ProductInput {
 	id: string;
@@ -14,12 +14,8 @@ export interface SimilarityResponse {
 export async function calculateSimilarity(
 	bodyText: string,
 	products: ProductInput[],
-	geminiAPIKey: string
+	llamaAPIKey: string
 ): Promise<SimilarityResponse | null> {
-	const gemini = new GoogleGenAI({
-		apiKey: geminiAPIKey,
-	});
-
 	const productDetails = products.map((product) => `User ID: ${product.id}\nProduct Description: "${product.description}"`).join('\n\n');
 
 	const promptContent = `You are a lead generation assistant for DigReddt.
@@ -52,6 +48,12 @@ Use the following criteria (total: 10.0 max):
  - Actionability (0–2 points)
    - Could this lead be pursued by a sales or marketing team?
 
+ - Bans:
+	- If any of the following are true, return a score of 0.0:
+		- The lead is a bot
+		- The lead is a spam account
+		- The lead is trying to sell something, so there's a price tag in the Social Media Content, there is a link to a product, or there's a package or bundle mentioned in the Social Media Content
+
 Only give high scores when the lead shows both relevance and intent/interest. Do not give high scores just for topical overlap without clear potential.
 
 For the return format, return a json object where they key is the userID and the value is the lead score (as a decimal between 0.0 and 10.0).
@@ -73,13 +75,20 @@ ${bodyText}
 `;
 
 	try {
-		const completion = await gemini.models.generateContent({
-			model: 'gemini-1.5-flash',
-			contents: promptContent,
+		const openai = new OpenAI({
+			apiKey: llamaAPIKey,
+			baseURL: 'https://api.llama.com/compat/v1/',
 		});
 
-		if (completion.text) {
-			const result = JSON.parse(completion.text.replace(/```json\n|```/g, ''));
+		const completion = await openai.chat.completions.create({
+			model: 'Llama-4-Scout-17B-16E-Instruct-FP8',
+			messages: [{ content: promptContent, role: 'user' }],
+		});
+
+		console.log('Completion: ', completion.choices[0].message.content);
+
+		if (completion.choices[0].message.content) {
+			const result = JSON.parse(completion.choices[0].message.content.toString().replace(/```json\n|```/g, ''));
 			console.log(`Result: ${JSON.stringify(result, null, 2)}`);
 			return result as SimilarityResponse;
 		}

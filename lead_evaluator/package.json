@@ -17,6 +17,8 @@
 	},
 	"dependencies": {
 		"@google/genai": "^1.4.0",
+		"llama-api-client": "^0.1.1",
+		"openai": "^5.1.1",
 		"postgres": "^3.4.5"
 	}
 }
