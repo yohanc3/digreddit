@@ -9,8 +9,6 @@ import {
     BiChevronUp,
     BiRightArrowAlt,
     BiBot,
-    BiCheckCircle,
-    BiXCircle,
 } from 'react-icons/bi';
 import clsx from 'clsx';
 import { Button } from '../button';
@@ -23,14 +21,12 @@ import { Badge } from '../badge';
 import { useEffect, useState } from 'react';
 import { timeAgo, isPostLead } from '@/util/utils';
 import {
-    useUpdateLeadInteraction,
     useUpdateLeadStage,
     useGenerateAIResponse,
     usePostComment,
 } from '@/lib/frontend/tanstack/queries';
 import { toast } from '@/hooks/use-toast';
 import { getBrowserRedditAccessToken } from '@/lib/frontend/utils/getRedditOauthToken';
-import { queryClient } from '@/app/providers';
 import { useRedditUser } from '@/lib/frontend/hooks/useRedditUser';
 import { useLeads } from '@/lib/frontend/hooks/useLeads';
 
@@ -87,7 +83,6 @@ export function RedditCommentLeadCard({
 }: RedditCommentLeadCardProps) {
     const unixCreatedAt = new Date(leadDetails.createdAt).getTime();
     const howLongAgo = timeAgo(unixCreatedAt);
-    const updateLeadInteraction = useUpdateLeadInteraction();
     const updateLeadStage = useUpdateLeadStage();
     const generateAIResponse = useGenerateAIResponse();
     const postComment = usePostComment();
@@ -284,7 +279,7 @@ export function RedditCommentLeadCard({
                                     ? handleMoveToIdentification
                                     : handleMoveToSkipped
                             }
-                            className="text-tertiarySize !text-tertiaryColor hover:underline cursor-pointer"
+                            className="text-xs !text-tertiaryColor hover:underline cursor-pointer"
                         >
                             {leadDetails.stage === 'skipped' ? 'Undo' : 'Skip'}
                         </div>
@@ -292,15 +287,7 @@ export function RedditCommentLeadCard({
                             href={`https://www.reddit.com${leadDetails.url}`}
                             target="_blank"
                         >
-                            <Button
-                                variant={'light'}
-                                onClick={() => {
-                                    updateLeadInteraction({
-                                        leadID: leadDetails.id,
-                                        isPost: false,
-                                    });
-                                }}
-                            >
+                            <Button variant={'light'}>
                                 Open <BiLinkExternal size={18} />
                             </Button>
                         </a>
@@ -506,7 +493,6 @@ export function RedditPostLeadCard({
 }: RedditPostLeadCardProps) {
     const unixCreatedAt = new Date(leadDetails.createdAt).getTime();
     const howLongAgo = timeAgo(unixCreatedAt);
-    const updateLeadInteraction = useUpdateLeadInteraction();
     const updateLeadStage = useUpdateLeadStage();
     const generateAIResponse = useGenerateAIResponse();
     const postComment = usePostComment();
@@ -703,20 +689,12 @@ export function RedditPostLeadCard({
                                 ? handleMoveToIdentification
                                 : handleMoveToSkipped
                         }
-                        className="text-tertiarySize !text-tertiaryColor hover:underline cursor-pointer"
+                        className="text-xs !text-tertiaryColor hover:underline cursor-pointer"
                     >
                         {leadDetails.stage === 'skipped' ? 'Undo' : 'Skip'}
                     </div>
                     <a href={leadDetails.url} target="_blank">
-                        <Button
-                            variant={'light'}
-                            onClick={() => {
-                                updateLeadInteraction({
-                                    leadID: leadDetails.id,
-                                    isPost: true,
-                                });
-                            }}
-                        >
+                        <Button variant={'light'}>
                             Open <BiLinkExternal size={18} />
                         </Button>
                     </a>
@@ -938,7 +916,6 @@ function RedditLeadCardDialog({
     const howLongAgo = timeAgo(unixCreatedAt);
     const upvotes = lead.ups - lead.downs;
 
-    const updateLeadInteraction = useUpdateLeadInteraction();
     const { redditUserData, isRedditUserDataLoading } = useRedditUser();
 
     const { refetchAllLeads } = useLeads(selectedProduct);
@@ -1298,12 +1275,6 @@ function RedditLeadCardDialog({
                                 <Button
                                     variant="dark"
                                     className="w-36 h-9 text-sm"
-                                    onClick={() => {
-                                        updateLeadInteraction({
-                                            leadID: lead.id,
-                                            isPost,
-                                        });
-                                    }}
                                 >
                                     View {isPost ? 'Post' : 'Comment'}
                                 </Button>
