@@ -58,12 +58,12 @@ export const POST = auth(async function POST(req: NextAuthRequest) {
     try {
         const body = await req.json();
 
-        if (!body.accessToken) {
-            return NextResponse.json(
-                { error: 'No access token provided' },
-                { status: 400 }
-            );
-        }
+        // if (!body.accessToken) {
+        //     return NextResponse.json(
+        //         { error: 'No access token provided' },
+        //         { status: 400 }
+        //     );
+        // }
 
         //Note from Adriel"
         // We don't validate the existence of access_token btw,

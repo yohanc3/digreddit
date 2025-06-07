@@ -1,6 +1,6 @@
-import OpenAI from 'openai';
 import postgres from 'postgres';
 import { Comment, Post } from './types';
+import { OpenAI } from 'openai';
 
 export interface ProductInput {
 	id: string;
@@ -14,50 +14,81 @@ export interface SimilarityResponse {
 export async function calculateSimilarity(
 	bodyText: string,
 	products: ProductInput[],
-	openaiKey: string
+	llamaAPIKey: string
 ): Promise<SimilarityResponse | null> {
-	const openai = new OpenAI({
-		baseURL: 'https://api.deepseek.com',
-		apiKey: openaiKey,
-	});
-
 	const productDetails = products.map((product) => `User ID: ${product.id}\nProduct Description: "${product.description}"`).join('\n\n');
 
-	const promptContent = `You are an expert lead generation assistant for DigReddt. Your goal is to find relevant leads for businesses by comparing social media content (posts/comments) to their product/service descriptions.
+	const promptContent = `You are a lead generation assistant for DigReddt.
 
-Given the following social media content:
-'''
-${bodyText}
-'''
+Your task is to determine how strong of a lead a piece of social media content is for one or more products. A strong lead is someone who is likely to be interested in the product and could become a customer.
 
-And the following product/service descriptions:
+You will receive the following input:
+
+Social Media Content: the content of a social media post or comment
+
+Products: an array of product objects, each containing:
+	User ID: a unique identifier for the product's owner
+	Description: the product or service description
+
+Scoring Instructions:
+
+Evaluate how strong of a lead the Social Media Content is for each product's description. A high score means the lead is highly relevant and actionable. A low score means the lead is not relevant or is unlikely to convert.
+
+Use the following criteria (total: 10.0 max):
+
+ - Topical Relevance (0–3 points)
+   - Does the lead discuss topics related to the product domain?
+
+ - Expressed Need or Interest (0–3 points)
+   - Does the user express a problem, need, or interest the product could solve?
+
+ - Fit as a Potential Buyer (0–2 points)
+   - Does the person seem like a potential customer for this product?
+
+ - Actionability (0–2 points)
+   - Could this lead be pursued by a sales or marketing team?
+
+ - Bans:
+	- If any of the following are true, return a score of 0.0:
+		- The lead is a bot
+		- The lead is a spam account
+		- The lead is trying to sell something, so there's a price tag in the Social Media Content, there is a link to a product, or there's a package or bundle mentioned in the Social Media Content
+
+Only give high scores when the lead shows both relevance and intent/interest. Do not give high scores just for topical overlap without clear potential.
+
+For the return format, return a json object where they key is the userID and the value is the lead score (as a decimal between 0.0 and 10.0).
+Example:
+\`\`\`json
+{
+  "72ae8269-d89a-4dbb-8fae-8c54bb438f82": 10.0,
+  "8cf6a701-3570-4a77-a43b-c8823eaed1c5": 7.0
+  \`\`\`
+}
+  
+Only return the JSON object. Do not add any explanation or commentary.
+
+Product Details:
 ${productDetails}
 
-Please evaluate how similar the social media content is to *each* product description. Rate the similarity as a decimal number between 0.0 (not at all similar or relevant as a lead) and 10.0 (highly similar and a strong potential lead).
-
-Return your response *only* as a single JSON object. Each key in the JSON object must be the ID, and its corresponding value must be the similarity score (a decimal number). Do not include any other text, explanations, or formatting outside of this JSON object.
-
-Example response format:
-{
-  "id_1": 7.5,
-  "id_abc": 9.2,
-  "id_42": 3.0
-}`;
+Social Media Content:
+${bodyText}
+`;
 
 	try {
-		const completion = await openai.chat.completions.create({
-			messages: [
-				{ role: 'system', content: 'You are a helpful assistant specialized in JSON outputs.' },
-				{ role: 'user', content: promptContent },
-			],
-			model: 'deepseek-chat',
-			response_format: {
-				type: 'json_object',
-			},
+		const openai = new OpenAI({
+			apiKey: llamaAPIKey,
+			baseURL: 'https://api.llama.com/compat/v1/',
 		});
 
-		if (completion.choices[0]?.message?.content) {
-			const result = JSON.parse(completion.choices[0].message.content);
+		const completion = await openai.chat.completions.create({
+			model: 'Llama-4-Scout-17B-16E-Instruct-FP8',
+			messages: [{ content: promptContent, role: 'user' }],
+		});
+
+		console.log('Completion: ', completion.choices[0].message.content);
+
+		if (completion.choices[0].message.content) {
+			const result = JSON.parse(completion.choices[0].message.content.toString().replace(/```json\n|```/g, ''));
 			console.log(`Result: ${JSON.stringify(result, null, 2)}`);
 			return result as SimilarityResponse;
 		}

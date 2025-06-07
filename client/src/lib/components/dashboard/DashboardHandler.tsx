@@ -2,24 +2,9 @@
 
 import { CommentLead, PostLead, Products, LeadStage } from '@/types/backend/db';
 import { useEffect, useState } from 'react';
-import {
-    LeftSideBarLeadResult,
-    RightSideBarLeadResult,
-} from '../ui/lead/sidebar';
 import { RedditCommentLeadCard, RedditPostLeadCard } from '../ui/lead/card';
-import ProductConfig from '../ui/lead/productConfig';
 import { isPostLead } from '@/util/utils';
 import { useLeads } from '@/lib/frontend/hooks/useLeads';
-import {
-    Select,
-    SelectItem,
-    SelectContent,
-    SelectTrigger,
-    SelectValue,
-} from '../ui/select';
-import { Label } from '../ui/label';
-import { Input } from '../ui/input';
-import { Checkbox } from '../ui/checkbox';
 import {
     Pagination,
     PaginationContent,
@@ -30,15 +15,7 @@ import {
     PaginationPrevious,
 } from '../ui/pagination';
 import { LEADS_PER_PAGE } from '@/lib/frontend/constant/pagination';
-import {
-    Menubar,
-    MenubarContent,
-    MenubarItem,
-    MenubarMenu,
-    MenubarTrigger,
-} from '../ui/menubar';
-import { ChevronDown } from 'lucide-react';
-import { HelpCircle } from 'lucide-react';
+import { DashboardHeader } from './DashboardHeader';
 
 const sortingMethods = [
     {
@@ -71,6 +48,7 @@ interface StagePagination {
     identification: number;
     initial_outreach: number;
     engagement: number;
+    skipped: number;
 }
 
 export default function DashboardHandler({
@@ -79,7 +57,7 @@ export default function DashboardHandler({
     fetchedProducts: Products[];
 }) {
     const [selectedProduct, setSelectedProduct] = useState<Products | null>(
-        fetchedProducts[0]
+        fetchedProducts[0] || null
     );
 
     const [currentStage, setCurrentStage] =
@@ -90,6 +68,7 @@ export default function DashboardHandler({
         identification: 0,
         initial_outreach: 0,
         engagement: 0,
+        skipped: 0,
     });
 
     const [options, setOptions] = useState<LeadOptions>({
@@ -99,6 +78,12 @@ export default function DashboardHandler({
         stage: 'identification',
     });
 
+    // State for dialog and AI responses, keyed by lead ID
+    const [openDialogLeadId, setOpenDialogLeadId] = useState<string | null>(
+        null
+    );
+    const [aiResponses, setAiResponses] = useState<Record<string, string>>({});
+
     const { leads, totalCount, isLoading } = useLeads(
         selectedProduct,
         options,
@@ -107,6 +92,30 @@ export default function DashboardHandler({
 
     const totalPages = Math.ceil(totalCount / LEADS_PER_PAGE);
 
+    // Handler functions for dialog and AI responses
+    function handleOpenDialog(leadId: string) {
+        setOpenDialogLeadId(leadId);
+    }
+
+    function handleCloseDialog() {
+        setOpenDialogLeadId(null);
+    }
+
+    function handleSetAiResponse(leadId: string, response: string) {
+        setAiResponses((prev) => ({
+            ...prev,
+            [leadId]: response,
+        }));
+    }
+
+    function handleClearAiResponse(leadId: string) {
+        setAiResponses((prev) => {
+            const newResponses = { ...prev };
+            delete newResponses[leadId];
+            return newResponses;
+        });
+    }
+
     function onSelectedProductChange(index: number) {
         setSelectedProduct(fetchedProducts[index]);
         // Reset pagination for all stages when changing products
@@ -114,6 +123,7 @@ export default function DashboardHandler({
             identification: 0,
             initial_outreach: 0,
             engagement: 0,
+            skipped: 0,
         });
     }
 
@@ -139,6 +149,7 @@ export default function DashboardHandler({
             identification: 0,
             initial_outreach: 0,
             engagement: 0,
+            skipped: 0,
         });
     }, [
         selectedProduct?.id,
@@ -155,228 +166,34 @@ export default function DashboardHandler({
                 return 'Initial Outreach';
             case 'engagement':
                 return 'Engagement';
+            case 'skipped':
+                return 'Skipped';
             default:
                 return stage;
         }
     };
 
     return (
-        <>
-            <LeftSideBarLeadResult
+        <div className="flex flex-col h-screen">
+            <DashboardHeader
                 products={fetchedProducts}
+                selectedProduct={selectedProduct}
                 onSelectedProductChange={onSelectedProductChange}
+                currentStage={currentStage}
+                handleStageChange={handleStageChange}
+                totalCount={totalCount}
+                options={options}
+                setOptions={setOptions}
+                sortingMethods={sortingMethods}
             />
 
-            <div className="w-2/3">
-                <ProductConfig
-                    productDetails={selectedProduct}
-                    className="border-b border-light"
-                />
-
-                <div className="flex border-b border-light">
-                    <div className="flex flex-col p-4 gap-y-2 justify-center border-r border-light w-1/3">
-                        <Label className="text-primarySize">
-                            Minimum lead rating
-                        </Label>
-                        <Input
-                            type="number"
-                            min={5}
-                            max={10}
-                            value={options.minRating}
-                            step={1}
-                            className="w-24"
-                            onChange={(e) => {
-                                const value = parseInt(e.target.value);
-                                if (
-                                    !isNaN(value) &&
-                                    value >= 1 &&
-                                    value <= 10
-                                ) {
-                                    setOptions({
-                                        ...options,
-                                        minRating: value as
-                                            | 5
-                                            | 6
-                                            | 7
-                                            | 8
-                                            | 9
-                                            | 10,
-                                    });
-                                }
-                            }}
-                        />
-                    </div>
-                    <div className="flex flex-col p-4 gap-y-2 justify-center border-r border-light w-1/4">
-                        <Label className="text-primarySize">
-                            Sorting method
-                        </Label>
-
-                        <Select
-                            value={options.sortingMethod}
-                            onValueChange={(value) => {
-                                setOptions({
-                                    ...options,
-                                    sortingMethod: value as
-                                        | 'newest'
-                                        | 'oldest'
-                                        | 'most-upvotes'
-                                        | 'least-upvotes',
-                                });
-                            }}
-                        >
-                            <SelectContent>
-                                {sortingMethods.map((method) => (
-                                    <SelectItem
-                                        key={method.value}
-                                        value={method.value}
-                                    >
-                                        {method.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a sorting method" />
-                            </SelectTrigger>
-                        </Select>
-                    </div>
-                    <div className="flex flex-col px-4 gap-y-2 justify-center border-r border-light">
-                        <div className="flex items-center gap-x-2">
-                            <Checkbox
-                                checked={options.showOnlyUninteracted}
-                                onCheckedChange={() => {
-                                    setOptions({
-                                        ...options,
-                                        showOnlyUninteracted:
-                                            !options.showOnlyUninteracted,
-                                    });
-                                }}
-                            />
-                            <Label className="text-primarySize">
-                                Show only leads you have not interacted with
-                            </Label>
-                        </div>
-                        <Label className="text-xs text-muted-foreground ">
-                            To interact with a lead, simply open the original
-                            comment/post through the "Open" or "View Comment"
-                            button.
-                        </Label>
-                    </div>
-                </div>
-
-                <div className="flex justify-between items-center p-4">
+            <main className="flex-grow ">
+                <div className="flex justify-between items-center px-14 py-4">
                     <div className="font-semibold text-primarySize text-secondaryColor">
                         Lead List at {getStageDisplayName(currentStage)} stage:
                     </div>
-                    <div className="flex items-center gap-x-3">
-                        {/* Help Button with Tooltip */}
-                        <div className="relative group">
-                            <button
-                                className="flex items-center justify-center w-6 h-6 rounded-full border border-gray-300 bg-white hover:bg-gray-50 transition-colors"
-                                aria-label="Help information about lead stages"
-                            >
-                                <HelpCircle
-                                    size={14}
-                                    className="text-gray-500"
-                                />
-                            </button>
-
-                            {/* Tooltip */}
-                            <div className="absolute right-0 top-8 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200 z-50">
-                                <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4 w-80 text-sm">
-                                    <div className="space-y-3">
-                                        <div>
-                                            <div className="font-semibold text-gray-800 mb-1">
-                                                Lead Stages:
-                                            </div>
-                                            <div className="text-gray-600 text-xs">
-                                                Organize your leads by
-                                                interaction level
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <div>
-                                                <span className="text-primaryColor font-semibold text-sm">
-                                                    1. Identification:
-                                                </span>
-                                                <div className="text-gray-600 text-xs">
-                                                    Newly discovered leads that
-                                                    match your keywords
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <span className="text-primaryColor font-semibold text-sm">
-                                                    2. Initial Outreach:
-                                                </span>
-                                                <div className="text-gray-600 text-xs">
-                                                    Leads you've contacted for
-                                                    the first time
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <span className="text-primaryColor font-semibold text-sm">
-                                                    3. Engagement:
-                                                </span>
-                                                <div className="text-gray-600 text-xs">
-                                                    Active conversations and
-                                                    relationship building
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="text-xs text-gray-500 pt-2 border-t border-gray-100">
-                                            Use the stage buttons on lead cards
-                                            to move them through your sales
-                                            process
-                                        </div>
-                                    </div>
-
-                                    {/* Tooltip Arrow */}
-                                    <div className="absolute top-0 right-4 transform -translate-y-1 w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-gray-200"></div>
-                                    <div className="absolute top-0 right-4 transform -translate-y-1 translate-x-0 translate-y-px w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-white"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <Menubar>
-                            <MenubarMenu>
-                                <MenubarTrigger className="text-sm font-medium cursor-pointer flex items-center gap-x-2">
-                                    {getStageDisplayName(currentStage)} (
-                                    {totalCount})
-                                    <ChevronDown size={16} />
-                                </MenubarTrigger>
-                                <MenubarContent>
-                                    <MenubarItem
-                                        onClick={() =>
-                                            handleStageChange('identification')
-                                        }
-                                    >
-                                        Identification
-                                    </MenubarItem>
-                                    <MenubarItem
-                                        onClick={() =>
-                                            handleStageChange(
-                                                'initial_outreach'
-                                            )
-                                        }
-                                    >
-                                        Initial Outreach
-                                    </MenubarItem>
-                                    <MenubarItem
-                                        onClick={() =>
-                                            handleStageChange('engagement')
-                                        }
-                                    >
-                                        Engagement
-                                    </MenubarItem>
-                                </MenubarContent>
-                            </MenubarMenu>
-                        </Menubar>
-                    </div>
                 </div>
-                <div className="w-full p-4 pt-1 justify-center grid grid-cols-3 gap-2 min-h-96">
+                <div className="w-full py-4 px-12 pt-1 justify-center grid grid-cols-3 gap-4 min-h-96">
                     {isLoading ? (
                         <div className="col-span-3 flex justify-center items-center">
                             <p className="text-primaryColor">Loading...</p>
@@ -396,12 +213,38 @@ export default function DashboardHandler({
                             return isPostLead(lead) ? (
                                 <RedditPostLeadCard
                                     leadDetails={lead as PostLead}
-                                    key={index}
+                                    key={lead.id}
+                                    selectedProduct={selectedProduct}
+                                    isDialogOpen={openDialogLeadId === lead.id}
+                                    onOpenDialog={() =>
+                                        handleOpenDialog(lead.id)
+                                    }
+                                    onCloseDialog={handleCloseDialog}
+                                    aiResponse={aiResponses[lead.id] || ''}
+                                    onSetAiResponse={(response: string) =>
+                                        handleSetAiResponse(lead.id, response)
+                                    }
+                                    onClearAiResponse={() =>
+                                        handleClearAiResponse(lead.id)
+                                    }
                                 />
                             ) : (
                                 <RedditCommentLeadCard
                                     leadDetails={lead as CommentLead}
-                                    key={index}
+                                    key={lead.id}
+                                    selectedProduct={selectedProduct}
+                                    isDialogOpen={openDialogLeadId === lead.id}
+                                    onOpenDialog={() =>
+                                        handleOpenDialog(lead.id)
+                                    }
+                                    onCloseDialog={handleCloseDialog}
+                                    aiResponse={aiResponses[lead.id] || ''}
+                                    onSetAiResponse={(response: string) =>
+                                        handleSetAiResponse(lead.id, response)
+                                    }
+                                    onClearAiResponse={() =>
+                                        handleClearAiResponse(lead.id)
+                                    }
                                 />
                             );
                         })
@@ -567,12 +410,7 @@ export default function DashboardHandler({
                         </Pagination>
                     </div>
                 )}
-            </div>
-
-            <RightSideBarLeadResult
-                productID={selectedProduct?.id}
-                productTitle={selectedProduct?.title}
-            />
-        </>
+            </main>
+        </div>
     );
 }

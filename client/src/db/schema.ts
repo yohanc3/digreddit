@@ -19,11 +19,13 @@ export const leadStage = pgEnum('lead_stage', [
     'identification',
     'initial_outreach',
     'engagement',
+    'skipped'
 ]);
 export const stages = pgEnum('stages', [
     'identification',
     'initial_outreach',
     'engagement',
+    'skipped'
 ]);
 
 export const authenticator = pgTable(
