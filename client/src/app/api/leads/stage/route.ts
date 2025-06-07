@@ -32,12 +32,13 @@ export const PUT = auth(async function PUT(req: NextAuthRequest) {
         'identification',
         'initial_outreach',
         'engagement',
+        'skipped',
     ];
 
     if (!validStages.includes(stage)) {
         return NextResponse.json(
             {
-                error: 'Invalid stage. Must be one of: identification, initial_outreach, engagement',
+                error: 'Invalid stage. ',
             },
             { status: 400 }
         );
