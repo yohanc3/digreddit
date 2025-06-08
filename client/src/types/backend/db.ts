@@ -1,4 +1,4 @@
-import { commentLeads, postLeads, products } from '@/db/schema';
+import { bookmarks, commentLeads, postLeads, products } from '@/db/schema';
 import { InferSelectModel } from 'drizzle-orm';
 
 export type PostLead = InferSelectModel<typeof postLeads>;
@@ -6,6 +6,8 @@ export type PostLead = InferSelectModel<typeof postLeads>;
 export type CommentLead = InferSelectModel<typeof commentLeads>;
 
 export type Products = InferSelectModel<typeof products>;
+
+export type Bookmark = InferSelectModel<typeof bookmarks>;
 
 //CRUD Function Parameter Types
 export type Payload<T> = Omit<T, 'id' | 'createdAt' | 'updatedAt'>;
@@ -19,4 +21,5 @@ export interface LeadFilters {
     sortingMethod?: 'newest' | 'oldest' | 'most-upvotes' | 'least-upvotes';
     showOnlyUninteracted?: boolean;
     stage?: LeadStage;
+    bookmarkID?: string;
 }

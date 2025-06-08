@@ -8,6 +8,7 @@ import {
     account,
     authenticator,
     feedback,
+    bookmarks,
 } from './schema';
 
 export const commentLeadsRelations = relations(commentLeads, ({ one }) => ({
@@ -15,6 +16,10 @@ export const commentLeadsRelations = relations(commentLeads, ({ one }) => ({
         fields: [commentLeads.productID],
         references: [products.id],
     }),
+    bookmark: one(bookmarks, {
+        fields: [commentLeads.bookmarkID],
+        references: [bookmarks.id],
+    })
 }));
 
 export const productsRelations = relations(products, ({ many }) => ({
@@ -27,6 +32,10 @@ export const postLeadsRelations = relations(postLeads, ({ one }) => ({
         fields: [postLeads.productID],
         references: [products.id],
     }),
+    bookmark: one(bookmarks, {
+        fields: [postLeads.bookmarkID],
+        references: [bookmarks.id],
+    })
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -61,4 +70,11 @@ export const feedbackRelations = relations(feedback, ({ one }) => ({
         fields: [feedback.userId],
         references: [users.id],
     }),
+}));
+
+export const bookmarksRelations = relations(bookmarks, ({one}) => ({
+	product: one(products, {
+		fields: [bookmarks.productId],
+		references: [products.id]
+	}),
 }));

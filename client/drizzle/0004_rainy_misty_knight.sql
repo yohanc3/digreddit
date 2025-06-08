@@ -1,0 +1,1 @@
+ALTER TABLE "Bookmarks" ADD COLUMN "description" text NOT NULL;
