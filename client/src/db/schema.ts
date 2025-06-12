@@ -120,6 +120,7 @@ export const commentLeads = pgTable(
         ups: smallint().notNull(),
         downs: smallint().notNull(),
         productID: uuid().notNull(),
+        bookmarkID: uuid(),
         createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
         rating: doublePrecision().notNull(),
         isInteracted: boolean().default(false),
@@ -131,6 +132,11 @@ export const commentLeads = pgTable(
             foreignColumns: [products.id],
             name: 'fk_product',
         }),
+        foreignKey({
+            columns: [table.bookmarkID],
+            foreignColumns: [bookmarks.id],
+            name: 'fk_bookmark', 
+        }).onDelete('set null'),
     ]
 );
 
@@ -192,6 +198,7 @@ export const postLeads = pgTable(
         ups: smallint().notNull(),
         downs: smallint().notNull(),
         productID: uuid().notNull(),
+        bookmarkID: uuid(),
         createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
         rating: doublePrecision().notNull(),
         isInteracted: boolean().default(false),
@@ -203,5 +210,29 @@ export const postLeads = pgTable(
             foreignColumns: [products.id],
             name: 'fk_product',
         }),
+        foreignKey({
+            columns: [table.bookmarkID],
+            foreignColumns: [bookmarks.id],
+            name: 'fk_bookmark',
+        }).onDelete('set null'),
     ]
 );
+
+export const bookmarks = pgTable("Bookmarks", {
+    id: uuid()
+        .default(sql`gen_random_uuid()`)
+        .primaryKey()
+        .notNull(),
+    title: text().notNull(),
+    description: text().notNull(),
+    createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+    updatedAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+    userId: uuid().notNull(),
+    productId: uuid().notNull(),
+}, (table) => [
+    foreignKey({
+        columns: [table.productId],
+        foreignColumns: [products.id],
+        name: "fk_product"
+    }),
+]);
