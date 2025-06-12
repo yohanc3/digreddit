@@ -3,6 +3,7 @@ import * as schema from './schema';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { count, eq, asc, desc, gte, and } from 'drizzle-orm';
 import {
+    bookmarks,
     commentLeads,
     feedback,
     nonBetaUsers,
@@ -86,7 +87,7 @@ export const leadsQueries = {
     getAllLeadsByProductID: async (
         productID: string,
         pagesOffset: number = 0,
-        filters?: LeadFilters
+        filters?: LeadFilters,
     ) => {
         const limit = Math.floor(PAGINATION_LIMIT / 2); // 15 for each type
         const offset = pagesOffset * limit;
@@ -107,6 +108,10 @@ export const leadsQueries = {
 
             if (filters?.stage) {
                 conditions.push(eq(table.stage, filters.stage));
+            }
+
+            if (filters?.bookmarkID) {
+                conditions.push(eq(table.bookmarkID, filters.bookmarkID));
             }
 
             return and(...conditions);
@@ -173,7 +178,6 @@ export const leadsQueries = {
 
         return allSortedLeads;
     },
-
     getTotalLeadsCountByProductID: async (
         productID: string,
         filters?: LeadFilters
@@ -194,6 +198,10 @@ export const leadsQueries = {
 
             if (filters?.stage) {
                 conditions.push(eq(table.stage, filters.stage));
+            }
+
+            if (filters?.bookmarkID) {
+                conditions.push(eq(table.bookmarkID, filters.bookmarkID));
             }
 
             return and(...conditions);
@@ -226,6 +234,116 @@ export const leadsQueries = {
         return updatedLead;
     },
 };
+
+export const bookmarkQueries = {
+    updateBookmark: async (
+        bookmarkID: string,
+        title: string,
+        description: string,
+        userID: string,
+    ) => {
+        const [udpatedBookmark] = await db
+            .update(bookmarks)
+            .set({ title, description })
+            .where(and(eq(bookmarks.id, bookmarkID), eq(bookmarks.userId, userID)))
+            .returning();
+
+        return udpatedBookmark;
+    },
+    createBookmark: async (
+        productID: string,
+        title: string,
+        description: string,
+        userID: string,
+    ) => {
+        const [createdBookmark] = await db
+            .insert(bookmarks)
+            .values({ title: title, description: description, userId: userID, productId: productID })
+            .returning();
+
+        return createdBookmark;
+    },
+    deleteBookmark: async (
+        bookmarkID: string,
+        userID: string,
+    ) => {
+        const [deletedBookmark] = await db
+            .delete(bookmarks)
+            .where(and(eq(bookmarks.id, bookmarkID), eq(bookmarks.userId, userID)))
+            .returning();
+
+        return deletedBookmark;
+    },
+    getProductBookmarks: async (
+        productID: string,
+    ) => {
+        return await db
+            .select()
+            .from(bookmarks)
+            .where(eq(bookmarks.productId, productID))
+    },
+    getUserBookmarks: async (userID: string) => {
+        const rows = await db
+            .select({
+                bookmarkId: bookmarks.id,
+                bookmarkTitle: bookmarks.title,
+                bookmarkDescription: bookmarks.description,
+                bookmarkCreatedAt: bookmarks.createdAt,
+                bookmarkUpdatedAt: bookmarks.updatedAt,
+                productId: products.id,
+                productTitle: products.title,
+            })
+            .from(bookmarks)
+            .innerJoin(products, eq(bookmarks.productId, products.id))
+            .where(eq(bookmarks.userId, userID));
+
+        // Group bookmarks by product
+        const groupedByProduct: Record<string, {
+            productId: string;
+            productTitle: string;
+            bookmarks: Array<{
+                id: string;
+                title: string;
+                description: string;
+                createdAt: string;
+                updatedAt: string;
+            }>
+        }> = {};
+
+        for (const row of rows) {
+            if (!groupedByProduct[row.productId]) {
+                groupedByProduct[row.productId] = {
+                    productId: row.productId,
+                    productTitle: row.productTitle,
+                    bookmarks: []
+                };
+            }
+
+            groupedByProduct[row.productId].bookmarks.push({
+                id: row.bookmarkId,
+                title: row.bookmarkTitle,
+                description: row.bookmarkDescription,
+                createdAt: row.bookmarkCreatedAt,
+                updatedAt: row.bookmarkUpdatedAt,
+            });
+        }
+
+        return Object.values(groupedByProduct);
+    },
+    addBookmarkToLead: async (
+        leadID: string,
+        bookmarkID: string,
+        isPost: boolean
+    ) => {
+        const [updatedLead] = await db
+            .update(isPost ? postLeads : commentLeads)
+            .set({ bookmarkID })
+            .where(eq(isPost ? postLeads.id : commentLeads.id, leadID))
+            .returning();
+
+        return updatedLead;
+    }
+}
 
 export const nonBetaUsersQueries = {
     addNonBetaUserEmail: async (email: string) => {

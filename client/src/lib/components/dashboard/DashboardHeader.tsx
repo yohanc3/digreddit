@@ -1,6 +1,6 @@
 'use client';
 
-import { Products, LeadStage } from '@/types/backend/db';
+import { Products, LeadStage, Bookmark } from '@/types/backend/db';
 import {
     Select,
     SelectContent,
@@ -18,8 +18,8 @@ import {
     MenubarTrigger,
 } from '../ui/menubar';
 import { ChevronDown, Trash, Plus } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useMutation } from '@tanstack/react-query';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useFetch } from '@/lib/frontend/hooks/useFetch';
 import { toast } from '@/hooks/use-toast';
 import {
@@ -38,13 +38,19 @@ import { LeadOptions } from './DashboardHandler';
 import EditProductDialog from '../ui/product/editDialog';
 import { Label } from '../ui/label';
 import { Checkbox } from '../ui/checkbox';
-
+import { BiBookmarks, BiFolder, BiFolderOpen, BiPlus } from 'react-icons/bi';
+import { Badge } from '../ui/badge';
 interface DashboardHeaderProps {
     products: Products[];
     selectedProduct: Products | null;
     onSelectedProductChange: (index: number) => void;
+    selectedBookmark: string;
+    setSelectedBoookMark: (val: string) => void;
     currentStage: LeadStage;
     handleStageChange: (stage: LeadStage) => void;
+    setOpenBookmarkCreationDialog: (val: boolean) => void;
+    bookmarks: Bookmark[],
+    isBookmarksLoading: boolean,
     totalCount: number;
     options: LeadOptions;
     setOptions: (options: LeadOptions) => void;
@@ -54,15 +60,22 @@ interface DashboardHeaderProps {
 export function DashboardHeader({
     products,
     selectedProduct,
+    selectedBookmark,
     onSelectedProductChange,
+    setSelectedBoookMark,
     currentStage,
     handleStageChange,
+    setOpenBookmarkCreationDialog,
+    bookmarks,
+    isBookmarksLoading,
     totalCount,
     options,
     setOptions,
     sortingMethods,
 }: DashboardHeaderProps) {
     const router = useRouter();
+    const queryClient = useQueryClient()
+    const search = useSearchParams()
     const { apiPost } = useFetch();
     const [confirmProductTitle, setConfirmProductTitle] = useState('');
     const [showLeadFilters, setShowLeadFilters] = useState(false);
@@ -116,8 +129,19 @@ export function DashboardHeader({
                 <div className="flex items-center gap-x-3">
                     {/* Product Selector */}
                     <Select
-                        onValueChange={(value) =>
-                            onSelectedProductChange(parseInt(value, 10))
+                        onValueChange={(value) => {
+                            const newIndex = parseInt(value, 10);
+                            const newProductId = products[newIndex].id;
+
+                            onSelectedProductChange(newIndex);
+                            setSelectedBoookMark("")
+                            // Defer query invalidation to after state update
+                            setTimeout(() => {
+                                // queryClient.removeQueries({ queryKey: ['allLeads', newProductId] });
+                                queryClient.invalidateQueries({ queryKey: ['allLeads', newProductId] });
+                            }, 0);
+                        }
+
                         }
                         value={
                             selectedProductIndex !== -1
@@ -184,11 +208,10 @@ export function DashboardHeader({
                         variant="outline"
                         size="sm"
                         onClick={() => setShowLeadFilters(!showLeadFilters)}
-                        className={`h-8 px-3 text-xs border-primaryColor transition-colors ${
-                            showLeadFilters
-                                ? 'bg-primaryColor text-white'
-                                : 'text-primaryColor hover:bg-primaryColor hover:text-white'
-                        }`}
+                        className={`h-8 px-3 text-xs border-primaryColor transition-colors ${showLeadFilters
+                            ? 'bg-primaryColor text-white'
+                            : 'text-primaryColor hover:bg-primaryColor hover:text-white'
+                            }`}
                     >
                         Lead Filters
                     </Button>
@@ -285,16 +308,16 @@ export function DashboardHeader({
                                             variant={'destructive'}
                                             onClick={() =>
                                                 selectedProduct &&
-                                                confirmProductTitle ===
+                                                    confirmProductTitle ===
                                                     selectedProduct.title
                                                     ? deleteProduct(
-                                                          selectedProduct.id
-                                                      )
+                                                        selectedProduct.id
+                                                    )
                                                     : toast({
-                                                          title: 'Incorrect product name',
-                                                          description:
-                                                              'Please try again with the correct product name',
-                                                      })
+                                                        title: 'Incorrect product name',
+                                                        description:
+                                                            'Please try again with the correct product name',
+                                                    })
                                             }
                                         >
                                             Delete Product
@@ -351,6 +374,7 @@ export function DashboardHeader({
                             <Select
                                 value={options.sortingMethod}
                                 onValueChange={(value) => {
+
                                     setOptions({
                                         ...options,
                                         sortingMethod: value as
@@ -379,6 +403,38 @@ export function DashboardHeader({
                     </div>
                 </div>
             )}
+            <div className='p-4 border-light border-b flex flex-col space-y-2'>
+                <div className='flex flex-row items-center text-primaryColor !text-primarySize !font-semibold' >
+                    <BiBookmarks size={23} />
+                    <div>
+                        Bookmarks:
+                    </div>
+                </div>
+                <div className='flex flex-row flex-wrap gap-1'>
+                    {
+                        !isBookmarksLoading && bookmarks && bookmarks?.length > 0 && bookmarks.map((bookmark) => {
+                            return (
+                                <Badge
+                                    key={bookmark.id}
+                                    variant={selectedBookmark === bookmark.id ? "openBookmark" : "closedBookmark"}
+                                    onMouseDown={(e) => {
+                                        queryClient.removeQueries({
+                                            queryKey: ['allLeads', selectedProduct?.id]
+                                        })
+                                        const newBookmarkId = selectedBookmark !== bookmark.id ? bookmark.id : "";
+                                        setSelectedBoookMark(newBookmarkId);
+                                        router.push(`/dashboard/?product=${selectedProduct?.id}${newBookmarkId ? `&bookmark=${newBookmarkId}` : ''}`);
+                                    }}
+                                ><BiFolder size={23} /> <div>{bookmark.title}</div></Badge>
+                            )
+                        })
+                    }
+                    <Badge
+                        variant={"closedBookmark"}
+                        onMouseDown={() => { setOpenBookmarkCreationDialog(true) }}
+                    ><BiPlus size={23} /> Add Bookmark</Badge>
+                </div>
+            </div>
         </div>
     );
 }

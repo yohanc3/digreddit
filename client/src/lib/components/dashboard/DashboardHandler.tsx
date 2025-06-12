@@ -1,10 +1,12 @@
 'use client';
 
-import { CommentLead, PostLead, Products, LeadStage } from '@/types/backend/db';
-import { useEffect, useState } from 'react';
+import { CommentLead, PostLead, Products, LeadStage, Bookmark } from '@/types/backend/db';
+import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { RedditCommentLeadCard, RedditPostLeadCard } from '../ui/lead/card';
 import { isPostLead } from '@/util/utils';
 import { useLeads } from '@/lib/frontend/hooks/useLeads';
+import { useQueryClient } from '@tanstack/react-query'
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
     Pagination,
     PaginationContent,
@@ -16,6 +18,15 @@ import {
 } from '../ui/pagination';
 import { LEADS_PER_PAGE } from '@/lib/frontend/constant/pagination';
 import { DashboardHeader } from './DashboardHeader';
+import { BiBookmark, BiBookmarks, BiCheckCircle, BiErrorCircle, BiFolder, BiPlus } from 'react-icons/bi';
+import { Badge } from '../ui/badge';
+import { useFetch } from '@/lib/frontend/hooks/useFetch';
+import { Dialog, DialogContent, DialogHeader, DialogTrigger } from '../ui/dialog';
+import { Button } from '../ui/button';
+import { toast } from '@/hooks/use-toast';
+import { title } from 'process';
+import { MissingFieldError } from '../error/form';
+import { useProductBookmarks } from '@/lib/frontend/hooks/useProductBookmarks';
 
 const sortingMethods = [
     {
@@ -41,6 +52,7 @@ export interface LeadOptions {
     sortingMethod: 'newest' | 'oldest' | 'most-upvotes' | 'least-upvotes';
     showOnlyUninteracted: boolean;
     stage: LeadStage;
+    bookmarkID?: string;
 }
 
 // Stage pagination state interface
@@ -56,9 +68,15 @@ export default function DashboardHandler({
 }: {
     fetchedProducts: Products[];
 }) {
-    const [selectedProduct, setSelectedProduct] = useState<Products | null>(
-        fetchedProducts[0] || null
-    );
+    const router = useRouter();
+    const queryClient = useQueryClient()
+    const searchParams = useSearchParams()
+    const productURLQuery = searchParams.get('product')
+    const bookmarkURLQuery = searchParams.get('bookmark')
+    const [selectedBookmark, setSelectedBoookMark] = useState(bookmarkURLQuery || "")
+    const [selectedProduct, setSelectedProduct] = useState<Products | null>(fetchedProducts.find((product) => product.id === productURLQuery) || fetchedProducts[0] || null);
+
+    const { bookmarks, isBookmarksLoading, refetchAllBookmarks } = useProductBookmarks(selectedProduct?.id || bookmarkURLQuery || undefined);
 
     const [currentStage, setCurrentStage] =
         useState<LeadStage>('identification');
@@ -82,10 +100,18 @@ export default function DashboardHandler({
     const [openDialogLeadId, setOpenDialogLeadId] = useState<string | null>(
         null
     );
+
+    const [openBookmarkDialogLeadId, setOpenBookmarkDialogLeadId] = useState<string | null>(
+        null
+    );
+
+    const [openBookmarkCreationDialog, setOpenBookmarkCreationDialog] = useState<boolean>(false)
+
     const [aiResponses, setAiResponses] = useState<Record<string, string>>({});
 
-    const { leads, totalCount, isLoading } = useLeads(
-        selectedProduct,
+    const { leads, totalCount, isLoading, refetchAllLeads } = useLeads(
+        selectedProduct || fetchedProducts.find((product) => product.id === productURLQuery) || fetchedProducts[0] || null,
+        selectedBookmark,
         options,
         stagePagination[currentStage]
     );
@@ -99,6 +125,14 @@ export default function DashboardHandler({
 
     function handleCloseDialog() {
         setOpenDialogLeadId(null);
+    }
+
+    function handleOpenBookmarkDialog(leadId: string) {
+        setOpenBookmarkDialogLeadId(leadId);
+    }
+
+    function handleCloseBookmarkDialog() {
+        setOpenBookmarkDialogLeadId(null);
     }
 
     function handleSetAiResponse(leadId: string, response: string) {
@@ -118,7 +152,7 @@ export default function DashboardHandler({
 
     function onSelectedProductChange(index: number) {
         setSelectedProduct(fetchedProducts[index]);
-        // Reset pagination for all stages when changing products
+        router.push(`/dashboard/?product=${fetchedProducts[index].id}`)
         setStagePagination({
             identification: 0,
             initial_outreach: 0,
@@ -156,7 +190,18 @@ export default function DashboardHandler({
         options.minRating,
         options.sortingMethod,
         options.showOnlyUninteracted,
+        selectedBookmark
     ]);
+
+    useEffect(() => {
+        queryClient.invalidateQueries({
+            queryKey: [
+                'allLeads',
+                selectedProduct?.id,
+                selectedBookmark
+            ]
+        })
+    }, [selectedBookmark, queryClient, selectedProduct?.id]);
 
     const getStageDisplayName = (stage: LeadStage) => {
         switch (stage) {
@@ -180,7 +225,12 @@ export default function DashboardHandler({
                 selectedProduct={selectedProduct}
                 onSelectedProductChange={onSelectedProductChange}
                 currentStage={currentStage}
+                selectedBookmark={selectedBookmark}
+                setSelectedBoookMark={setSelectedBoookMark}
                 handleStageChange={handleStageChange}
+                setOpenBookmarkCreationDialog={setOpenBookmarkCreationDialog}
+                bookmarks={bookmarks || []}
+                isBookmarksLoading={isBookmarksLoading}
                 totalCount={totalCount}
                 options={options}
                 setOptions={setOptions}
@@ -198,7 +248,7 @@ export default function DashboardHandler({
                         <div className="col-span-3 flex justify-center items-center">
                             <p className="text-primaryColor">Loading...</p>
                         </div>
-                    ) : !leads || (!isLoading && leads.length === 0) ? (
+                    ) : !leads || leads.length === 0 ? (
                         <div className="col-span-3 flex justify-center items-center">
                             <p className="text-primaryColor">
                                 No leads in{' '}
@@ -209,17 +259,22 @@ export default function DashboardHandler({
                             </p>
                         </div>
                     ) : (
-                        leads.map((lead, index) => {
+                        !isLoading && leads.map((lead, index) => {
                             return isPostLead(lead) ? (
                                 <RedditPostLeadCard
                                     leadDetails={lead as PostLead}
                                     key={lead.id}
                                     selectedProduct={selectedProduct}
                                     isDialogOpen={openDialogLeadId === lead.id}
+                                    isBookmarkDialogOpen={openBookmarkDialogLeadId === lead.id}
                                     onOpenDialog={() =>
                                         handleOpenDialog(lead.id)
                                     }
+                                    onOpenBookmarkDialog={() => {
+                                        handleOpenBookmarkDialog(lead.id)
+                                    }}
                                     onCloseDialog={handleCloseDialog}
+                                    onCloseBookmarkDialog={handleCloseBookmarkDialog}
                                     aiResponse={aiResponses[lead.id] || ''}
                                     onSetAiResponse={(response: string) =>
                                         handleSetAiResponse(lead.id, response)
@@ -227,6 +282,8 @@ export default function DashboardHandler({
                                     onClearAiResponse={() =>
                                         handleClearAiResponse(lead.id)
                                     }
+                                    refetchAllLeads={refetchAllLeads}
+                                    bookmarks={bookmarks || []}
                                 />
                             ) : (
                                 <RedditCommentLeadCard
@@ -234,10 +291,15 @@ export default function DashboardHandler({
                                     key={lead.id}
                                     selectedProduct={selectedProduct}
                                     isDialogOpen={openDialogLeadId === lead.id}
+                                    isBookmarkDialogOpen={openBookmarkDialogLeadId === lead.id}
                                     onOpenDialog={() =>
                                         handleOpenDialog(lead.id)
                                     }
+                                    onOpenBookmarkDialog={() => {
+                                        handleOpenBookmarkDialog(lead.id)
+                                    }}
                                     onCloseDialog={handleCloseDialog}
+                                    onCloseBookmarkDialog={handleCloseBookmarkDialog}
                                     aiResponse={aiResponses[lead.id] || ''}
                                     onSetAiResponse={(response: string) =>
                                         handleSetAiResponse(lead.id, response)
@@ -245,6 +307,8 @@ export default function DashboardHandler({
                                     onClearAiResponse={() =>
                                         handleClearAiResponse(lead.id)
                                     }
+                                    refetchAllLeads={refetchAllLeads}
+                                    bookmarks={bookmarks || []}
                                 />
                             );
                         })
@@ -267,7 +331,7 @@ export default function DashboardHandler({
                                             ) {
                                                 handlePageChange(
                                                     stagePagination[
-                                                        currentStage
+                                                    currentStage
                                                     ] - 1
                                                 );
                                             }
@@ -312,7 +376,7 @@ export default function DashboardHandler({
                                                 e.preventDefault();
                                                 handlePageChange(
                                                     stagePagination[
-                                                        currentStage
+                                                    currentStage
                                                     ] - 1
                                                 );
                                             }}
@@ -337,50 +401,50 @@ export default function DashboardHandler({
                                 {/* Show next page */}
                                 {stagePagination[currentStage] <
                                     totalPages - 1 && (
-                                    <PaginationItem>
-                                        <PaginationLink
-                                            href="#"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                handlePageChange(
-                                                    stagePagination[
-                                                        currentStage
-                                                    ] + 1
-                                                );
-                                            }}
-                                            className="text-primaryColor hover:text-primaryColor"
-                                        >
-                                            {stagePagination[currentStage] + 2}
-                                        </PaginationLink>
-                                    </PaginationItem>
-                                )}
-
-                                {/* Show last page */}
-                                {stagePagination[currentStage] <
-                                    totalPages - 3 && (
-                                    <>
-                                        {stagePagination[currentStage] <
-                                            totalPages - 4 && (
-                                            <PaginationItem>
-                                                <PaginationEllipsis className="text-primaryColor" />
-                                            </PaginationItem>
-                                        )}
                                         <PaginationItem>
                                             <PaginationLink
                                                 href="#"
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     handlePageChange(
-                                                        totalPages - 1
+                                                        stagePagination[
+                                                        currentStage
+                                                        ] + 1
                                                     );
                                                 }}
                                                 className="text-primaryColor hover:text-primaryColor"
                                             >
-                                                {totalPages}
+                                                {stagePagination[currentStage] + 2}
                                             </PaginationLink>
                                         </PaginationItem>
-                                    </>
-                                )}
+                                    )}
+
+                                {/* Show last page */}
+                                {stagePagination[currentStage] <
+                                    totalPages - 3 && (
+                                        <>
+                                            {stagePagination[currentStage] <
+                                                totalPages - 4 && (
+                                                    <PaginationItem>
+                                                        <PaginationEllipsis className="text-primaryColor" />
+                                                    </PaginationItem>
+                                                )}
+                                            <PaginationItem>
+                                                <PaginationLink
+                                                    href="#"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        handlePageChange(
+                                                            totalPages - 1
+                                                        );
+                                                    }}
+                                                    className="text-primaryColor hover:text-primaryColor"
+                                                >
+                                                    {totalPages}
+                                                </PaginationLink>
+                                            </PaginationItem>
+                                        </>
+                                    )}
 
                                 <PaginationItem>
                                     <PaginationNext
@@ -393,14 +457,14 @@ export default function DashboardHandler({
                                             ) {
                                                 handlePageChange(
                                                     stagePagination[
-                                                        currentStage
+                                                    currentStage
                                                     ] + 1
                                                 );
                                             }
                                         }}
                                         className={
                                             stagePagination[currentStage] ===
-                                            totalPages - 1
+                                                totalPages - 1
                                                 ? 'pointer-events-none opacity-50 text-primaryColor'
                                                 : 'text-primaryColor hover:text-primaryColor'
                                         }
@@ -411,6 +475,130 @@ export default function DashboardHandler({
                     </div>
                 )}
             </main>
+            {selectedProduct && <RedditBookmarkCreationDialog isOpen={openBookmarkCreationDialog} bookmarks={bookmarks || []} productID={selectedProduct.id} onOpenChange={(open: boolean) => setOpenBookmarkCreationDialog(open)} />}
         </div>
     );
 }
+
+
+interface RedditLeadBookmarkProps {
+    productID: string,
+    isOpen: boolean;
+    bookmarks: Bookmark[];
+    onOpenChange: (open: boolean) => void;
+}
+
+export interface BookmarkFormDataTarget extends EventTarget {
+    description: { value: string };
+    title: { value: string };
+}
+
+function RedditBookmarkCreationDialog({
+    productID,
+    isOpen,
+    bookmarks,
+    onOpenChange,
+}: RedditLeadBookmarkProps) {
+    const [bookmarkDetails, setBookmarkDetails] = useState({})
+    const { apiPost } = useFetch()
+    const queryClient = useQueryClient();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [bookmarkForm, setBookmarkForm] = useState({ title: "", description: "" })
+    const [errors, setErrors] = useState({ title: false, description: false })
+    async function handleBookmarkSubmit(e: FormEvent<HTMLFormElement>) {
+        e.preventDefault()
+        setIsSubmitting(true)
+        const form = e.target as BookmarkFormDataTarget;
+        const title = form.title.value;
+        const description = form.description.value;
+
+        const newErrors = {
+            description: !description,
+            title: !title
+        };
+
+        const hasErrors = Object.values(newErrors).some(
+            (error) => error === true
+        );
+
+
+
+        if (!hasErrors) {
+            try {
+
+                const bookmark = await apiPost("/api/product/bookmark/create", {
+                    productID: productID,
+                    title: title,
+                    description: description
+                })
+
+                queryClient.resetQueries({
+                    queryKey: ['productBookmarks', productID]
+                })
+
+                toast({
+                    title: `Bookmark ${title} Created`,
+                    description: `${title} has been added to your Bookmarks List`,
+                    action: <BiCheckCircle color="#576F72" size={35} />,
+                });
+
+                onOpenChange(false)
+                setIsSubmitting(false)
+                setBookmarkForm({ title: "", description: "" })
+                setErrors({ title: false, description: false })
+                return;
+            } catch (error) {
+                toast({
+                    title: 'Something Went Wrong',
+                    description: 'Try again later.',
+                    action: <BiErrorCircle color="#f87171" size={35} />,
+                });
+            }
+        } else {
+            setErrors(newErrors);
+        }
+        setIsSubmitting(false)
+    }
+
+    function handleBoookmarkTitleOnChange(e: ChangeEvent<HTMLInputElement>) {
+        setBookmarkForm((prev) => { return { ...prev, title: e.target.value } })
+    }
+
+    function handleBoookmarkDescriptionOnChange(e: ChangeEvent<HTMLTextAreaElement>) {
+        setBookmarkForm((prev) => { return { ...prev, description: e.target.value } })
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-xl p-6 flex flex-col text-primaryColor">
+                <DialogHeader>
+                    <div className='font-semibold flex flex-row items-center space-x-1'>
+                        <BiBookmark size={27} /><div>Bookmark:</div>
+                    </div>
+                </DialogHeader>
+                <form onSubmit={handleBookmarkSubmit} className='flex flex-col space-y-5'>
+                    <div className='flex flex-col'>
+                        <label>
+                            Title:
+                        </label>
+                        <input value={bookmarkForm.title} name="title" placeholder="Bookmark Title" onChange={handleBoookmarkTitleOnChange} className='border border-light p-2 rounded-md' disabled={isSubmitting} />
+                        <MissingFieldError trigger={Boolean(errors.title)} />
+                    </div>
+                    <div className='flex flex-col'>
+                        <label>
+                            Description:
+                        </label>
+                        <textarea value={bookmarkForm.description} name="description" placeholder="Bookmark Description" onChange={handleBoookmarkDescriptionOnChange} className='border border-light p-2 rounded-md' disabled={isSubmitting} />
+                        <MissingFieldError trigger={Boolean(errors.description)} />
+                    </div>
+                    <div className='w-full flex justify-end'>
+                        <Button type='submit' variant={'dark'} className='!w-min' disabled={isSubmitting}>
+                            Add Bookmark
+                        </Button>
+                    </div>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+

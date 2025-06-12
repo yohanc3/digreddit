@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { users, authenticator, session, feedback, products, commentLeads, account, postLeads } from "./schema";
+import { users, authenticator, session, feedback, account, products, commentLeads, postLeads, bookmarks } from "./schema";
 
 export const authenticatorRelations = relations(authenticator, ({one}) => ({
 	user: one(users, {
@@ -29,6 +29,13 @@ export const feedbackRelations = relations(feedback, ({one}) => ({
 	}),
 }));
 
+export const accountRelations = relations(account, ({one}) => ({
+	user: one(users, {
+		fields: [account.userId],
+		references: [users.id]
+	}),
+}));
+
 export const commentLeadsRelations = relations(commentLeads, ({one}) => ({
 	product: one(products, {
 		fields: [commentLeads.productId],
@@ -39,18 +46,19 @@ export const commentLeadsRelations = relations(commentLeads, ({one}) => ({
 export const productsRelations = relations(products, ({many}) => ({
 	commentLeads: many(commentLeads),
 	postLeads: many(postLeads),
-}));
-
-export const accountRelations = relations(account, ({one}) => ({
-	user: one(users, {
-		fields: [account.userId],
-		references: [users.id]
-	}),
+	bookmarks: many(bookmarks),
 }));
 
 export const postLeadsRelations = relations(postLeads, ({one}) => ({
 	product: one(products, {
 		fields: [postLeads.productId],
+		references: [products.id]
+	}),
+}));
+
+export const bookmarksRelations = relations(bookmarks, ({one}) => ({
+	product: one(products, {
+		fields: [bookmarks.productId],
 		references: [products.id]
 	}),
 }));
