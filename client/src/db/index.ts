@@ -87,7 +87,7 @@ export const leadsQueries = {
     getAllLeadsByProductID: async (
         productID: string,
         pagesOffset: number = 0,
-        filters?: LeadFilters,
+        filters?: LeadFilters
     ) => {
         const limit = Math.floor(PAGINATION_LIMIT / 2); // 15 for each type
         const offset = pagesOffset * limit;
@@ -240,12 +240,14 @@ export const bookmarkQueries = {
         bookmarkID: string,
         title: string,
         description: string,
-        userID: string,
+        userID: string
     ) => {
         const [udpatedBookmark] = await db
             .update(bookmarks)
             .set({ title, description })
-            .where(and(eq(bookmarks.id, bookmarkID), eq(bookmarks.userId, userID)))
+            .where(
+                and(eq(bookmarks.id, bookmarkID), eq(bookmarks.userID, userID))
+            )
             .returning();
 
         return udpatedBookmark;
@@ -254,33 +256,35 @@ export const bookmarkQueries = {
         productID: string,
         title: string,
         description: string,
-        userID: string,
+        userID: string
     ) => {
         const [createdBookmark] = await db
             .insert(bookmarks)
-            .values({ title: title, description: description, userId: userID, productId: productID })
+            .values({
+                title: title,
+                description: description,
+                userID: userID,
+                productID: productID,
+            })
             .returning();
 
         return createdBookmark;
     },
-    deleteBookmark: async (
-        bookmarkID: string,
-        userID: string,
-    ) => {
+    deleteBookmark: async (bookmarkID: string, userID: string) => {
         const [deletedBookmark] = await db
             .delete(bookmarks)
-            .where(and(eq(bookmarks.id, bookmarkID), eq(bookmarks.userId, userID)))
+            .where(
+                and(eq(bookmarks.id, bookmarkID), eq(bookmarks.userID, userID))
+            )
             .returning();
 
         return deletedBookmark;
     },
-    getProductBookmarks: async (
-        productID: string,
-    ) => {
+    getProductBookmarks: async (productID: string) => {
         return await db
             .select()
             .from(bookmarks)
-            .where(eq(bookmarks.productId, productID))
+            .where(eq(bookmarks.productID, productID));
     },
     getUserBookmarks: async (userID: string) => {
         const rows = await db
@@ -294,28 +298,31 @@ export const bookmarkQueries = {
                 productTitle: products.title,
             })
             .from(bookmarks)
-            .innerJoin(products, eq(bookmarks.productId, products.id))
-            .where(eq(bookmarks.userId, userID));
+            .innerJoin(products, eq(bookmarks.productID, products.id))
+            .where(eq(bookmarks.userID, userID));
 
         // Group bookmarks by product
-        const groupedByProduct: Record<string, {
-            productId: string;
-            productTitle: string;
-            bookmarks: Array<{
-                id: string;
-                title: string;
-                description: string;
-                createdAt: string;
-                updatedAt: string;
-            }>
-        }> = {};
+        const groupedByProduct: Record<
+            string,
+            {
+                productId: string;
+                productTitle: string;
+                bookmarks: Array<{
+                    id: string;
+                    title: string;
+                    description: string;
+                    createdAt: string;
+                    updatedAt: string;
+                }>;
+            }
+        > = {};
 
         for (const row of rows) {
             if (!groupedByProduct[row.productId]) {
                 groupedByProduct[row.productId] = {
                     productId: row.productId,
                     productTitle: row.productTitle,
-                    bookmarks: []
+                    bookmarks: [],
                 };
             }
 
@@ -342,8 +349,8 @@ export const bookmarkQueries = {
             .returning();
 
         return updatedLead;
-    }
-}
+    },
+};
 
 export const nonBetaUsersQueries = {
     addNonBetaUserEmail: async (email: string) => {
