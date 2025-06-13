@@ -526,7 +526,12 @@ export function DashboardHeader({
                     </div>
                     <div className="flex overflow-x-auto gap-2 pb-1 scrollbar-thin">
                         <div className="flex gap-2 min-w-max">
-                            {!isCollectionsLoading &&
+                            {!isCollectionsLoading && !collections ? (
+                                <div className="text-sm text-gray-500">
+                                    No collections yet!
+                                </div>
+                            ) : (
+                                !isCollectionsLoading &&
                                 collections?.map((collection) => (
                                     <Badge
                                         key={collection.id}
@@ -560,7 +565,8 @@ export function DashboardHeader({
                                         <BiCollection size={23} />{' '}
                                         <div>{collection.title}</div>
                                     </Badge>
-                                ))}
+                                ))
+                            )}
                         </div>
                     </div>
                 </div>
