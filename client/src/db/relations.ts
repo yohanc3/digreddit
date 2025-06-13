@@ -9,6 +9,7 @@ import {
     authenticator,
     feedback,
     bookmarks,
+    collections,
 } from './schema';
 
 export const commentLeadsRelations = relations(commentLeads, ({ one }) => ({
@@ -19,12 +20,14 @@ export const commentLeadsRelations = relations(commentLeads, ({ one }) => ({
     bookmark: one(bookmarks, {
         fields: [commentLeads.bookmarkID],
         references: [bookmarks.id],
-    })
+    }),
 }));
 
 export const productsRelations = relations(products, ({ many }) => ({
     commentLeads: many(commentLeads),
     postLeads: many(postLeads),
+    bookmarks: many(bookmarks),
+    collections: many(collections),
 }));
 
 export const postLeadsRelations = relations(postLeads, ({ one }) => ({
@@ -35,7 +38,7 @@ export const postLeadsRelations = relations(postLeads, ({ one }) => ({
     bookmark: one(bookmarks, {
         fields: [postLeads.bookmarkID],
         references: [bookmarks.id],
-    })
+    }),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -72,9 +75,16 @@ export const feedbackRelations = relations(feedback, ({ one }) => ({
     }),
 }));
 
-export const bookmarksRelations = relations(bookmarks, ({one}) => ({
-	product: one(products, {
-		fields: [bookmarks.productId],
-		references: [products.id]
-	}),
+export const bookmarksRelations = relations(bookmarks, ({ one }) => ({
+    product: one(products, {
+        fields: [bookmarks.productID],
+        references: [products.id],
+    }),
+}));
+
+export const collectionsRelations = relations(collections, ({ one }) => ({
+    product: one(products, {
+        fields: [collections.productID],
+        references: [products.id],
+    }),
 }));
