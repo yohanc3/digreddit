@@ -239,3 +239,27 @@ export const bookmarks = pgTable(
         }),
     ]
 );
+
+export const collections = pgTable(
+    'Collections',
+    {
+        id: uuid()
+            .default(sql`gen_random_uuid()`)
+            .primaryKey()
+            .notNull(),
+        title: text().notNull(),
+        description: text().notNull(),
+        subreddits: jsonb().notNull(),
+        createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+        updatedAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+        userID: uuid().notNull(),
+        productID: uuid().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.productID],
+            foreignColumns: [products.id],
+            name: 'fk_collection_product',
+        }),
+    ]
+);

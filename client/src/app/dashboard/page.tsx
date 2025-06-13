@@ -14,9 +14,9 @@ export default async function Dashboard() {
     );
 
     return (
-        <>
+        <div className="flex flex-col h-screen w-full">
             <DashboardHandler fetchedProducts={fetchedProducts} />
             <WelcomeDialog />
-        </>
+        </div>
     );
 }
