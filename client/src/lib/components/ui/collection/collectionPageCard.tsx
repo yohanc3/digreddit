@@ -375,7 +375,7 @@ function CollectionEditDialog({
 
                         {/* Subreddits List */}
                         {collectionForm.subreddits.length > 0 && (
-                            <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-md">
+                            <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-md overflow-y-auto max-h-44">
                                 {collectionForm.subreddits.map(
                                     (subreddit, index) => (
                                         <div

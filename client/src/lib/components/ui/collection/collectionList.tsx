@@ -1,6 +1,5 @@
-import { Collection } from '@/types/backend/db';
 import clsx from 'clsx';
-import CollectionPageCard from './collectionPageCard';
+import CollectionPageCard from '@/lib/components/ui/collection/collectionPageCard';
 
 interface CollectionListProps {
     className?: string;

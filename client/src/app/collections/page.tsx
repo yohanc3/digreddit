@@ -1,8 +1,8 @@
 'use client';
 
-import CollectionList from '@/lib/components/ui/collection/collectionList';
-import { useUserCollections } from '@/lib/frontend/hooks/useUserCollections';
 import { BiCollection } from 'react-icons/bi';
+import { useUserCollections } from '@/lib/frontend/hooks/useUserCollections';
+import CollectionList from '@/lib/components/ui/collection/collectionList';
 
 interface UserCollectionsByProduct {
     productId: string;
