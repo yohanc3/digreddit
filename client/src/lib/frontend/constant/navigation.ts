@@ -1,1 +1,7 @@
-export const navigationItems = ['dashboard', 'your products', 'create product', 'bookmarks'];
+export const navigationItems = [
+    'dashboard',
+    'your products',
+    'create product',
+    'bookmarks',
+    'collections',
+];

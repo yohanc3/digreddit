@@ -9,7 +9,8 @@ export function useLeads(
     selectedProduct: Products | null,
     selectedBookmark?: string,
     options?: LeadOptions,
-    page: number = 0
+    page: number = 0,
+    selectedCollection?: string
 ): {
     leads: CommentLead[] | PostLead[] | null;
     totalCount: number;
@@ -21,7 +22,7 @@ export function useLeads(
     // Debounce the options to prevent excessive API calls
     const [debouncedOptions] = useDebounce(options, 1500);
     const { apiPost } = useFetch();
-    const search = useSearchParams()
+    const search = useSearchParams();
 
     const {
         data: result,
@@ -30,7 +31,14 @@ export function useLeads(
         isRefetching,
         isFetching,
     } = useQuery({
-        queryKey: ['allLeads', selectedProduct?.id, selectedBookmark ,page, debouncedOptions],
+        queryKey: [
+            'allLeads',
+            selectedProduct?.id,
+            selectedBookmark,
+            selectedCollection,
+            page,
+            debouncedOptions,
+        ],
         queryFn: async () => {
             if (!selectedProduct) return { allLeads: [], totalCount: 0 };
 
@@ -43,7 +51,8 @@ export function useLeads(
                           showOnlyUninteracted:
                               debouncedOptions.showOnlyUninteracted,
                           stage: debouncedOptions.stage,
-                          bookmarkID: selectedBookmark
+                          bookmarkID: selectedBookmark,
+                          collectionID: selectedCollection,
                       }
                     : undefined;
 
@@ -77,7 +86,14 @@ export function useLeads(
     });
 
     if (!result)
-        return { leads: null, totalCount: 0, isLoading, isRefetching, isFetching, refetchAllLeads };
+        return {
+            leads: null,
+            totalCount: 0,
+            isLoading,
+            isRefetching,
+            isFetching,
+            refetchAllLeads,
+        };
 
     // No need for client-side filtering anymore since it's done in the backend
     return {

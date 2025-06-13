@@ -1,9 +1,10 @@
 import 'dotenv/config';
 import * as schema from './schema';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { count, eq, asc, desc, gte, and } from 'drizzle-orm';
+import { count, eq, asc, desc, gte, and, inArray } from 'drizzle-orm';
 import {
     bookmarks,
+    collections,
     commentLeads,
     feedback,
     nonBetaUsers,
@@ -87,10 +88,26 @@ export const leadsQueries = {
     getAllLeadsByProductID: async (
         productID: string,
         pagesOffset: number = 0,
-        filters?: LeadFilters,
+        filters?: LeadFilters
     ) => {
         const limit = Math.floor(PAGINATION_LIMIT / 2); // 15 for each type
         const offset = pagesOffset * limit;
+
+        // Get collection subreddits if collectionID is provided
+        let collectionSubreddits: string[] = [];
+        if (filters?.collectionID) {
+            const collection = await db
+                .select({ subreddits: collections.subreddits })
+                .from(collections)
+                .where(eq(collections.id, filters.collectionID))
+                .limit(1);
+
+            if (collection[0]?.subreddits) {
+                collectionSubreddits = (
+                    collection[0].subreddits as string[]
+                ).map((subreddit: string) => 'r/' + subreddit);
+            }
+        }
 
         // Build where conditions
         const buildWhereConditions = (
@@ -112,6 +129,10 @@ export const leadsQueries = {
 
             if (filters?.bookmarkID) {
                 conditions.push(eq(table.bookmarkID, filters.bookmarkID));
+            }
+
+            if (filters?.collectionID && collectionSubreddits.length > 0) {
+                conditions.push(inArray(table.subreddit, collectionSubreddits));
             }
 
             return and(...conditions);
@@ -182,6 +203,22 @@ export const leadsQueries = {
         productID: string,
         filters?: LeadFilters
     ) => {
+        // Get collection subreddits if collectionID is provided
+        let collectionSubreddits: string[] = [];
+        if (filters?.collectionID) {
+            const collection = await db
+                .select({ subreddits: collections.subreddits })
+                .from(collections)
+                .where(eq(collections.id, filters.collectionID))
+                .limit(1);
+
+            if (collection[0]?.subreddits) {
+                collectionSubreddits = (
+                    collection[0].subreddits as string[]
+                ).map((subreddit: string) => 'r/' + subreddit);
+            }
+        }
+
         // Build where conditions for counting
         const buildWhereConditions = (
             table: typeof postLeads | typeof commentLeads
@@ -202,6 +239,10 @@ export const leadsQueries = {
 
             if (filters?.bookmarkID) {
                 conditions.push(eq(table.bookmarkID, filters.bookmarkID));
+            }
+
+            if (filters?.collectionID && collectionSubreddits.length > 0) {
+                conditions.push(inArray(table.subreddit, collectionSubreddits));
             }
 
             return and(...conditions);
@@ -240,12 +281,14 @@ export const bookmarkQueries = {
         bookmarkID: string,
         title: string,
         description: string,
-        userID: string,
+        userID: string
     ) => {
         const [udpatedBookmark] = await db
             .update(bookmarks)
             .set({ title, description })
-            .where(and(eq(bookmarks.id, bookmarkID), eq(bookmarks.userId, userID)))
+            .where(
+                and(eq(bookmarks.id, bookmarkID), eq(bookmarks.userID, userID))
+            )
             .returning();
 
         return udpatedBookmark;
@@ -254,33 +297,35 @@ export const bookmarkQueries = {
         productID: string,
         title: string,
         description: string,
-        userID: string,
+        userID: string
     ) => {
         const [createdBookmark] = await db
             .insert(bookmarks)
-            .values({ title: title, description: description, userId: userID, productId: productID })
+            .values({
+                title: title,
+                description: description,
+                userID: userID,
+                productID: productID,
+            })
             .returning();
 
         return createdBookmark;
     },
-    deleteBookmark: async (
-        bookmarkID: string,
-        userID: string,
-    ) => {
+    deleteBookmark: async (bookmarkID: string, userID: string) => {
         const [deletedBookmark] = await db
             .delete(bookmarks)
-            .where(and(eq(bookmarks.id, bookmarkID), eq(bookmarks.userId, userID)))
+            .where(
+                and(eq(bookmarks.id, bookmarkID), eq(bookmarks.userID, userID))
+            )
             .returning();
 
         return deletedBookmark;
     },
-    getProductBookmarks: async (
-        productID: string,
-    ) => {
+    getProductBookmarks: async (productID: string) => {
         return await db
             .select()
             .from(bookmarks)
-            .where(eq(bookmarks.productId, productID))
+            .where(eq(bookmarks.productID, productID));
     },
     getUserBookmarks: async (userID: string) => {
         const rows = await db
@@ -294,28 +339,31 @@ export const bookmarkQueries = {
                 productTitle: products.title,
             })
             .from(bookmarks)
-            .innerJoin(products, eq(bookmarks.productId, products.id))
-            .where(eq(bookmarks.userId, userID));
+            .innerJoin(products, eq(bookmarks.productID, products.id))
+            .where(eq(bookmarks.userID, userID));
 
         // Group bookmarks by product
-        const groupedByProduct: Record<string, {
-            productId: string;
-            productTitle: string;
-            bookmarks: Array<{
-                id: string;
-                title: string;
-                description: string;
-                createdAt: string;
-                updatedAt: string;
-            }>
-        }> = {};
+        const groupedByProduct: Record<
+            string,
+            {
+                productId: string;
+                productTitle: string;
+                bookmarks: Array<{
+                    id: string;
+                    title: string;
+                    description: string;
+                    createdAt: string;
+                    updatedAt: string;
+                }>;
+            }
+        > = {};
 
         for (const row of rows) {
             if (!groupedByProduct[row.productId]) {
                 groupedByProduct[row.productId] = {
                     productId: row.productId,
                     productTitle: row.productTitle,
-                    bookmarks: []
+                    bookmarks: [],
                 };
             }
 
@@ -342,8 +390,8 @@ export const bookmarkQueries = {
             .returning();
 
         return updatedLead;
-    }
-}
+    },
+};
 
 export const nonBetaUsersQueries = {
     addNonBetaUserEmail: async (email: string) => {
@@ -402,5 +450,126 @@ export const feedbackQueries = {
             .returning();
 
         return createdFeedback;
+    },
+};
+
+export const collectionQueries = {
+    updateCollection: async (
+        collectionID: string,
+        title: string,
+        description: string,
+        subreddits: string[],
+        userID: string
+    ) => {
+        const [updatedCollection] = await db
+            .update(collections)
+            .set({
+                title,
+                description,
+                subreddits: subreddits as any,
+                updatedAt: new Date().toISOString(),
+            })
+            .where(
+                and(
+                    eq(collections.id, collectionID),
+                    eq(collections.userID, userID)
+                )
+            )
+            .returning();
+
+        return updatedCollection;
+    },
+    createCollection: async (
+        productID: string,
+        title: string,
+        description: string,
+        subreddits: string[],
+        userID: string
+    ) => {
+        const [createdCollection] = await db
+            .insert(collections)
+            .values({
+                title: title,
+                description: description,
+                subreddits: subreddits as any,
+                userID: userID,
+                productID: productID,
+            })
+            .returning();
+
+        return createdCollection;
+    },
+    deleteCollection: async (collectionID: string, userID: string) => {
+        const [deletedCollection] = await db
+            .delete(collections)
+            .where(
+                and(
+                    eq(collections.id, collectionID),
+                    eq(collections.userID, userID)
+                )
+            )
+            .returning();
+
+        return deletedCollection;
+    },
+    getProductCollections: async (productID: string) => {
+        return await db
+            .select()
+            .from(collections)
+            .where(eq(collections.productID, productID));
+    },
+    getUserCollections: async (userID: string) => {
+        const rows = await db
+            .select({
+                collectionId: collections.id,
+                collectionTitle: collections.title,
+                collectionDescription: collections.description,
+                collectionSubreddits: collections.subreddits,
+                collectionCreatedAt: collections.createdAt,
+                collectionUpdatedAt: collections.updatedAt,
+                productId: products.id,
+                productTitle: products.title,
+            })
+            .from(collections)
+            .innerJoin(products, eq(collections.productID, products.id))
+            .where(eq(collections.userID, userID));
+
+        // Group collections by product
+        const groupedByProduct: Record<
+            string,
+            {
+                productId: string;
+                productTitle: string;
+                collections: Array<{
+                    id: string;
+                    title: string;
+                    description: string;
+                    subreddits: string[];
+                    createdAt: string;
+                    updatedAt: string;
+                }>;
+            }
+        > = {};
+
+        for (const row of rows) {
+            if (!groupedByProduct[row.productId]) {
+                groupedByProduct[row.productId] = {
+                    productId: row.productId,
+                    productTitle: row.productTitle,
+                    collections: [],
+                };
+            }
+
+            groupedByProduct[row.productId].collections.push({
+                id: row.collectionId,
+                title: row.collectionTitle,
+                description: row.collectionDescription,
+                subreddits: row.collectionSubreddits as string[],
+                createdAt: row.collectionCreatedAt,
+                updatedAt: row.collectionUpdatedAt,
+            });
+        }
+
+        return Object.values(groupedByProduct);
     },
 };

@@ -1,6 +1,6 @@
 'use client';
 
-import { Products, LeadStage, Bookmark } from '@/types/backend/db';
+import { Products, LeadStage, Bookmark, Collection } from '@/types/backend/db';
 import {
     Select,
     SelectContent,
@@ -38,7 +38,13 @@ import { LeadOptions } from './DashboardHandler';
 import EditProductDialog from '../ui/product/editDialog';
 import { Label } from '../ui/label';
 import { Checkbox } from '../ui/checkbox';
-import { BiBookmarks, BiFolder, BiFolderOpen, BiPlus } from 'react-icons/bi';
+import {
+    BiBookmarks,
+    BiFolder,
+    BiFolderOpen,
+    BiPlus,
+    BiCollection,
+} from 'react-icons/bi';
 import { Badge } from '../ui/badge';
 interface DashboardHeaderProps {
     products: Products[];
@@ -46,11 +52,16 @@ interface DashboardHeaderProps {
     onSelectedProductChange: (index: number) => void;
     selectedBookmark: string;
     setSelectedBoookMark: (val: string) => void;
+    selectedCollection: string;
+    setSelectedCollection: (val: string) => void;
     currentStage: LeadStage;
     handleStageChange: (stage: LeadStage) => void;
     setOpenBookmarkCreationDialog: (val: boolean) => void;
-    bookmarks: Bookmark[],
-    isBookmarksLoading: boolean,
+    setOpenCollectionCreationDialog: (val: boolean) => void;
+    bookmarks: Bookmark[];
+    isBookmarksLoading: boolean;
+    collections: Collection[];
+    isCollectionsLoading: boolean;
     totalCount: number;
     options: LeadOptions;
     setOptions: (options: LeadOptions) => void;
@@ -63,19 +74,24 @@ export function DashboardHeader({
     selectedBookmark,
     onSelectedProductChange,
     setSelectedBoookMark,
+    selectedCollection,
+    setSelectedCollection,
     currentStage,
     handleStageChange,
     setOpenBookmarkCreationDialog,
+    setOpenCollectionCreationDialog,
     bookmarks,
     isBookmarksLoading,
+    collections,
+    isCollectionsLoading,
     totalCount,
     options,
     setOptions,
     sortingMethods,
 }: DashboardHeaderProps) {
     const router = useRouter();
-    const queryClient = useQueryClient()
-    const search = useSearchParams()
+    const queryClient = useQueryClient();
+    const search = useSearchParams();
     const { apiPost } = useFetch();
     const [confirmProductTitle, setConfirmProductTitle] = useState('');
     const [showLeadFilters, setShowLeadFilters] = useState(false);
@@ -134,15 +150,15 @@ export function DashboardHeader({
                             const newProductId = products[newIndex].id;
 
                             onSelectedProductChange(newIndex);
-                            setSelectedBoookMark("")
+                            setSelectedBoookMark('');
                             // Defer query invalidation to after state update
                             setTimeout(() => {
                                 // queryClient.removeQueries({ queryKey: ['allLeads', newProductId] });
-                                queryClient.invalidateQueries({ queryKey: ['allLeads', newProductId] });
+                                queryClient.invalidateQueries({
+                                    queryKey: ['allLeads', newProductId],
+                                });
                             }, 0);
-                        }
-
-                        }
+                        }}
                         value={
                             selectedProductIndex !== -1
                                 ? String(selectedProductIndex)
@@ -208,10 +224,11 @@ export function DashboardHeader({
                         variant="outline"
                         size="sm"
                         onClick={() => setShowLeadFilters(!showLeadFilters)}
-                        className={`h-8 px-3 text-xs border-primaryColor transition-colors ${showLeadFilters
-                            ? 'bg-primaryColor text-white'
-                            : 'text-primaryColor hover:bg-primaryColor hover:text-white'
-                            }`}
+                        className={`h-8 px-3 text-xs border-primaryColor transition-colors ${
+                            showLeadFilters
+                                ? 'bg-primaryColor text-white'
+                                : 'text-primaryColor hover:bg-primaryColor hover:text-white'
+                        }`}
                     >
                         Lead Filters
                     </Button>
@@ -261,15 +278,44 @@ export function DashboardHeader({
                         </MenubarMenu>
                     </Menubar>
 
-                    <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => router.push('/create-product')}
-                        className="h-8 px-3 text-xs bg-primaryColor hover:bg-opacity-90 text-white"
-                    >
-                        <Plus size={14} className="mr-1.5" />
-                        Create New Product
-                    </Button>
+                    <Menubar className="p-0 border-none">
+                        <MenubarMenu>
+                            <MenubarTrigger className="text-xs font-medium cursor-pointer flex items-center gap-x-2 border border-primaryColor rounded-md px-3 py-1.5 bg-primaryColor text-white hover:bg-opacity-90 transition-colors">
+                                <Plus size={14} />
+                                Create New
+                                <ChevronDown size={14} />
+                            </MenubarTrigger>
+                            <MenubarContent>
+                                <MenubarItem
+                                    onClick={() =>
+                                        router.push('/create-product')
+                                    }
+                                    className="text-sm hover:bg-primaryColor hover:text-white cursor-pointer"
+                                >
+                                    <Plus size={14} className="mr-2" />
+                                    Product
+                                </MenubarItem>
+                                <MenubarItem
+                                    onClick={() =>
+                                        setOpenBookmarkCreationDialog(true)
+                                    }
+                                    className="text-sm hover:bg-primaryColor hover:text-white cursor-pointer"
+                                >
+                                    <BiBookmarks size={14} className="mr-2" />
+                                    Bookmark
+                                </MenubarItem>
+                                <MenubarItem
+                                    onClick={() =>
+                                        setOpenCollectionCreationDialog(true)
+                                    }
+                                    className="text-sm hover:bg-primaryColor hover:text-white cursor-pointer"
+                                >
+                                    <BiCollection size={14} className="mr-2" />
+                                    Collection
+                                </MenubarItem>
+                            </MenubarContent>
+                        </MenubarMenu>
+                    </Menubar>
                     {selectedProduct && (
                         <Dialog>
                             <DialogTrigger asChild>
@@ -308,16 +354,16 @@ export function DashboardHeader({
                                             variant={'destructive'}
                                             onClick={() =>
                                                 selectedProduct &&
-                                                    confirmProductTitle ===
+                                                confirmProductTitle ===
                                                     selectedProduct.title
                                                     ? deleteProduct(
-                                                        selectedProduct.id
-                                                    )
+                                                          selectedProduct.id
+                                                      )
                                                     : toast({
-                                                        title: 'Incorrect product name',
-                                                        description:
-                                                            'Please try again with the correct product name',
-                                                    })
+                                                          title: 'Incorrect product name',
+                                                          description:
+                                                              'Please try again with the correct product name',
+                                                      })
                                             }
                                         >
                                             Delete Product
@@ -374,7 +420,6 @@ export function DashboardHeader({
                             <Select
                                 value={options.sortingMethod}
                                 onValueChange={(value) => {
-
                                     setOptions({
                                         ...options,
                                         sortingMethod: value as
@@ -403,36 +448,127 @@ export function DashboardHeader({
                     </div>
                 </div>
             )}
-            <div className='p-4 border-light border-b flex flex-col space-y-2'>
-                <div className='flex flex-row items-center text-primaryColor !text-primarySize !font-semibold' >
-                    <BiBookmarks size={23} />
-                    <div>
-                        Bookmarks:
+            <div className="p-4 border-light border-b flex flex-row space-x-6">
+                {/* Bookmarks Section */}
+                <div className="flex flex-col space-y-2 flex-1 min-w-0">
+                    <div className="flex flex-row items-center justify-between text-primaryColor !text-primarySize !font-semibold">
+                        <div className="flex items-center gap-2">
+                            <BiBookmarks size={23} />
+                            <div>Bookmarks:</div>
+                        </div>
+                        <Badge
+                            variant={'closedBookmark'}
+                            onMouseDown={() =>
+                                setOpenBookmarkCreationDialog(true)
+                            }
+                            className="whitespace-nowrap flex-shrink-0 cursor-pointer"
+                        >
+                            <BiPlus size={16} className="mr-1" /> Add Bookmark
+                        </Badge>
+                    </div>
+                    <div className="flex overflow-x-auto gap-2 pb-1 scrollbar-thin">
+                        <div className="flex gap-2 min-w-max">
+                            {!isBookmarksLoading &&
+                                bookmarks?.map((bookmark) => (
+                                    <Badge
+                                        key={bookmark.id}
+                                        variant={
+                                            selectedBookmark === bookmark.id
+                                                ? 'openBookmark'
+                                                : 'closedBookmark'
+                                        }
+                                        onMouseDown={() => {
+                                            queryClient.removeQueries({
+                                                queryKey: [
+                                                    'allLeads',
+                                                    selectedProduct?.id,
+                                                ],
+                                            });
+                                            const newBookmarkId =
+                                                selectedBookmark !== bookmark.id
+                                                    ? bookmark.id
+                                                    : '';
+                                            setSelectedCollection('');
+                                            setSelectedBoookMark(newBookmarkId);
+                                            router.push(
+                                                `/dashboard/?product=${selectedProduct?.id}${newBookmarkId ? `&bookmark=${newBookmarkId}` : ''}`
+                                            );
+                                        }}
+                                        className="whitespace-nowrap flex-shrink-0"
+                                    >
+                                        <BiFolder size={23} />{' '}
+                                        <div>{bookmark.title}</div>
+                                    </Badge>
+                                ))}
+                        </div>
                     </div>
                 </div>
-                <div className='flex flex-row flex-wrap gap-1'>
-                    {
-                        !isBookmarksLoading && bookmarks && bookmarks?.length > 0 && bookmarks.map((bookmark) => {
-                            return (
-                                <Badge
-                                    key={bookmark.id}
-                                    variant={selectedBookmark === bookmark.id ? "openBookmark" : "closedBookmark"}
-                                    onMouseDown={(e) => {
-                                        queryClient.removeQueries({
-                                            queryKey: ['allLeads', selectedProduct?.id]
-                                        })
-                                        const newBookmarkId = selectedBookmark !== bookmark.id ? bookmark.id : "";
-                                        setSelectedBoookMark(newBookmarkId);
-                                        router.push(`/dashboard/?product=${selectedProduct?.id}${newBookmarkId ? `&bookmark=${newBookmarkId}` : ''}`);
-                                    }}
-                                ><BiFolder size={23} /> <div>{bookmark.title}</div></Badge>
-                            )
-                        })
-                    }
-                    <Badge
-                        variant={"closedBookmark"}
-                        onMouseDown={() => { setOpenBookmarkCreationDialog(true) }}
-                    ><BiPlus size={23} /> Add Bookmark</Badge>
+
+                {/* Vertical Divider */}
+                <div className="w-px bg-gray-200 self-stretch"></div>
+
+                {/* Collections Section */}
+                <div className="flex flex-col space-y-2 flex-1 min-w-0">
+                    <div className="flex flex-row items-center justify-between text-primaryColor !text-primarySize !font-semibold">
+                        <div className="flex items-center gap-2">
+                            <BiCollection size={23} />
+                            <div>Collections:</div>
+                        </div>
+                        <Badge
+                            variant={'closedBookmark'}
+                            onMouseDown={() =>
+                                setOpenCollectionCreationDialog(true)
+                            }
+                            className="whitespace-nowrap flex-shrink-0 cursor-pointer"
+                        >
+                            <BiPlus size={16} className="mr-1" /> Add Collection
+                        </Badge>
+                    </div>
+                    <div className="flex overflow-x-auto gap-2 pb-1 scrollbar-thin">
+                        <div className="flex gap-2 min-w-max">
+                            {!isCollectionsLoading && !collections ? (
+                                <div className="text-sm text-gray-500">
+                                    No collections yet!
+                                </div>
+                            ) : (
+                                !isCollectionsLoading &&
+                                collections?.map((collection) => (
+                                    <Badge
+                                        key={collection.id}
+                                        variant={
+                                            selectedCollection === collection.id
+                                                ? 'openBookmark'
+                                                : 'closedBookmark'
+                                        }
+                                        onMouseDown={() => {
+                                            queryClient.removeQueries({
+                                                queryKey: [
+                                                    'allLeads',
+                                                    selectedProduct?.id,
+                                                ],
+                                            });
+                                            const newCollectionId =
+                                                selectedCollection !==
+                                                collection.id
+                                                    ? collection.id
+                                                    : '';
+                                            setSelectedBoookMark('');
+                                            setSelectedCollection(
+                                                newCollectionId
+                                            );
+                                            router.push(
+                                                `/dashboard/?product=${selectedProduct?.id}${newCollectionId ? `&collection=${newCollectionId}` : ''}`
+                                            );
+                                        }}
+                                        className="whitespace-nowrap flex-shrink-0"
+                                    >
+                                        <BiCollection size={23} />{' '}
+                                        <div>{collection.title}</div>
+                                    </Badge>
+                                ))
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
