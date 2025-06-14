@@ -6,7 +6,7 @@ import { Label } from '../label';
 import { Input } from '../input';
 import { Textarea } from '../textarea';
 import { Badge } from '../badge';
-import { X } from 'lucide-react';
+import { X, Plus, AlertCircle } from 'lucide-react';
 import { useFetch } from '@/lib/frontend/hooks/useFetch';
 import { toast } from '@/hooks/use-toast';
 import { BiCheckCircle, BiErrorCircle } from 'react-icons/bi';
@@ -19,6 +19,13 @@ import LightButton from '../../button/light';
 import type { Products } from '@/types/backend/db';
 import { useProducts } from '@/lib/frontend/hooks/useProducts';
 import { useRouter } from 'next/navigation';
+
+interface CriteriaField {
+    id: string;
+    maxScore: number;
+    description: string;
+    subCriteria: { [key: number]: string };
+}
 
 interface EditProductDialogProps {
     productDetails: Products;
@@ -49,6 +56,9 @@ export default function EditProductDialog({
         (productDetails?.keywords as string[]) || []
     );
     const [currentKeywordInput, setCurrentKeywordInput] = useState<string>('');
+
+    // Lead Evaluation Criteria state
+    const [criteriaFields, setCriteriaFields] = useState<CriteriaField[]>([]);
 
     function handleKeywordSubmit() {
         const trimmedKeyword = currentKeywordInput.trim();
@@ -99,6 +109,153 @@ export default function EditProductDialog({
         );
     }
 
+    // Criteria management functions
+    function addCriteriaField() {
+        const totalPoints = getTotalPoints();
+        const remainingPoints = 10 - totalPoints;
+
+        if (remainingPoints <= 0) {
+            toast({
+                title: 'Maximum points reached',
+                description: 'All criteria points must sum to exactly 10.',
+                action: <BiErrorCircle color="#f87171" size={35} />,
+            });
+            return;
+        }
+
+        const newCriteria: CriteriaField = {
+            id: Date.now().toString(),
+            maxScore: Math.min(remainingPoints, 5), // Default to 5 or remaining points
+            description: '',
+            subCriteria: {},
+        };
+
+        // Initialize subcriteria
+        for (let i = 0; i <= newCriteria.maxScore; i++) {
+            newCriteria.subCriteria[i] = '';
+        }
+
+        setCriteriaFields((prev) => [...prev, newCriteria]);
+    }
+
+    function removeCriteriaField(id: string) {
+        setCriteriaFields((prev) =>
+            prev.filter((criteria) => criteria.id !== id)
+        );
+    }
+
+    function updateCriteriaMaxScore(id: string, newMaxScore: number) {
+        const totalPointsWithoutThis =
+            getTotalPoints() -
+            (criteriaFields.find((c) => c.id === id)?.maxScore || 0);
+        const maxAllowed = 10 - totalPointsWithoutThis;
+
+        if (newMaxScore > maxAllowed) {
+            toast({
+                title: 'Invalid point allocation',
+                description: `Maximum ${maxAllowed} points available for this criteria.`,
+                action: <BiErrorCircle color="#f87171" size={35} />,
+            });
+            return;
+        }
+
+        setCriteriaFields((prev) =>
+            prev.map((criteria) => {
+                if (criteria.id === id) {
+                    const updatedCriteria = {
+                        ...criteria,
+                        maxScore: newMaxScore,
+                    };
+                    // Reset and rebuild subcriteria
+                    updatedCriteria.subCriteria = {};
+                    for (let i = 0; i <= newMaxScore; i++) {
+                        updatedCriteria.subCriteria[i] =
+                            criteria.subCriteria[i] || '';
+                    }
+                    return updatedCriteria;
+                }
+                return criteria;
+            })
+        );
+    }
+
+    function updateCriteriaDescription(id: string, description: string) {
+        const wordCount = description.split(' ').filter((w) => w.trim()).length;
+        const charCount = description.length;
+
+        if (wordCount > 20) {
+            toast({
+                title: 'Description too long',
+                description:
+                    'Maximum 20 words allowed for criteria description.',
+                action: <BiErrorCircle color="#f87171" size={35} />,
+            });
+            return;
+        }
+
+        if (charCount > 110) {
+            toast({
+                title: 'Description too long',
+                description:
+                    'Maximum 110 characters allowed for criteria description.',
+                action: <BiErrorCircle color="#f87171" size={35} />,
+            });
+            return;
+        }
+
+        setCriteriaFields((prev) =>
+            prev.map((criteria) =>
+                criteria.id === id ? { ...criteria, description } : criteria
+            )
+        );
+    }
+
+    function updateSubCriteria(id: string, score: number, value: string) {
+        const wordCount = value.split(' ').filter((w) => w.trim()).length;
+        const charCount = value.length;
+
+        if (wordCount > 20) {
+            toast({
+                title: 'Score guideline too long',
+                description: 'Maximum 20 words allowed for score guidelines.',
+                action: <BiErrorCircle color="#f87171" size={35} />,
+            });
+            return;
+        }
+
+        if (charCount > 110) {
+            toast({
+                title: 'Score guideline too long',
+                description:
+                    'Maximum 110 characters allowed for score guidelines.',
+                action: <BiErrorCircle color="#f87171" size={35} />,
+            });
+            return;
+        }
+
+        setCriteriaFields((prev) =>
+            prev.map((criteria) => {
+                if (criteria.id === id) {
+                    return {
+                        ...criteria,
+                        subCriteria: {
+                            ...criteria.subCriteria,
+                            [score]: value,
+                        },
+                    };
+                }
+                return criteria;
+            })
+        );
+    }
+
+    function getTotalPoints() {
+        return criteriaFields.reduce(
+            (total, criteria) => total + criteria.maxScore,
+            0
+        );
+    }
+
     async function handleSaveChanges() {
         try {
             const { status } = await apiPost('api/product/update', {
@@ -106,6 +263,7 @@ export default function EditProductDialog({
                 title: newTitle,
                 description: newDescription,
                 keywords: newKeywords,
+                leadEvaluationCriteria: criteriaFields,
             });
 
             if (status === 200) {
@@ -141,6 +299,9 @@ export default function EditProductDialog({
         }
     }
 
+    const totalPoints = getTotalPoints();
+    const isPointsValid = totalPoints === 10;
+
     return (
         <Dialog>
             <DialogTrigger asChild>{trigger}</DialogTrigger>
@@ -155,7 +316,7 @@ export default function EditProductDialog({
                         </p>
                     </div>
 
-                    <div className="space-y-6">
+                    <div className="space-y-8">
                         {/* Title Field */}
                         <div className="space-y-2">
                             <Label
@@ -256,13 +417,273 @@ export default function EditProductDialog({
                                 </p>
                             </div>
                         </div>
+
+                        {/* Lead Evaluation Criteria Section */}
+                        <div className="space-y-4 border-t pt-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <Label className="text-sm font-medium">
+                                        Lead Evaluation Criteria
+                                    </Label>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Define scoring criteria for evaluating
+                                        leads (must total 10 points)
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div
+                                        className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
+                                            isPointsValid
+                                                ? 'bg-green-100 text-green-700'
+                                                : 'bg-orange-100 text-orange-700'
+                                        }`}
+                                    >
+                                        {!isPointsValid && (
+                                            <AlertCircle size={12} />
+                                        )}
+                                        {totalPoints}/10 points
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={addCriteriaField}
+                                        disabled={totalPoints >= 10}
+                                        className="flex items-center gap-1 px-3 py-1 rounded-md border border-gray-300 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <Plus size={12} />
+                                        Add Criteria
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Criteria Fields */}
+                            {criteriaFields.length > 0 && (
+                                <div className="space-y-4">
+                                    {criteriaFields.map((criteria, index) => (
+                                        <div
+                                            key={criteria.id}
+                                            className="border rounded-lg p-4 bg-white shadow-sm"
+                                        >
+                                            <div className="flex items-center justify-between mb-3">
+                                                <h4 className="text-sm font-medium text-gray-900">
+                                                    Criteria {index + 1}
+                                                </h4>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        removeCriteriaField(
+                                                            criteria.id
+                                                        )
+                                                    }
+                                                    className="text-red-500 hover:text-red-700 p-1"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            </div>
+
+                                            {/* Max Score and Description */}
+                                            <div className="grid grid-cols-12 gap-3 mb-4">
+                                                <div className="col-span-2">
+                                                    <Label className="text-xs text-gray-600">
+                                                        Max Score
+                                                    </Label>
+                                                    <Input
+                                                        type="number"
+                                                        min="1"
+                                                        max={
+                                                            10 -
+                                                            (totalPoints -
+                                                                criteria.maxScore)
+                                                        }
+                                                        value={
+                                                            criteria.maxScore
+                                                        }
+                                                        onChange={(e) =>
+                                                            updateCriteriaMaxScore(
+                                                                criteria.id,
+                                                                parseInt(
+                                                                    e.target
+                                                                        .value
+                                                                ) || 1
+                                                            )
+                                                        }
+                                                        className="text-center font-medium"
+                                                    />
+                                                </div>
+                                                <div className="col-span-10">
+                                                    <Label className="text-xs text-gray-600">
+                                                        Description (max 20
+                                                        words, 110 characters)
+                                                    </Label>
+                                                    <Input
+                                                        value={
+                                                            criteria.description
+                                                        }
+                                                        onChange={(e) =>
+                                                            updateCriteriaDescription(
+                                                                criteria.id,
+                                                                e.target.value
+                                                            )
+                                                        }
+                                                        placeholder="What does this criteria evaluate?"
+                                                        className="text-sm"
+                                                    />
+                                                    <p className="text-xs text-gray-400 mt-1">
+                                                        {
+                                                            criteria.description
+                                                                .split(' ')
+                                                                .filter((w) =>
+                                                                    w.trim()
+                                                                ).length
+                                                        }
+                                                        /20 words •{' '}
+                                                        {
+                                                            criteria.description
+                                                                .length
+                                                        }
+                                                        /110 characters
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* Sub-criteria scoring */}
+                                            <div className="space-y-2">
+                                                <Label className="text-xs text-gray-600 font-medium">
+                                                    Scoring Guidelines
+                                                </Label>
+                                                <div className="grid gap-2">
+                                                    {Array.from(
+                                                        {
+                                                            length:
+                                                                criteria.maxScore +
+                                                                1,
+                                                        },
+                                                        (_, i) =>
+                                                            criteria.maxScore -
+                                                            i
+                                                    ).map((score) => (
+                                                        <div
+                                                            key={score}
+                                                            className="grid grid-cols-12 gap-3 items-center"
+                                                        >
+                                                            <div className="col-span-1">
+                                                                <div
+                                                                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                                                                        score ===
+                                                                        criteria.maxScore
+                                                                            ? 'bg-green-100 text-green-700'
+                                                                            : score ===
+                                                                                0
+                                                                              ? 'bg-red-100 text-red-700'
+                                                                              : 'bg-blue-100 text-blue-700'
+                                                                    }`}
+                                                                >
+                                                                    {score}
+                                                                </div>
+                                                            </div>
+                                                            <div className="col-span-11">
+                                                                <Input
+                                                                    value={
+                                                                        criteria
+                                                                            .subCriteria[
+                                                                            score
+                                                                        ] || ''
+                                                                    }
+                                                                    onChange={(
+                                                                        e
+                                                                    ) =>
+                                                                        updateSubCriteria(
+                                                                            criteria.id,
+                                                                            score,
+                                                                            e
+                                                                                .target
+                                                                                .value
+                                                                        )
+                                                                    }
+                                                                    placeholder={`What qualifies for ${score} ${score === 1 ? 'point' : 'points'}? (max 20 words, 110 chars)`}
+                                                                    className="text-sm"
+                                                                />
+                                                                <p className="text-xs text-gray-400 mt-1">
+                                                                    {
+                                                                        (
+                                                                            criteria
+                                                                                .subCriteria[
+                                                                                score
+                                                                            ] ||
+                                                                            ''
+                                                                        )
+                                                                            .split(
+                                                                                ' '
+                                                                            )
+                                                                            .filter(
+                                                                                (
+                                                                                    w
+                                                                                ) =>
+                                                                                    w.trim()
+                                                                            )
+                                                                            .length
+                                                                    }
+                                                                    /20 words •{' '}
+                                                                    {
+                                                                        (
+                                                                            criteria
+                                                                                .subCriteria[
+                                                                                score
+                                                                            ] ||
+                                                                            ''
+                                                                        ).length
+                                                                    }
+                                                                    /110
+                                                                    characters
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {criteriaFields.length === 0 && (
+                                <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
+                                    <div className="text-gray-400 mb-2">
+                                        <AlertCircle
+                                            size={24}
+                                            className="mx-auto"
+                                        />
+                                    </div>
+                                    <p className="text-sm text-gray-500 mb-3">
+                                        No evaluation criteria defined yet
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={addCriteriaField}
+                                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                    >
+                                        Add your first criteria
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
                         <DialogClose asChild>
                             {/* Save Button */}
-                            <div className="flex justify-end pt-4">
+                            <div className="flex justify-end pt-4 border-t">
                                 <LightButton
                                     title="Save Changes"
-                                    onClick={handleSaveChanges}
-                                    className="px-8 rounded-full"
+                                    onClick={
+                                        criteriaFields.length > 0 &&
+                                        !isPointsValid
+                                            ? undefined
+                                            : handleSaveChanges
+                                    }
+                                    className={`px-8 rounded-full ${
+                                        criteriaFields.length > 0 &&
+                                        !isPointsValid
+                                            ? 'opacity-50 cursor-not-allowed'
+                                            : ''
+                                    }`}
                                 />
                             </div>
                         </DialogClose>
