@@ -14,7 +14,7 @@ export const POST = auth(async function POST(req: NextAuthRequest) {
 
     const body = await req.json();
 
-    const { productID, title, description, keywords } = body;
+    const { productID, title, description, keywords, criteria } = body;
 
     try {
         if (
@@ -30,11 +30,19 @@ export const POST = auth(async function POST(req: NextAuthRequest) {
             );
         }
 
+        // Log the criteria string to console
+        if (criteria) {
+            console.log('=== LEAD EVALUATION CRITERIA ===');
+            console.log(criteria);
+            console.log('=== END CRITERIA ===');
+        }
+
         await productsQueries.updateProductByID(
             productID,
             title,
             description,
-            keywords
+            keywords,
+            criteria
         );
 
         return NextResponse.json({ ok: true, status: 200 }, { status: 200 });

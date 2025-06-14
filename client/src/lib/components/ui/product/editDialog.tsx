@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogClose, DialogContent, DialogTrigger } from '../dialog';
 import { Label } from '../label';
 import { Input } from '../input';
@@ -20,11 +20,17 @@ import type { Products } from '@/types/backend/db';
 import { useProducts } from '@/lib/frontend/hooks/useProducts';
 import { useRouter } from 'next/navigation';
 
+interface CriteriaRange {
+    label: string;
+    points: string;
+    description: string;
+}
+
 interface CriteriaField {
     id: string;
     maxScore: number;
     description: string;
-    subCriteria: { [key: number]: string };
+    ranges: CriteriaRange[];
 }
 
 interface EditProductDialogProps {
@@ -59,6 +65,115 @@ export default function EditProductDialog({
 
     // Lead Evaluation Criteria state
     const [criteriaFields, setCriteriaFields] = useState<CriteriaField[]>([]);
+
+    function calculateRanges(maxScore: number): CriteriaRange[] {
+        if (maxScore <= 0) return [];
+
+        const ranges: CriteriaRange[] = [];
+
+        if (maxScore <= 2) {
+            // For max 1-2, just individual points
+            for (let i = maxScore; i >= 0; i--) {
+                ranges.push({
+                    label: `${i} ${i === 1 ? 'point' : 'points'}`,
+                    points: i.toString(),
+                    description: '',
+                });
+            }
+        } else if (maxScore === 3) {
+            // For max 3: 3, 2, 1, 0
+            ranges.push(
+                { label: '3 points', points: '3', description: '' },
+                { label: '2 points', points: '2', description: '' },
+                { label: '1 point', points: '1', description: '' },
+                { label: '0 points', points: '0', description: '' }
+            );
+        } else {
+            // For max 4+: use ranges
+            // Highest tier: max points
+            ranges.push({
+                label: `${maxScore} points`,
+                points: maxScore.toString(),
+                description: '',
+            });
+
+            // Middle tier(s): create ranges
+            let remaining = maxScore - 1;
+            while (remaining > 1) {
+                const rangeStart = Math.max(2, remaining - 1);
+                const rangeEnd = remaining;
+
+                if (rangeStart === rangeEnd) {
+                    ranges.push({
+                        label: `${rangeStart} ${rangeStart === 1 ? 'point' : 'points'}`,
+                        points: rangeStart.toString(),
+                        description: '',
+                    });
+                } else {
+                    ranges.push({
+                        label: `${rangeStart}-${rangeEnd} points`,
+                        points: `${rangeStart}-${rangeEnd}`,
+                        description: '',
+                    });
+                }
+
+                remaining = rangeStart - 1;
+            }
+
+            // Second-to-lowest tier: 1 point (if not already included)
+            if (remaining === 1) {
+                ranges.push({
+                    label: '1 point',
+                    points: '1',
+                    description: '',
+                });
+            }
+
+            // Lowest tier: 0 points
+            ranges.push({
+                label: '0 points',
+                points: '0',
+                description: '',
+            });
+        }
+
+        return ranges;
+    }
+
+    // Parse existing criteria on component mount
+    function parseCriteriaFromProduct(
+        criteriaString: string | null | undefined
+    ): CriteriaField[] {
+        if (!criteriaString || criteriaString.trim() === '') return [];
+
+        try {
+            const parsed = JSON.parse(criteriaString);
+            if (!parsed.criteria || !Array.isArray(parsed.criteria)) return [];
+
+            return parsed.criteria.map((criteria: any, index: number) => ({
+                id: `existing-${index}-${Date.now()}`,
+                maxScore: criteria.max || 0,
+                description: criteria.name || '',
+                ranges:
+                    criteria.ranges?.map((range: any) => ({
+                        label: range.pts,
+                        points: range.pts,
+                        description: range.desc || '',
+                    })) || calculateRanges(criteria.max || 0),
+            }));
+        } catch (error) {
+            console.error('Error parsing criteria:', error);
+            return [];
+        }
+    }
+
+    // Initialize criteria fields from existing product data
+    useEffect(() => {
+        const existingCriteria = parseCriteriaFromProduct(
+            productDetails?.criteria
+        );
+        setCriteriaFields(existingCriteria);
+    }, [productDetails?.criteria]);
 
     function handleKeywordSubmit() {
         const trimmedKeyword = currentKeywordInput.trim();
@@ -123,17 +238,13 @@ export default function EditProductDialog({
             return;
         }
 
+        const newMaxScore = Math.min(remainingPoints, 5);
         const newCriteria: CriteriaField = {
             id: Date.now().toString(),
-            maxScore: Math.min(remainingPoints, 5), // Default to 5 or remaining points
+            maxScore: newMaxScore,
             description: '',
-            subCriteria: {},
+            ranges: calculateRanges(newMaxScore),
         };
-
-        // Initialize subcriteria
-        for (let i = 0; i <= newCriteria.maxScore; i++) {
-            newCriteria.subCriteria[i] = '';
-        }
 
         setCriteriaFields((prev) => [...prev, newCriteria]);
     }
@@ -162,17 +273,11 @@ export default function EditProductDialog({
         setCriteriaFields((prev) =>
             prev.map((criteria) => {
                 if (criteria.id === id) {
-                    const updatedCriteria = {
+                    return {
                         ...criteria,
                         maxScore: newMaxScore,
+                        ranges: calculateRanges(newMaxScore),
                     };
-                    // Reset and rebuild subcriteria
-                    updatedCriteria.subCriteria = {};
-                    for (let i = 0; i <= newMaxScore; i++) {
-                        updatedCriteria.subCriteria[i] =
-                            criteria.subCriteria[i] || '';
-                    }
-                    return updatedCriteria;
                 }
                 return criteria;
             })
@@ -180,7 +285,9 @@ export default function EditProductDialog({
     }
 
     function updateCriteriaDescription(id: string, description: string) {
-        const wordCount = description.split(' ').filter((w) => w.trim()).length;
+        const wordCount = description
+            .split(' ')
+            .filter((w: string) => w.trim()).length;
         const charCount = description.length;
 
         if (wordCount > 20) {
@@ -210,8 +317,14 @@ export default function EditProductDialog({
         );
     }
 
-    function updateSubCriteria(id: string, score: number, value: string) {
-        const wordCount = value.split(' ').filter((w) => w.trim()).length;
+    function updateRangeDescription(
+        id: string,
+        rangeIndex: number,
+        value: string
+    ) {
+        const wordCount = value
+            .split(' ')
+            .filter((w: string) => w.trim()).length;
         const charCount = value.length;
 
         if (wordCount > 20) {
@@ -236,12 +349,14 @@ export default function EditProductDialog({
         setCriteriaFields((prev) =>
             prev.map((criteria) => {
                 if (criteria.id === id) {
+                    const updatedRanges = [...criteria.ranges];
+                    updatedRanges[rangeIndex] = {
+                        ...updatedRanges[rangeIndex],
+                        description: value,
+                    };
                     return {
                         ...criteria,
-                        subCriteria: {
-                            ...criteria.subCriteria,
-                            [score]: value,
-                        },
+                        ranges: updatedRanges,
                     };
                 }
                 return criteria;
@@ -256,14 +371,36 @@ export default function EditProductDialog({
         );
     }
 
+    function generateCriteriaString() {
+        if (criteriaFields.length === 0) return '';
+
+        // Create compact range-based format for API efficiency
+        const compactCriteria = criteriaFields.map((criteria, index) => ({
+            name: criteria.description || `Criteria ${index + 1}`,
+            max: criteria.maxScore,
+            ranges: criteria.ranges.map((range) => ({
+                pts: range.points,
+                desc: range.description || `${range.label} description needed`,
+            })),
+        }));
+
+        return JSON.stringify({
+            criteria: compactCriteria,
+            total: getTotalPoints(),
+        });
+    }
+
     async function handleSaveChanges() {
         try {
+            const criteriaString = generateCriteriaString();
+
             const { status } = await apiPost('api/product/update', {
                 productID: productDetails?.id,
                 title: newTitle,
                 description: newDescription,
                 keywords: newKeywords,
                 leadEvaluationCriteria: criteriaFields,
+                criteria: criteriaString,
             });
 
             if (status === 200) {
@@ -545,99 +682,85 @@ export default function EditProductDialog({
                                                 </div>
                                             </div>
 
-                                            {/* Sub-criteria scoring */}
+                                            {/* Range Description */}
                                             <div className="space-y-2">
                                                 <Label className="text-xs text-gray-600 font-medium">
                                                     Scoring Guidelines
                                                 </Label>
                                                 <div className="grid gap-2">
-                                                    {Array.from(
-                                                        {
-                                                            length:
-                                                                criteria.maxScore +
-                                                                1,
-                                                        },
-                                                        (_, i) =>
-                                                            criteria.maxScore -
-                                                            i
-                                                    ).map((score) => (
-                                                        <div
-                                                            key={score}
-                                                            className="grid grid-cols-12 gap-3 items-center"
-                                                        >
-                                                            <div className="col-span-1">
-                                                                <div
-                                                                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                                                                        score ===
-                                                                        criteria.maxScore
-                                                                            ? 'bg-green-100 text-green-700'
-                                                                            : score ===
-                                                                                0
-                                                                              ? 'bg-red-100 text-red-700'
-                                                                              : 'bg-blue-100 text-blue-700'
-                                                                    }`}
-                                                                >
-                                                                    {score}
+                                                    {criteria.ranges.map(
+                                                        (range, index) => (
+                                                            <div
+                                                                key={index}
+                                                                className="grid grid-cols-12 gap-3 items-center"
+                                                            >
+                                                                <div className="col-span-2">
+                                                                    <div
+                                                                        className={`px-2 py-1 rounded-md text-xs font-medium text-center ${
+                                                                            index ===
+                                                                            0
+                                                                                ? 'bg-green-100 text-green-700'
+                                                                                : index ===
+                                                                                    criteria
+                                                                                        .ranges
+                                                                                        .length -
+                                                                                        1
+                                                                                  ? 'bg-red-100 text-red-700'
+                                                                                  : 'bg-blue-100 text-blue-700'
+                                                                        }`}
+                                                                    >
+                                                                        {
+                                                                            range.label
+                                                                        }
+                                                                    </div>
+                                                                </div>
+                                                                <div className="col-span-10">
+                                                                    <Input
+                                                                        value={
+                                                                            range.description
+                                                                        }
+                                                                        onChange={(
+                                                                            e
+                                                                        ) =>
+                                                                            updateRangeDescription(
+                                                                                criteria.id,
+                                                                                index,
+                                                                                e
+                                                                                    .target
+                                                                                    .value
+                                                                            )
+                                                                        }
+                                                                        placeholder={`What qualifies for ${range.points}? (max 20 words, 110 chars)`}
+                                                                        className="text-sm"
+                                                                    />
+                                                                    <p className="text-xs text-gray-400 mt-1">
+                                                                        {
+                                                                            range.description
+                                                                                .split(
+                                                                                    ' '
+                                                                                )
+                                                                                .filter(
+                                                                                    (
+                                                                                        w
+                                                                                    ) =>
+                                                                                        w.trim()
+                                                                                )
+                                                                                .length
+                                                                        }
+                                                                        /20
+                                                                        words •{' '}
+                                                                        {
+                                                                            range
+                                                                                .description
+                                                                                .length
+                                                                        }
+                                                                        /110
+                                                                        characters
+                                                                    </p>
                                                                 </div>
                                                             </div>
-                                                            <div className="col-span-11">
-                                                                <Input
-                                                                    value={
-                                                                        criteria
-                                                                            .subCriteria[
-                                                                            score
-                                                                        ] || ''
-                                                                    }
-                                                                    onChange={(
-                                                                        e
-                                                                    ) =>
-                                                                        updateSubCriteria(
-                                                                            criteria.id,
-                                                                            score,
-                                                                            e
-                                                                                .target
-                                                                                .value
-                                                                        )
-                                                                    }
-                                                                    placeholder={`What qualifies for ${score} ${score === 1 ? 'point' : 'points'}? (max 20 words, 110 chars)`}
-                                                                    className="text-sm"
-                                                                />
-                                                                <p className="text-xs text-gray-400 mt-1">
-                                                                    {
-                                                                        (
-                                                                            criteria
-                                                                                .subCriteria[
-                                                                                score
-                                                                            ] ||
-                                                                            ''
-                                                                        )
-                                                                            .split(
-                                                                                ' '
-                                                                            )
-                                                                            .filter(
-                                                                                (
-                                                                                    w
-                                                                                ) =>
-                                                                                    w.trim()
-                                                                            )
-                                                                            .length
-                                                                    }
-                                                                    /20 words •{' '}
-                                                                    {
-                                                                        (
-                                                                            criteria
-                                                                                .subCriteria[
-                                                                                score
-                                                                            ] ||
-                                                                            ''
-                                                                        ).length
-                                                                    }
-                                                                    /110
-                                                                    characters
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    ))}
+                                                        )
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -653,15 +776,25 @@ export default function EditProductDialog({
                                             className="mx-auto"
                                         />
                                     </div>
-                                    <p className="text-sm text-gray-500 mb-3">
-                                        No evaluation criteria defined yet
+                                    <p className="text-sm text-gray-500 mb-1">
+                                        {productDetails?.criteria &&
+                                        productDetails.criteria.trim() !== ''
+                                            ? 'Previous criteria could not be loaded'
+                                            : 'No evaluation criteria defined yet'}
+                                    </p>
+                                    <p className="text-xs text-gray-400 mb-3">
+                                        Create scoring criteria to automatically
+                                        evaluate leads (must total 10 points)
                                     </p>
                                     <button
                                         type="button"
                                         onClick={addCriteriaField}
                                         className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                                     >
-                                        Add your first criteria
+                                        {productDetails?.criteria &&
+                                        productDetails.criteria.trim() !== ''
+                                            ? 'Create new criteria'
+                                            : 'Add your first criteria'}
                                     </button>
                                 </div>
                             )}
