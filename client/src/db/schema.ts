@@ -60,6 +60,7 @@ export const products = pgTable('Products', {
     createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
     updatedAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
     keywords: jsonb().notNull(),
+    criteria: text().default(''),
     userId: uuid().notNull(),
 });
 

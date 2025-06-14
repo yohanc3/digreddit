@@ -48,7 +48,8 @@ export const productsQueries = {
         productID: string,
         title: string,
         description: string,
-        keywords: string[]
+        keywords: string[],
+        criteria?: string
     ) => {
         const [updatedProduct] = await db
             .update(products)
@@ -56,6 +57,7 @@ export const productsQueries = {
                 title,
                 description,
                 keywords,
+                criteria: criteria || '',
                 updatedAt: new Date().toISOString(),
             })
             .where(eq(products.id, productID))
