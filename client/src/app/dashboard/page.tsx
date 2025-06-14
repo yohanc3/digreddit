@@ -13,8 +13,6 @@ export default async function Dashboard() {
         session.user.id
     );
 
-    console.log(fetchedProducts);
-
     return (
         <div className="flex flex-col h-screen w-full">
             <DashboardHandler fetchedProducts={fetchedProducts} />

@@ -9,7 +9,7 @@ import { Badge } from '../badge';
 import { X, Plus, AlertCircle } from 'lucide-react';
 import { useFetch } from '@/lib/frontend/hooks/useFetch';
 import { toast } from '@/hooks/use-toast';
-import { BiCheckCircle, BiErrorCircle } from 'react-icons/bi';
+import { BiCheckCircle, BiErrorCircle, BiBot } from 'react-icons/bi';
 import {
     productKeywordsMaximumLength,
     productKeywordMinimumLength,
@@ -65,6 +65,8 @@ export default function EditProductDialog({
 
     // Lead Evaluation Criteria state
     const [criteriaFields, setCriteriaFields] = useState<CriteriaField[]>([]);
+    const [isGeneratingCriteria, setIsGeneratingCriteria] =
+        useState<boolean>(false);
 
     function calculateRanges(maxScore: number): CriteriaRange[] {
         if (maxScore <= 0) return [];
@@ -390,6 +392,75 @@ export default function EditProductDialog({
         });
     }
 
+    async function handleGenerateAICriteria() {
+        if (!productDetails?.id) return;
+
+        setIsGeneratingCriteria(true);
+
+        toast({
+            title: 'Generating criteria...',
+            description:
+                'AI is creating evaluation criteria based on your product description.',
+            action: <BiBot color="#576F72" size={35} />,
+        });
+
+        try {
+            const { status, criteria, success } = await apiPost(
+                'api/product/criteria/generate',
+                {
+                    productID: productDetails.id,
+                }
+            );
+
+            console.log('status:', status);
+            console.log('success:', success);
+            console.log('data:', criteria);
+
+            if (success) {
+                // Convert AI response to frontend format
+                const aiCriteria = criteria.criteria.map(
+                    (criteria: any, index: number) => ({
+                        id: `ai-${index}-${Date.now()}`,
+                        maxScore: criteria.max,
+                        description: criteria.name,
+                        ranges: criteria.ranges.map((range: any) => ({
+                            label:
+                                range.pts === '0'
+                                    ? '0 points'
+                                    : range.pts.includes('-')
+                                      ? `${range.pts} points`
+                                      : range.pts === '1'
+                                        ? '1 point'
+                                        : `${range.pts} points`,
+                            points: range.pts,
+                            description: range.desc,
+                        })),
+                    })
+                );
+
+                setCriteriaFields(aiCriteria);
+
+                toast({
+                    title: 'AI criteria generated!',
+                    description:
+                        'Review and customize the generated criteria as needed.',
+                    action: <BiCheckCircle color="#576F72" size={35} />,
+                });
+            } else {
+                throw new Error('Failed to generate criteria');
+            }
+        } catch (error) {
+            console.error('Error generating AI criteria:', error);
+            toast({
+                title: 'Failed to generate criteria',
+                description: 'Please try again or create criteria manually.',
+                action: <BiErrorCircle color="#f87171" size={35} />,
+            });
+        } finally {
+            setIsGeneratingCriteria(false);
+        }
+    }
+
     async function handleSaveChanges() {
         try {
             const criteriaString = generateCriteriaString();
@@ -580,6 +651,32 @@ export default function EditProductDialog({
                                         )}
                                         {totalPoints}/10 points
                                     </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleGenerateAICriteria}
+                                        disabled={
+                                            isGeneratingCriteria ||
+                                            !productDetails?.description?.trim()
+                                        }
+                                        className="flex items-center gap-1 px-3 py-1 rounded-md border border-blue-300 text-xs font-medium text-blue-700 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title={
+                                            !productDetails?.description?.trim()
+                                                ? 'Add a product description first'
+                                                : 'Generate AI criteria'
+                                        }
+                                    >
+                                        <BiBot
+                                            size={14}
+                                            className={
+                                                isGeneratingCriteria
+                                                    ? 'animate-pulse'
+                                                    : ''
+                                            }
+                                        />
+                                        {isGeneratingCriteria
+                                            ? 'Generating...'
+                                            : 'AI Generate'}
+                                    </button>
                                     <button
                                         type="button"
                                         onClick={addCriteriaField}
