@@ -54,19 +54,19 @@ Example output:
 	"id": <product ID>,
 	"score": 10.0,
 	"criteriaResults":
-		"1. <criterion name>: <points awarded> – <reason selected>",
-		"2. <criterion name>: <points awarded> – <reason selected>",
-		"3. <criterion name>: <points awarded> – <reason selected>",
-		"4. <criterion name>: <points awarded> – <reason selected>"
+		"1. <criterion name>: <points awarded>/<criterion max_points> – <reason selected>",
+		"2. <criterion name>: <points awarded>/<criterion max_points> – <reason selected>",
+		"3. <criterion name>: <points awarded>/<criterion max_points> – <reason selected>",
+		"4. <criterion name>: <points awarded>/<criterion max_points> – <reason selected>"
   },
   {
 	"id": <product ID>,
 	"score": 7.0,
 	"criteriaResults":
-		"1. <criterion name>: <points awarded> – <reason selected>",
-		"2. <criterion name>: <points awarded> – <reason selected>",
-		"3. <criterion name>: <points awarded> – <reason selected>",
-		"4. <criterion name>: <points awarded> – <reason selected>"
+		"1. <criterion name>: <points awarded>/<criterion max_points> – <reason selected>",
+		"2. <criterion name>: <points awarded>/<criterion max_points> – <reason selected>",
+		"3. <criterion name>: <points awarded>/<criterion max_points> – <reason selected>",
+		"4. <criterion name>: <points awarded>/<criterion max_points> – <reason selected>"
   }
 ]
 \`\`\`
