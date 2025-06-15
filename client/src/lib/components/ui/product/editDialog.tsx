@@ -19,6 +19,12 @@ import LightButton from '../../button/light';
 import type { Products } from '@/types/backend/db';
 import { useProducts } from '@/lib/frontend/hooks/useProducts';
 import { useRouter } from 'next/navigation';
+import AICriteriaDialog from './AICriteriaDialog';
+import {
+    parseCriteriaFromProduct,
+    generateCriteriaXML,
+    calculateRanges,
+} from '@/lib/frontend/utils/criteriaParser';
 
 interface CriteriaRange {
     label: string;
@@ -64,118 +70,11 @@ export default function EditProductDialog({
     const [currentKeywordInput, setCurrentKeywordInput] = useState<string>('');
 
     // Lead Evaluation Criteria state
-    const [criteriaFields, setCriteriaFields] = useState<CriteriaField[]>([]);
-    const [isGeneratingCriteria, setIsGeneratingCriteria] =
-        useState<boolean>(false);
+    const [criteriaFields, setCriteriaFields] = useState<CriteriaField[]>(
+        parseCriteriaFromProduct(productDetails?.criteria)
+    );
 
-    function calculateRanges(maxScore: number): CriteriaRange[] {
-        if (maxScore <= 0) return [];
-
-        const ranges: CriteriaRange[] = [];
-
-        if (maxScore <= 2) {
-            // For max 1-2, just individual points
-            for (let i = maxScore; i >= 0; i--) {
-                ranges.push({
-                    label: `${i} ${i === 1 ? 'point' : 'points'}`,
-                    points: i.toString(),
-                    description: '',
-                });
-            }
-        } else if (maxScore === 3) {
-            // For max 3: 3, 2, 1, 0
-            ranges.push(
-                { label: '3 points', points: '3', description: '' },
-                { label: '2 points', points: '2', description: '' },
-                { label: '1 point', points: '1', description: '' },
-                { label: '0 points', points: '0', description: '' }
-            );
-        } else {
-            // For max 4+: use ranges
-            // Highest tier: max points
-            ranges.push({
-                label: `${maxScore} points`,
-                points: maxScore.toString(),
-                description: '',
-            });
-
-            // Middle tier(s): create ranges
-            let remaining = maxScore - 1;
-            while (remaining > 1) {
-                const rangeStart = Math.max(2, remaining - 1);
-                const rangeEnd = remaining;
-
-                if (rangeStart === rangeEnd) {
-                    ranges.push({
-                        label: `${rangeStart} ${rangeStart === 1 ? 'point' : 'points'}`,
-                        points: rangeStart.toString(),
-                        description: '',
-                    });
-                } else {
-                    ranges.push({
-                        label: `${rangeStart}-${rangeEnd} points`,
-                        points: `${rangeStart}-${rangeEnd}`,
-                        description: '',
-                    });
-                }
-
-                remaining = rangeStart - 1;
-            }
-
-            // Second-to-lowest tier: 1 point (if not already included)
-            if (remaining === 1) {
-                ranges.push({
-                    label: '1 point',
-                    points: '1',
-                    description: '',
-                });
-            }
-
-            // Lowest tier: 0 points
-            ranges.push({
-                label: '0 points',
-                points: '0',
-                description: '',
-            });
-        }
-
-        return ranges;
-    }
-
-    // Parse existing criteria on component mount
-    function parseCriteriaFromProduct(
-        criteriaString: string | null | undefined
-    ): CriteriaField[] {
-        if (!criteriaString || criteriaString.trim() === '') return [];
-
-        try {
-            const parsed = JSON.parse(criteriaString);
-            if (!parsed.criteria || !Array.isArray(parsed.criteria)) return [];
-
-            return parsed.criteria.map((criteria: any, index: number) => ({
-                id: `existing-${index}-${Date.now()}`,
-                maxScore: criteria.max || 0,
-                description: criteria.name || '',
-                ranges:
-                    criteria.ranges?.map((range: any) => ({
-                        label: range.pts,
-                        points: range.pts,
-                        description: range.desc || '',
-                    })) || calculateRanges(criteria.max || 0),
-            }));
-        } catch (error) {
-            console.error('Error parsing criteria:', error);
-            return [];
-        }
-    }
-
-    // Initialize criteria fields from existing product data
-    useEffect(() => {
-        const existingCriteria = parseCriteriaFromProduct(
-            productDetails?.criteria
-        );
-        setCriteriaFields(existingCriteria);
-    }, [productDetails?.criteria]);
+    console.log('criteriaFields: ', productDetails?.criteria);
 
     function handleKeywordSubmit() {
         const trimmedKeyword = currentKeywordInput.trim();
@@ -373,105 +272,22 @@ export default function EditProductDialog({
         );
     }
 
-    function generateCriteriaString() {
-        if (criteriaFields.length === 0) return '';
-
-        // Create compact range-based format for API efficiency
-        const compactCriteria = criteriaFields.map((criteria, index) => ({
-            name: criteria.description || `Criteria ${index + 1}`,
-            max: criteria.maxScore,
-            ranges: criteria.ranges.map((range) => ({
-                pts: range.points,
-                desc: range.description || `${range.label} description needed`,
-            })),
-        }));
-
-        return JSON.stringify({
-            criteria: compactCriteria,
-            total: getTotalPoints(),
-        });
-    }
-
-    async function handleGenerateAICriteria() {
-        if (!productDetails?.id) return;
-
-        setIsGeneratingCriteria(true);
-
-        toast({
-            title: 'Generating criteria...',
-            description:
-                'AI is creating evaluation criteria based on your product description.',
-            action: <BiBot color="#576F72" size={35} />,
-        });
-
-        try {
-            const { status, criteria, success } = await apiPost(
-                'api/product/criteria/generate',
-                {
-                    productID: productDetails.id,
-                }
-            );
-
-            console.log('status:', status);
-            console.log('success:', success);
-            console.log('data:', criteria);
-
-            if (success) {
-                // Convert AI response to frontend format
-                const aiCriteria = criteria.criteria.map(
-                    (criteria: any, index: number) => ({
-                        id: `ai-${index}-${Date.now()}`,
-                        maxScore: criteria.max,
-                        description: criteria.name,
-                        ranges: criteria.ranges.map((range: any) => ({
-                            label:
-                                range.pts === '0'
-                                    ? '0 points'
-                                    : range.pts.includes('-')
-                                      ? `${range.pts} points`
-                                      : range.pts === '1'
-                                        ? '1 point'
-                                        : `${range.pts} points`,
-                            points: range.pts,
-                            description: range.desc,
-                        })),
-                    })
-                );
-
-                setCriteriaFields(aiCriteria);
-
-                toast({
-                    title: 'AI criteria generated!',
-                    description:
-                        'Review and customize the generated criteria as needed.',
-                    action: <BiCheckCircle color="#576F72" size={35} />,
-                });
-            } else {
-                throw new Error('Failed to generate criteria');
-            }
-        } catch (error) {
-            console.error('Error generating AI criteria:', error);
-            toast({
-                title: 'Failed to generate criteria',
-                description: 'Please try again or create criteria manually.',
-                action: <BiErrorCircle color="#f87171" size={35} />,
-            });
-        } finally {
-            setIsGeneratingCriteria(false);
-        }
+    function handleAICriteriaGenerated(newCriteria: CriteriaField[]) {
+        setCriteriaFields(newCriteria);
     }
 
     async function handleSaveChanges() {
         try {
-            const criteriaString = generateCriteriaString();
+            const criteriaXML = generateCriteriaXML(criteriaFields);
+
+            console.log('criteriaXML', criteriaXML);
 
             const { status } = await apiPost('api/product/update', {
                 productID: productDetails?.id,
                 title: newTitle,
                 description: newDescription,
                 keywords: newKeywords,
-                leadEvaluationCriteria: criteriaFields,
-                criteria: criteriaString,
+                criteria: criteriaXML,
             });
 
             if (status === 200) {
@@ -651,32 +467,29 @@ export default function EditProductDialog({
                                         )}
                                         {totalPoints}/10 points
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={handleGenerateAICriteria}
-                                        disabled={
-                                            isGeneratingCriteria ||
-                                            !productDetails?.description?.trim()
+                                    <AICriteriaDialog
+                                        productID={productDetails?.id || ''}
+                                        onCriteriaGenerated={
+                                            handleAICriteriaGenerated
                                         }
-                                        className="flex items-center gap-1 px-3 py-1 rounded-md border border-blue-300 text-xs font-medium text-blue-700 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        title={
-                                            !productDetails?.description?.trim()
-                                                ? 'Add a product description first'
-                                                : 'Generate AI criteria'
+                                        trigger={
+                                            <button
+                                                type="button"
+                                                disabled={
+                                                    !productDetails?.description?.trim()
+                                                }
+                                                className="flex items-center gap-1 px-3 py-1 rounded-md border border-blue-300 text-xs font-medium text-blue-700 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                title={
+                                                    !productDetails?.description?.trim()
+                                                        ? 'Add a product description first'
+                                                        : 'Generate AI criteria'
+                                                }
+                                            >
+                                                <BiBot size={14} />
+                                                AI Generate
+                                            </button>
                                         }
-                                    >
-                                        <BiBot
-                                            size={14}
-                                            className={
-                                                isGeneratingCriteria
-                                                    ? 'animate-pulse'
-                                                    : ''
-                                            }
-                                        />
-                                        {isGeneratingCriteria
-                                            ? 'Generating...'
-                                            : 'AI Generate'}
-                                    </button>
+                                    />
                                     <button
                                         type="button"
                                         onClick={addCriteriaField}
@@ -883,16 +696,32 @@ export default function EditProductDialog({
                                         Create scoring criteria to automatically
                                         evaluate leads (must total 10 points)
                                     </p>
-                                    <button
-                                        type="button"
-                                        onClick={addCriteriaField}
-                                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                                    >
-                                        {productDetails?.criteria &&
-                                        productDetails.criteria.trim() !== ''
-                                            ? 'Create new criteria'
-                                            : 'Add your first criteria'}
-                                    </button>
+                                    <AICriteriaDialog
+                                        productID={productDetails?.id || ''}
+                                        onCriteriaGenerated={
+                                            handleAICriteriaGenerated
+                                        }
+                                        trigger={
+                                            <button
+                                                type="button"
+                                                disabled={
+                                                    !productDetails?.description?.trim()
+                                                }
+                                                className="text-sm text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                                title={
+                                                    !productDetails?.description?.trim()
+                                                        ? 'Add a product description first'
+                                                        : 'Generate AI criteria'
+                                                }
+                                            >
+                                                {productDetails?.criteria &&
+                                                productDetails.criteria.trim() !==
+                                                    ''
+                                                    ? 'Create new criteria with AI'
+                                                    : 'Generate your first criteria with AI'}
+                                            </button>
+                                        }
+                                    />
                                 </div>
                             )}
                         </div>
