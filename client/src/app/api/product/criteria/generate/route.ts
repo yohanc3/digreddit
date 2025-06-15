@@ -16,7 +16,7 @@ export const POST = auth(async function POST(req: NextAuthRequest) {
 
     try {
         const body = await req.json();
-        const { productID } = body;
+        const { productID, idealCustomer, additionalInstructions } = body;
 
         if (!productID) {
             return NextResponse.json(
@@ -36,12 +36,29 @@ export const POST = auth(async function POST(req: NextAuthRequest) {
         }
 
         // Create AI prompt for generating criteria
-        const prompt = `You are an expert at creating lead evaluation criteria for business products. Based on the product description provided, create a comprehensive lead evaluation system.
+        const userPreferences = [];
+        if (idealCustomer && idealCustomer.trim()) {
+            userPreferences.push(`Customer Profile: ${idealCustomer.trim()}`);
+        }
+        if (additionalInstructions && additionalInstructions.trim()) {
+            userPreferences.push(
+                `Special Instructions: ${additionalInstructions.trim()}`
+            );
+        }
+
+        const prompt = `You are an expert at creating lead evaluation criteria for business products. Based on the product description and user preferences provided, create a comprehensive lead evaluation system.
 
 Product Title: ${product.title}
 Product Description: ${product.description}
 
-Create lead evaluation criteria that will help score potential customers/leads for this product. The criteria should:
+${
+    userPreferences.length > 0
+        ? `User Preferences:
+${userPreferences.join('\n')}
+
+`
+        : ''
+}Create lead evaluation criteria that will help score potential customers/leads for this product. The criteria should:
 1. Total exactly 10 points across all criteria
 2. Have 2-4 different criteria categories
 3. Use range-based scoring (e.g., "4-5 points", "2-3 points", etc.) for scores above 3
