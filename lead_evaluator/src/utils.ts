@@ -5,73 +5,80 @@ import { OpenAI } from 'openai';
 export interface ProductInput {
 	id: string;
 	description: string;
+	criteria: string;
 }
 
 export interface SimilarityResponse {
-	[userId: string]: number;
+	id: string;
+	score: number;
+	criteriaResults: string[];
 }
 
 export async function calculateSimilarity(
 	bodyText: string,
 	products: ProductInput[],
 	llamaAPIKey: string
-): Promise<SimilarityResponse | null> {
-	const productDetails = products.map((product) => `User ID: ${product.id}\nProduct Description: "${product.description}"`).join('\n\n');
+): Promise<SimilarityResponse[] | null> {
+	const productDetails = products
+		.map(
+			(product) =>
+				`Product ID: ${product.id}\nProduct Description: "${product.description}"\nLead Evaluation Criteria: "${
+					product.criteria || 'No criteria provided'
+				}"`
+		)
+		.join('\n\n');
 
-	const promptContent = `You are a lead generation assistant for DigReddt.
+	const promptContent = `You are a lead generation assistant for DigReddit.
 
 Your task is to determine how strong of a lead a piece of social media content is for one or more products. A strong lead is someone who is likely to be interested in the product and could become a customer.
 
-You will receive the following input:
+You will receive an SERIES of the following input:
 
-Social Media Content: the content of a social media post or comment
+1. Social Media Content: the content of a social media post or comment
 
-Products: an array of product objects, each containing:
-	User ID: a unique identifier for the product's owner
-	Description: the product or service description
+2. Products: an array of product objects, each containing:
+	1. Product ID: a unique identifier for the product
+	2. Description: the product or service description
+	3. Criteria: the criteria for evaluating the lead for the product
 
 Scoring Instructions:
 
-Evaluate how strong of a lead the Social Media Content is for each product's description. A high score means the lead is highly relevant and actionable. A low score means the lead is not relevant or is unlikely to convert.
+Use the criteria provided in each Product Details to evaluate the respective Social Media Content. Ensure you are using only the correct criteria for each product, and you are using EVERY single criterion. If there is not criteria for a product, simply return a score of 0.0 for the respective product description. Remember well, you may receive a criteria for one product, and none for another.
 
-Use the following criteria (total: 10.0 max):
+For the return format, return a JSON ARRAY of objects where the key is the product ID and the value is the lead score (as a decimal between 0.0 and 10.0). Additionally, add the score the lead received for each criterion and return a brief summary with each criterion, the points awarded, and the reason selected in human-readable format.
 
- - Topical Relevance (0–3 points)
-   - Does the lead discuss topics related to the product domain?
-
- - Expressed Need or Interest (0–3 points)
-   - Does the user express a problem, need, or interest the product could solve?
-
- - Fit as a Potential Buyer (0–2 points)
-   - Does the person seem like a potential customer for this product?
-
- - Actionability (0–2 points)
-   - Could this lead be pursued by a sales or marketing team?
-
- - Bans:
-	- If any of the following are true, return a score of 0.0:
-		- The lead is a bot
-		- The lead is a spam account
-		- The lead is trying to sell something, so there's a price tag in the Social Media Content, there is a link to a product, or there's a package or bundle mentioned in the Social Media Content
-
-Only give high scores when the lead shows both relevance and intent/interest. Do not give high scores just for topical overlap without clear potential.
-
-For the return format, return a json object where they key is the userID and the value is the lead score (as a decimal between 0.0 and 10.0).
-Example:
+Example output:
 \`\`\`json
-{
-  "72ae8269-d89a-4dbb-8fae-8c54bb438f82": 10.0,
-  "8cf6a701-3570-4a77-a43b-c8823eaed1c5": 7.0
-  \`\`\`
-}
+[
+  {
+	"id": <product ID>,
+	"score": 10.0,
+	"criteriaResults":
+		"1. <criterion name>: <points awarded> – <reason selected>",
+		"2. <criterion name>: <points awarded> – <reason selected>",
+		"3. <criterion name>: <points awarded> – <reason selected>",
+		"4. <criterion name>: <points awarded> – <reason selected>"
+  },
+  {
+	"id": <product ID>,
+	"score": 7.0,
+	"criteriaResults":
+		"1. <criterion name>: <points awarded> – <reason selected>",
+		"2. <criterion name>: <points awarded> – <reason selected>",
+		"3. <criterion name>: <points awarded> – <reason selected>",
+		"4. <criterion name>: <points awarded> – <reason selected>"
+  }
+]
+\`\`\`
   
 Only return the JSON object. Do not add any explanation or commentary.
 
-Product Details:
+Products Details:
 ${productDetails}
 
 Social Media Content:
 ${bodyText}
+
 `;
 
 	try {
@@ -85,12 +92,10 @@ ${bodyText}
 			messages: [{ content: promptContent, role: 'user' }],
 		});
 
-		console.log('Completion: ', completion.choices[0].message.content);
-
 		if (completion.choices[0].message.content) {
 			const result = JSON.parse(completion.choices[0].message.content.toString().replace(/```json\n|```/g, ''));
 			console.log(`Result: ${JSON.stringify(result, null, 2)}`);
-			return result as SimilarityResponse;
+			return result as SimilarityResponse[];
 		}
 
 		console.error('No content in completion response.');
@@ -104,7 +109,7 @@ ${bodyText}
 export async function getProducts(keywords: string[], db: postgres.Sql) {
 	try {
 		const products: ProductInput[] = await db`
-			SELECT title, id, description
+			SELECT title, id, description, criteria
 			FROM "Products"
 			WHERE EXISTS (
 				SELECT 1
@@ -124,12 +129,16 @@ export type PushLeadsReturn = {
 	message: 'all' | 'some' | 'none';
 };
 
-export async function pushPostLeads(similarityResults: SimilarityResponse, db: postgres.Sql, post: Post): Promise<PushLeadsReturn> {
+export async function pushPostLeads(similarityResults: SimilarityResponse[], db: postgres.Sql, post: Post): Promise<PushLeadsReturn> {
 	try {
 		const leadIDs: string[] = [];
 		const skippedLeads: string[] = [];
 
-		for (const [productID, similarityScore] of Object.entries(similarityResults)) {
+		for (const similarityResult of similarityResults) {
+			const productID = similarityResult.id;
+			const similarityScore = similarityResult.score;
+			const criteriaResults = similarityResult.criteriaResults;
+
 			if (similarityScore < 5) {
 				console.log(`Skipping lead for product ${productID} with similarity score ${similarityScore} due to low similarity`);
 				skippedLeads.push(productID);
@@ -141,8 +150,8 @@ export async function pushPostLeads(similarityResults: SimilarityResponse, db: p
 			const dateString = date.toISOString();
 
 			const lead = await db`
-				INSERT INTO "PostLeads" (id, subreddit, title, author, body, url, "numComments", "subredditSubscribers", "over18", ups, downs, "productID", rating, "createdAt")
-				VALUES (${post.id}, ${post.subreddit}, ${post.title}, ${post.author}, ${post.body}, ${post.url}, ${post.numComments}, ${post.subredditSubscribers}, ${post.over18}, ${post.ups}, ${post.downs}, ${productID}, ${similarityScore}, ${dateString})
+				INSERT INTO "PostLeads" (id, subreddit, title, author, body, url, "numComments", "subredditSubscribers", "over18", ups, downs, "productID", rating, "createdAt", "criteriaResults")
+				VALUES (${post.id}, ${post.subreddit}, ${post.title}, ${post.author}, ${post.body}, ${post.url}, ${post.numComments}, ${post.subredditSubscribers}, ${post.over18}, ${post.ups}, ${post.downs}, ${productID}, ${similarityScore}, ${dateString}, ${criteriaResults})
 				RETURNING id
 			`;
 
@@ -165,7 +174,7 @@ export async function pushPostLeads(similarityResults: SimilarityResponse, db: p
 }
 
 export async function pushCommentLeads(
-	similarityResults: SimilarityResponse,
+	similarityResults: SimilarityResponse[],
 	db: postgres.Sql,
 	comment: Comment
 ): Promise<PushLeadsReturn> {
@@ -173,7 +182,11 @@ export async function pushCommentLeads(
 		const leadIDs: string[] = [];
 		const skippedLeads: string[] = [];
 
-		for (const [productID, similarityScore] of Object.entries(similarityResults)) {
+		for (const similarityResult of similarityResults) {
+			const productID = similarityResult.id;
+			const similarityScore = similarityResult.score;
+			const criteriaResults = similarityResult.criteriaResults;
+
 			if (similarityScore < 5) {
 				console.log(`Skipping lead for product ${productID} with similarity score ${similarityScore} due to low similarity`);
 				skippedLeads.push(productID);
@@ -185,8 +198,8 @@ export async function pushCommentLeads(
 			const dateString = date.toISOString();
 
 			const lead = await db`
-				INSERT INTO "CommentLeads" (id, subreddit, author, body, url, ups, downs, "productID", rating, "createdAt")
-				VALUES (${comment.id}, ${comment.subreddit}, ${comment.author}, ${comment.body}, ${comment.url}, ${comment.ups}, ${comment.downs}, ${productID}, ${similarityScore}, ${dateString})
+				INSERT INTO "CommentLeads" (id, subreddit, author, body, url, ups, downs, "productID", rating, "createdAt", "criteriaResults")
+				VALUES (${comment.id}, ${comment.subreddit}, ${comment.author}, ${comment.body}, ${comment.url}, ${comment.ups}, ${comment.downs}, ${productID}, ${similarityScore}, ${dateString}, ${criteriaResults})
 				RETURNING id
 			`;
 
