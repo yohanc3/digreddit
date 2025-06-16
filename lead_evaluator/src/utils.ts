@@ -14,6 +14,20 @@ export interface SimilarityResponse {
 	criteriaResults: string[];
 }
 
+const defaultCriteria = `
+ - Topical Relevance (0–3 points)
+   - Does the lead discuss topics related to the product domain?
+
+ - Expressed Need or Interest (0–3 points)
+   - Does the user express a problem, need, or interest the product could solve?
+
+ - Fit as a Potential Buyer (0–2 points)
+   - Does the person seem like a potential customer for this product?
+
+ - Actionability (0–2 points)
+   - Could this lead be pursued by a sales or marketing team?
+   `;
+
 export async function calculateSimilarity(
 	bodyText: string,
 	products: ProductInput[],
@@ -23,7 +37,7 @@ export async function calculateSimilarity(
 		.map(
 			(product) =>
 				`Product ID: ${product.id}\nProduct Description: "${product.description}"\nLead Evaluation Criteria: "${
-					product.criteria || 'No criteria provided'
+					product.criteria || defaultCriteria
 				}"`
 		)
 		.join('\n\n');
