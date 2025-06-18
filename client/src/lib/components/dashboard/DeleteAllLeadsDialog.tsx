@@ -43,7 +43,7 @@ export function DeleteAllLeadsDialog({
 
         setIsDeleting(true);
         try {
-            const response = await fetch('/api/product/delete/all', {
+            const response = await fetch('/api/leads/delete/all', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

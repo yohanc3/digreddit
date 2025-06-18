@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import * as schema from './schema';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { count, eq, asc, desc, gte, and, inArray } from 'drizzle-orm';
+import { count, eq, asc, desc, gte, and, inArray, lte } from 'drizzle-orm';
 import {
     bookmarks,
     collections,
@@ -117,8 +117,8 @@ export const leadsQueries = {
         ) => {
             const conditions = [eq(table.productID, productID)];
 
-            if (filters?.minRating) {
-                conditions.push(gte(table.rating, filters.minRating));
+            if (filters?.maxRating) {
+                conditions.push(gte(table.rating, filters.maxRating));
             }
 
             if (filters?.showOnlyUninteracted) {
@@ -227,8 +227,8 @@ export const leadsQueries = {
         ) => {
             const conditions = [eq(table.productID, productID)];
 
-            if (filters?.minRating) {
-                conditions.push(gte(table.rating, filters.minRating));
+            if (filters?.maxRating) {
+                conditions.push(lte(table.rating, filters.maxRating));
             }
 
             if (filters?.showOnlyUninteracted) {
