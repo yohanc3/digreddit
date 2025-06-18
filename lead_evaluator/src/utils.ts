@@ -59,14 +59,14 @@ Scoring Instructions:
 
 Use the criteria provided in each Product Details to evaluate the respective Social Media Content. Ensure you are using only the correct criteria for each product, and you are using EVERY single criterion. If there is not criteria for a product, simply return a score of 0.0 for the respective product description. Remember well, you may receive a criteria for one product, and none for another.
 
-For the return format, return a JSON ARRAY of objects where the key is the product ID and the value is the lead score (as a decimal between 0.0 and 10.0). Additionally, add the score the lead received for each criterion and return a brief summary with each criterion, the points awarded, and the reason selected in human-readable format.
+For the return format, return a JSON ARRAY of objects where the key is the product ID and the value is the lead score (as a decimal between 0.0 and 10.0). Ensure all numbers are integers, so NO decimals.
 
 Example output:
 \`\`\`json
 [
   {
 	"id": <product ID>,
-	"score": 10.0,
+	"score": <sum of all <points awarded> for each criterion>,
 	"criteriaResults":
 		"1. <criterion name>: <points awarded>/<criterion max_points> – <reason selected>",
 		"2. <criterion name>: <points awarded>/<criterion max_points> – <reason selected>",
@@ -75,7 +75,7 @@ Example output:
   },
   {
 	"id": <product ID>,
-	"score": 7.0,
+	"score": <sum of all <points awarded> for each criterion>,
 	"criteriaResults":
 		"1. <criterion name>: <points awarded>/<criterion max_points> – <reason selected>",
 		"2. <criterion name>: <points awarded>/<criterion max_points> – <reason selected>",
