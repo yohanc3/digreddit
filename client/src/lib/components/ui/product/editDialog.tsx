@@ -1,15 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogClose, DialogContent, DialogTrigger } from '../dialog';
 import { Label } from '../label';
 import { Input } from '../input';
 import { Textarea } from '../textarea';
 import { Badge } from '../badge';
-import { X } from 'lucide-react';
+import { X, Plus, AlertCircle } from 'lucide-react';
 import { useFetch } from '@/lib/frontend/hooks/useFetch';
 import { toast } from '@/hooks/use-toast';
-import { BiCheckCircle, BiErrorCircle } from 'react-icons/bi';
+import { BiCheckCircle, BiErrorCircle, BiBot } from 'react-icons/bi';
 import {
     productKeywordsMaximumLength,
     productKeywordMinimumLength,
@@ -19,6 +19,25 @@ import LightButton from '../../button/light';
 import type { Products } from '@/types/backend/db';
 import { useProducts } from '@/lib/frontend/hooks/useProducts';
 import { useRouter } from 'next/navigation';
+import AICriteriaDialog from './AICriteriaDialog';
+import {
+    parseCriteriaFromProduct,
+    generateCriteriaXML,
+} from '@/lib/frontend/utils/criteriaParser';
+import CriteriaBuilder from './CriteriaBuilder';
+
+interface CriteriaRange {
+    label: string;
+    points: string;
+    description: string;
+}
+
+interface CriteriaField {
+    id: string;
+    maxScore: number;
+    description: string;
+    ranges: CriteriaRange[];
+}
 
 interface EditProductDialogProps {
     productDetails: Products;
@@ -49,6 +68,24 @@ export default function EditProductDialog({
         (productDetails?.keywords as string[]) || []
     );
     const [currentKeywordInput, setCurrentKeywordInput] = useState<string>('');
+
+    // Lead Evaluation Criteria state
+    const [criteriaFields, setCriteriaFields] = useState<CriteriaField[]>(
+        parseCriteriaFromProduct(productDetails?.criteria)
+    );
+
+    useEffect(() => {
+        setNewTitle(productDetails?.title || '');
+        setNewDescription(productDetails?.description || '');
+        setNewKeywords((productDetails?.keywords as string[]) || []);
+        setCriteriaFields(parseCriteriaFromProduct(productDetails?.criteria));
+    }, [
+        productDetails.id,
+        productDetails.title,
+        productDetails.description,
+        productDetails.keywords,
+        productDetails.criteria,
+    ]);
 
     function handleKeywordSubmit() {
         const trimmedKeyword = currentKeywordInput.trim();
@@ -101,11 +138,14 @@ export default function EditProductDialog({
 
     async function handleSaveChanges() {
         try {
+            const criteriaXML = generateCriteriaXML(criteriaFields);
+
             const { status } = await apiPost('api/product/update', {
                 productID: productDetails?.id,
                 title: newTitle,
                 description: newDescription,
                 keywords: newKeywords,
+                criteria: criteriaXML,
             });
 
             if (status === 200) {
@@ -155,7 +195,7 @@ export default function EditProductDialog({
                         </p>
                     </div>
 
-                    <div className="space-y-6">
+                    <div className="space-y-8">
                         {/* Title Field */}
                         <div className="space-y-2">
                             <Label
@@ -256,9 +296,19 @@ export default function EditProductDialog({
                                 </p>
                             </div>
                         </div>
+
+                        {/* Lead Evaluation Criteria Section */}
+                        <CriteriaBuilder
+                            criteriaFields={criteriaFields}
+                            setCriteriaFields={setCriteriaFields}
+                            productID={productDetails?.id || ''}
+                            productDescription={newDescription}
+                            isCreationMode={false}
+                        />
+
                         <DialogClose asChild>
                             {/* Save Button */}
-                            <div className="flex justify-end pt-4">
+                            <div className="flex justify-end pt-4 border-t">
                                 <LightButton
                                     title="Save Changes"
                                     onClick={handleSaveChanges}
