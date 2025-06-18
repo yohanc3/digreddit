@@ -74,7 +74,18 @@ export default function EditProductDialog({
         parseCriteriaFromProduct(productDetails?.criteria)
     );
 
-    console.log('criteriaFields: ', productDetails?.criteria);
+    useEffect(() => {
+        setNewTitle(productDetails?.title || '');
+        setNewDescription(productDetails?.description || '');
+        setNewKeywords((productDetails?.keywords as string[]) || []);
+        setCriteriaFields(parseCriteriaFromProduct(productDetails?.criteria));
+    }, [
+        productDetails.id,
+        productDetails.title,
+        productDetails.description,
+        productDetails.keywords,
+        productDetails.criteria,
+    ]);
 
     function handleKeywordSubmit() {
         const trimmedKeyword = currentKeywordInput.trim();
@@ -128,8 +139,6 @@ export default function EditProductDialog({
     async function handleSaveChanges() {
         try {
             const criteriaXML = generateCriteriaXML(criteriaFields);
-
-            console.log('criteriaXML', criteriaXML);
 
             const { status } = await apiPost('api/product/update', {
                 productID: productDetails?.id,

@@ -197,15 +197,18 @@ export default function DashboardHandler({
         });
     }
 
-    function onSelectedProductChange(index: number) {
-        setSelectedProduct(fetchedProducts[index]);
-        router.push(`/dashboard/?product=${fetchedProducts[index].id}`);
-        setStagePagination({
-            identification: 0,
-            initial_outreach: 0,
-            engagement: 0,
-            skipped: 0,
-        });
+    function onSelectedProductChange(productId: string) {
+        const product = fetchedProducts.find((p) => p.id === productId);
+        if (product) {
+            setSelectedProduct(product);
+            router.push(`/dashboard/?product=${productId}`);
+            setStagePagination({
+                identification: 0,
+                initial_outreach: 0,
+                engagement: 0,
+                skipped: 0,
+            });
+        }
     }
 
     function handlePageChange(page: number) {
@@ -325,7 +328,7 @@ export default function DashboardHandler({
                             return isPostLead(lead) ? (
                                 <RedditPostLeadCard
                                     leadDetails={lead as PostLead}
-                                    key={lead.id}
+                                    key={lead.uniqueID}
                                     selectedProduct={selectedProduct}
                                     isDialogOpen={openDialogLeadId === lead.id}
                                     isBookmarkDialogOpen={
@@ -354,7 +357,7 @@ export default function DashboardHandler({
                             ) : (
                                 <RedditCommentLeadCard
                                     leadDetails={lead as CommentLead}
-                                    key={lead.id}
+                                    key={lead.uniqueID}
                                     selectedProduct={selectedProduct}
                                     isDialogOpen={openDialogLeadId === lead.id}
                                     isBookmarkDialogOpen={
