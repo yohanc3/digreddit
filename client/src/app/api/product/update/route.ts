@@ -14,7 +14,7 @@ export const POST = auth(async function POST(req: NextAuthRequest) {
 
     const body = await req.json();
 
-    const { productID, title, description, keywords } = body;
+    const { productID, title, description, keywords, criteria } = body;
 
     try {
         if (
@@ -34,7 +34,8 @@ export const POST = auth(async function POST(req: NextAuthRequest) {
             productID,
             title,
             description,
-            keywords
+            keywords,
+            criteria
         );
 
         return NextResponse.json({ ok: true, status: 200 }, { status: 200 });

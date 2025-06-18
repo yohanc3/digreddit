@@ -3,27 +3,42 @@ import { useFetch } from './useFetch';
 import { CommentLead, PostLead, Products } from '@/types/backend/db';
 import { LeadOptions } from '@/lib/components/dashboard/DashboardHandler';
 import { useDebounce } from 'use-debounce';
+import { useSearchParams } from 'next/navigation';
 
 export function useLeads(
     selectedProduct: Products | null,
+    selectedBookmark?: string,
     options?: LeadOptions,
-    page: number = 0
+    page: number = 0,
+    selectedCollection?: string
 ): {
     leads: CommentLead[] | PostLead[] | null;
     totalCount: number;
     isLoading: boolean;
+    isRefetching: boolean;
+    isFetching: boolean;
     refetchAllLeads: () => void;
 } {
     // Debounce the options to prevent excessive API calls
     const [debouncedOptions] = useDebounce(options, 1500);
     const { apiPost } = useFetch();
+    const search = useSearchParams();
 
     const {
         data: result,
         isLoading,
         refetch: refetchAllLeads,
+        isRefetching,
+        isFetching,
     } = useQuery({
-        queryKey: ['allLeads', selectedProduct?.id, page, debouncedOptions],
+        queryKey: [
+            'allLeads',
+            selectedProduct?.id,
+            selectedBookmark,
+            selectedCollection,
+            page,
+            debouncedOptions,
+        ],
         queryFn: async () => {
             if (!selectedProduct) return { allLeads: [], totalCount: 0 };
 
@@ -36,6 +51,8 @@ export function useLeads(
                           showOnlyUninteracted:
                               debouncedOptions.showOnlyUninteracted,
                           stage: debouncedOptions.stage,
+                          bookmarkID: selectedBookmark,
+                          collectionID: selectedCollection,
                       }
                     : undefined;
 
@@ -69,7 +86,14 @@ export function useLeads(
     });
 
     if (!result)
-        return { leads: null, totalCount: 0, isLoading, refetchAllLeads };
+        return {
+            leads: null,
+            totalCount: 0,
+            isLoading,
+            isRefetching,
+            isFetching,
+            refetchAllLeads,
+        };
 
     // No need for client-side filtering anymore since it's done in the backend
     return {
@@ -77,5 +101,7 @@ export function useLeads(
         totalCount: result.totalCount,
         refetchAllLeads,
         isLoading,
+        isRefetching,
+        isFetching,
     };
 }
