@@ -1,5 +1,11 @@
 'use client';
-import { CommentLead, PostLead, LeadStage, Products } from '@/types/backend/db';
+import {
+    CommentLead,
+    PostLead,
+    LeadStage,
+    Products,
+    Bookmark,
+} from '@/types/backend/db';
 import {
     BiUpvote,
     BiCommentDetail,
@@ -9,12 +15,19 @@ import {
     BiChevronUp,
     BiRightArrowAlt,
     BiBot,
+    BiCheckCircle,
+    BiBookmark,
+    BiSolidBookmark,
+    BiPlus,
+    BiFolder,
 } from 'react-icons/bi';
+import { PiSpinnerGapThin } from 'react-icons/pi';
 import clsx from 'clsx';
 import { Button } from '../button';
 import {
     Dialog,
     DialogContent,
+    DialogHeader,
     DialogTrigger,
 } from '@/lib/components/ui/dialog';
 import { Badge } from '../badge';
@@ -29,6 +42,9 @@ import { toast } from '@/hooks/use-toast';
 import { getBrowserRedditAccessToken } from '@/lib/frontend/utils/getRedditOauthToken';
 import { useRedditUser } from '@/lib/frontend/hooks/useRedditUser';
 import { useLeads } from '@/lib/frontend/hooks/useLeads';
+import { useFetch } from '@/lib/frontend/hooks/useFetch';
+import { title } from 'process';
+import { useQueryClient } from '@tanstack/react-query';
 
 // Helper function to get next stage and button text
 function getNextStageInfo(currentStage: LeadStage): {
@@ -63,11 +79,16 @@ interface RedditCommentLeadCardProps {
     className?: string;
     selectedProduct: Products | null;
     isDialogOpen: boolean;
+    isBookmarkDialogOpen: boolean;
     onOpenDialog: () => void;
+    onOpenBookmarkDialog: () => void;
     onCloseDialog: () => void;
+    onCloseBookmarkDialog: () => void;
     aiResponse: string;
     onSetAiResponse: (response: string) => void;
     onClearAiResponse: () => void;
+    refetchAllLeads: () => void;
+    bookmarks: Bookmark[];
 }
 
 export function RedditCommentLeadCard({
@@ -75,13 +96,19 @@ export function RedditCommentLeadCard({
     leadDetails,
     selectedProduct,
     isDialogOpen,
+    isBookmarkDialogOpen,
     onOpenDialog,
+    onOpenBookmarkDialog,
     onCloseDialog,
+    onCloseBookmarkDialog,
     aiResponse,
     onSetAiResponse,
     onClearAiResponse,
+    refetchAllLeads,
+    bookmarks,
 }: RedditCommentLeadCardProps) {
     const unixCreatedAt = new Date(leadDetails.createdAt).getTime();
+    const [bookmarkTrigger, setBookmarkTrigger] = useState(false);
     const howLongAgo = timeAgo(unixCreatedAt);
     const updateLeadStage = useUpdateLeadStage();
     const generateAIResponse = useGenerateAIResponse();
@@ -93,7 +120,7 @@ export function RedditCommentLeadCard({
     // Determine if connected to Reddit
     const isConnectedToReddit = !isRedditUserDataLoading && !!redditUserData;
 
-    const { refetchAllLeads } = useLeads(selectedProduct);
+    const criteriaResults = leadDetails.criteriaResults as string[];
 
     function handleGenerateResponse() {
         if (!isConnectedToReddit) {
@@ -255,216 +282,297 @@ export function RedditCommentLeadCard({
     }
 
     return (
-        <div
-            className={clsx(
-                'w-auto flex flex-col bg-white text-black p-3 rounded-lg gap-y-1 border border-light justify-between',
-                className
-            )}
-        >
-            <div>
-                {/* Card Header */}
-                <div className="flex flex-row justify-between">
-                    <div className="flex flex-col">
-                        <div className="text-secondaryColor text-primarySize font-semibold">
-                            {leadDetails.subreddit}
-                        </div>
-                        <div className="text-tertiaryColor text-tertiarySize font-medium">
-                            by: {leadDetails.author}
-                        </div>
-                    </div>
-                    <div className="flex flex-row items-center space-x-2">
-                        <div
-                            onMouseDown={
-                                leadDetails.stage === 'skipped'
-                                    ? handleMoveToIdentification
-                                    : handleMoveToSkipped
-                            }
-                            className="text-xs !text-tertiaryColor hover:underline cursor-pointer"
-                        >
-                            {leadDetails.stage === 'skipped' ? 'Undo' : 'Skip'}
-                        </div>
-                        <a
-                            href={`https://www.reddit.com${leadDetails.url}`}
-                            target="_blank"
-                        >
-                            <Button variant={'light'}>
-                                Open <BiLinkExternal size={18} />
-                            </Button>
-                        </a>
-                    </div>
-                </div>
-
-                {/* Card Body */}
-                <div className="flex flex-col pt-4 h-28">
-                    <div className="text-tertiarySize font-medium text-tertiaryColor text-justify h-12">
-                        {leadDetails.body.substring(0, 300) + '...'}
-                    </div>
-                </div>
-            </div>
-
-            <div>
-                {/* Card Rating */}
-                <div className="flex flex-row justify-between items-center">
-                    <div className="items-center text-xs font-semibold text-tertiaryColor gap-x-1">
-                        <p>
-                            AI Lead Rating:{' '}
-                            <span className="font-bold text-sm">
-                                {leadDetails.rating}
-                            </span>
-                        </p>
-                    </div>
-                    {/* Reddit Post/Comment Details */}
-                    <div className="flex flex-row h-10 gap-x-3 items-center">
-                        <div className="flex flex-row items-center justify-center gap-x-0.5">
-                            <BiUpvote color="#D93900" size={18} />{' '}
-                            <p className="text-tertiarySize text-tertiaryColor">
-                                {' '}
-                                {leadDetails.ups - leadDetails.downs}{' '}
-                            </p>
-                        </div>
-
-                        <div className="flex flex-row items-center justify-center gap-x-1">
-                            <BiTimeFive color="#344054" size={18} />{' '}
-                            <p className="text-tertiarySize text-tertiaryColor">
-                                {' '}
-                                {howLongAgo}{' '}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                {(leadDetails.stage === 'identification' ||
-                    leadDetails.stage === 'skipped') && (
-                    <div className="relative group">
-                        {/* AI Response Section */}
+        <>
+            <div
+                onMouseEnter={() => {
+                    setBookmarkTrigger(true);
+                }}
+                onMouseLeave={() => {
+                    setBookmarkTrigger(false);
+                }}
+            >
+                <div
+                    className={clsx(
+                        'flex space-x-2 w-full justify-end pr-2 transition-all duration-300 ease-out',
+                        'relative', // Ensure positioning context
+                        bookmarkTrigger
+                            ? 'translate-y-0 opacity-100 z-10' // visible and in front
+                            : 'translate-y-5 pointer-events-none' // hidden and behind
+                    )}
+                    onMouseDown={onOpenBookmarkDialog}
+                >
+                    <div
+                        className={clsx(
+                            'flex flex-row items-center border-light border border-b-0 rounded-md rounded-b-none py-1 px-2 cursor-pointer',
+                            bookmarkTrigger
+                                ? 'translate-y-0  z-10' // visible and in front
+                                : 'border-0 pointer-events-none' // hidden and behind
+                        )}
+                    >
                         <div
                             className={clsx(
-                                'space-y-2 mt-2 transition-all duration-200',
-                                !isConnectedToReddit &&
-                                    'opacity-60 cursor-not-allowed'
+                                'text-secondarySize !text-primaryColor font-semibold mr-1',
+                                bookmarkTrigger
+                                    ? 'translate-y-0 opacity-100 z-10' // visible and in front
+                                    : 'opacity-0 -z-20 pointer-events-none' // hidden and behind
                             )}
                         >
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs font-medium text-tertiaryColor">
-                                    Initial Outreach Response:
-                                </span>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleGenerateResponse}
-                                    disabled={
-                                        !isConnectedToReddit ||
-                                        generateAIResponse.isPending
-                                    }
-                                    className="h-7 px-2 text-xs"
-                                >
-                                    {generateAIResponse.isPending ? (
-                                        'Generating...'
-                                    ) : (
-                                        <>
-                                            <BiBot size={14} className="mr-1" />
-                                            Generate
-                                        </>
-                                    )}
-                                </Button>
-                            </div>
-                            <textarea
-                                value={aiResponse}
-                                onChange={(e) =>
-                                    onSetAiResponse(e.target.value)
-                                }
-                                placeholder={
-                                    isConnectedToReddit
-                                        ? 'Initial outreach response goes here...'
-                                        : 'Connect to Reddit to enable this feature...'
-                                }
-                                disabled={!isConnectedToReddit}
-                                className={clsx(
-                                    'w-full h-20 p-2 text-xs border rounded-md resize-none focus:ring-2 focus:border-transparent',
-                                    isConnectedToReddit
-                                        ? 'border-gray-200 focus:ring-blue-500 bg-white'
-                                        : 'border-red-200 bg-red-50 text-gray-400 cursor-not-allowed'
-                                )}
-                            />
+                            {bookmarks.find(
+                                (bookmark) =>
+                                    bookmark.id === leadDetails.bookmarkID
+                            )?.title || <BiPlus color={'#576F72'} size={20} />}
                         </div>
 
-                        {/* Tooltip for disabled state */}
-                        {!isConnectedToReddit && (
-                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-72 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
-                                <div className="bg-gray-800 text-white text-xs rounded-lg p-2 shadow-lg">
-                                    <div className="font-medium mb-1">
-                                        🔗 Reddit Connection Required
-                                    </div>
-                                    <div className="text-gray-200">
-                                        Connect your Reddit account by clicking
-                                        the Reddit button in the navigation bar.
-                                    </div>
+                        <BiSolidBookmark
+                            className={clsx(
+                                'block z-50',
+                                bookmarkTrigger
+                                    ? 'opacity-100' // visible and in front
+                                    : 'z-50 pointer-events-none' // hidden and behind
+                            )}
+                            color={'#576F72'}
+                            size={20}
+                        />
+                    </div>
+                </div>
 
-                                    {/* Tooltip Arrow */}
-                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-800"></div>
+                <div
+                    className={clsx(
+                        'w-auto flex z-50 flex-col bg-white text-black p-3 rounded-lg gap-y-1 border border-light justify-between',
+                        className
+                    )}
+                >
+                    <div>
+                        {/* Card Header */}
+                        <div className="flex flex-row justify-between">
+                            <div className="flex flex-col">
+                                <div className="text-secondaryColor text-primarySize font-semibold">
+                                    {leadDetails.subreddit}
+                                </div>
+                                <div className="text-tertiaryColor text-tertiarySize font-medium">
+                                    by: {leadDetails.author}
                                 </div>
                             </div>
-                        )}
-                    </div>
-                )}
-
-                <div className="flex flex-col space-y-2">
-                    {/* Stage Transition Button */}
-                    {nextStage &&
-                        (leadDetails.stage === 'identification' ||
-                            leadDetails.stage === 'skipped' ||
-                            leadDetails.stage === 'initial_outreach') && (
-                            <div className="mt-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={
-                                        leadDetails.stage === 'initial_outreach'
-                                            ? handleMoveToEngagement
-                                            : handlePostComment
+                            <div className="flex flex-row items-center space-x-2">
+                                <div
+                                    onMouseDown={
+                                        leadDetails.stage === 'skipped'
+                                            ? handleMoveToIdentification
+                                            : handleMoveToSkipped
                                     }
-                                    className="w-full text-xs"
-                                    disabled={
-                                        postComment.isPending ||
-                                        ((leadDetails.stage ===
-                                            'identification' ||
-                                            leadDetails.stage === 'skipped') &&
-                                            !isConnectedToReddit)
-                                    }
+                                    className="text-tertiarySize !text-tertiaryColor hover:underline cursor-pointer"
                                 >
-                                    {(leadDetails.stage === 'identification' ||
-                                        leadDetails.stage === 'skipped') &&
-                                    !postComment.isPending
-                                        ? 'Post Comment'
-                                        : postComment.isPending
-                                          ? 'Sending...'
-                                          : buttonText}
-                                    {!postComment.isPending && (
-                                        <BiRightArrowAlt
-                                            size={16}
-                                            className="ml-1"
-                                        />
+                                    {leadDetails.stage === 'skipped'
+                                        ? 'Undo'
+                                        : 'Skip'}
+                                </div>
+                                <a
+                                    href={`https://www.reddit.com${leadDetails.url}`}
+                                    target="_blank"
+                                >
+                                    <Button variant={'light'}>
+                                        Open <BiLinkExternal size={18} />
+                                    </Button>
+                                </a>
+                            </div>
+                        </div>
+
+                        {/* Card Body */}
+                        <div className="flex flex-col pt-4 h-28">
+                            <div className="text-tertiarySize font-medium text-tertiaryColor text-justify h-12">
+                                {leadDetails.body.substring(0, 300) + '...'}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        {/* Card Rating */}
+                        <div className="flex flex-row justify-between items-center">
+                            <div className="items-center text-xs font-semibold text-tertiaryColor gap-x-1">
+                                <p>
+                                    AI Lead Rating:{' '}
+                                    <span className="font-bold text-sm">
+                                        {leadDetails.rating}
+                                    </span>
+                                </p>
+                            </div>
+                            {/* Reddit Post/Comment Details */}
+                            <div className="flex flex-row h-10 gap-x-3 items-center">
+                                <div className="flex flex-row items-center justify-center gap-x-0.5">
+                                    <BiUpvote color="#D93900" size={18} />{' '}
+                                    <p className="text-tertiarySize text-tertiaryColor">
+                                        {' '}
+                                        {leadDetails.ups -
+                                            leadDetails.downs}{' '}
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-row items-center justify-center gap-x-1">
+                                    <BiTimeFive color="#344054" size={18} />{' '}
+                                    <p className="text-tertiarySize text-tertiaryColor">
+                                        {' '}
+                                        {howLongAgo}{' '}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {(leadDetails.stage === 'identification' ||
+                            leadDetails.stage === 'skipped') && (
+                            <div className="relative group">
+                                {/* AI Response Section */}
+                                <div
+                                    className={clsx(
+                                        'space-y-2 mt-2 transition-all duration-200',
+                                        !isConnectedToReddit &&
+                                            'opacity-60 cursor-not-allowed'
                                     )}
-                                </Button>
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-medium text-tertiaryColor">
+                                            Initial Outreach Response:
+                                        </span>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={handleGenerateResponse}
+                                            disabled={
+                                                !isConnectedToReddit ||
+                                                generateAIResponse.isPending
+                                            }
+                                            className="h-7 px-2 text-xs"
+                                        >
+                                            {generateAIResponse.isPending ? (
+                                                'Generating...'
+                                            ) : (
+                                                <>
+                                                    <BiBot
+                                                        size={14}
+                                                        className="mr-1"
+                                                    />
+                                                    Generate
+                                                </>
+                                            )}
+                                        </Button>
+                                    </div>
+                                    <textarea
+                                        value={aiResponse}
+                                        onChange={(e) =>
+                                            onSetAiResponse(e.target.value)
+                                        }
+                                        placeholder={
+                                            isConnectedToReddit
+                                                ? 'Initial outreach response goes here...'
+                                                : 'Connect to Reddit to enable this feature...'
+                                        }
+                                        disabled={!isConnectedToReddit}
+                                        className={clsx(
+                                            'w-full h-20 p-2 text-xs border rounded-md resize-none focus:ring-2 focus:border-transparent',
+                                            isConnectedToReddit
+                                                ? 'border-gray-200 focus:ring-blue-500 bg-white'
+                                                : 'border-red-200 bg-red-50 text-gray-400 cursor-not-allowed'
+                                        )}
+                                    />
+                                </div>
+
+                                {/* Tooltip for disabled state */}
+                                {!isConnectedToReddit && (
+                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-72 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                                        <div className="bg-gray-800 text-white text-xs rounded-lg p-2 shadow-lg">
+                                            <div className="font-medium mb-1">
+                                                🔗 Reddit Connection Required
+                                            </div>
+                                            <div className="text-gray-200">
+                                                Connect your Reddit account by
+                                                clicking the Reddit button in
+                                                the navigation bar.
+                                            </div>
+
+                                            {/* Tooltip Arrow */}
+                                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-800"></div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
+
+                        <div className="flex flex-col space-y-2">
+                            {/* Stage Transition Button */}
+                            {nextStage &&
+                                (leadDetails.stage === 'identification' ||
+                                    leadDetails.stage === 'skipped' ||
+                                    leadDetails.stage ===
+                                        'initial_outreach') && (
+                                    <div className="mt-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={
+                                                leadDetails.stage ===
+                                                'initial_outreach'
+                                                    ? handleMoveToEngagement
+                                                    : handlePostComment
+                                            }
+                                            className="w-full text-xs"
+                                            disabled={
+                                                postComment.isPending ||
+                                                ((leadDetails.stage ===
+                                                    'identification' ||
+                                                    leadDetails.stage ===
+                                                        'skipped') &&
+                                                    !isConnectedToReddit)
+                                            }
+                                        >
+                                            {(leadDetails.stage ===
+                                                'identification' ||
+                                                leadDetails.stage ===
+                                                    'skipped') &&
+                                            !postComment.isPending
+                                                ? 'Post Comment'
+                                                : postComment.isPending
+                                                  ? 'Sending...'
+                                                  : buttonText}
+                                            {!postComment.isPending && (
+                                                <BiRightArrowAlt
+                                                    size={16}
+                                                    className="ml-1"
+                                                />
+                                            )}
+                                        </Button>
+                                    </div>
+                                )}
+                        </div>
+                    </div>
+
+                    <RedditLeadCardDialog
+                        lead={leadDetails}
+                        generateAIResponse={generateAIResponse}
+                        postComment={postComment}
+                        updateLeadStage={updateLeadStage}
+                        selectedProduct={selectedProduct}
+                        isOpen={isDialogOpen}
+                        onOpenChange={(open: boolean) =>
+                            open ? onOpenDialog() : onCloseDialog()
+                        }
+                        aiResponse={aiResponse}
+                        onSetAiResponse={onSetAiResponse}
+                        onClearAiResponse={onClearAiResponse}
+                        refetchAllLeads={refetchAllLeads}
+                        criteriaResults={criteriaResults}
+                    />
+                    <RedditLeadBookmarkDialog
+                        lead={leadDetails}
+                        bookmarks={bookmarks}
+                        isOpen={isBookmarkDialogOpen}
+                        onOpenChange={(open: boolean) =>
+                            open
+                                ? onOpenBookmarkDialog()
+                                : onCloseBookmarkDialog()
+                        }
+                    />
                 </div>
             </div>
-
-            <RedditLeadCardDialog
-                lead={leadDetails}
-                generateAIResponse={generateAIResponse}
-                postComment={postComment}
-                updateLeadStage={updateLeadStage}
-                selectedProduct={selectedProduct}
-                isOpen={isDialogOpen}
-                onOpenChange={(open: boolean) =>
-                    open ? onOpenDialog() : onCloseDialog()
-                }
-                aiResponse={aiResponse}
-                onSetAiResponse={onSetAiResponse}
-                onClearAiResponse={onClearAiResponse}
-            />
-        </div>
+        </>
     );
 }
 
@@ -473,11 +581,16 @@ interface RedditPostLeadCardProps {
     className?: string;
     selectedProduct: Products | null;
     isDialogOpen: boolean;
+    isBookmarkDialogOpen: boolean;
     onOpenDialog: () => void;
+    onOpenBookmarkDialog: () => void;
     onCloseDialog: () => void;
+    onCloseBookmarkDialog: () => void;
     aiResponse: string;
     onSetAiResponse: (response: string) => void;
     onClearAiResponse: () => void;
+    refetchAllLeads: () => void;
+    bookmarks: Bookmark[];
 }
 
 export function RedditPostLeadCard({
@@ -485,12 +598,18 @@ export function RedditPostLeadCard({
     leadDetails,
     selectedProduct,
     isDialogOpen,
+    isBookmarkDialogOpen,
     onOpenDialog,
+    onOpenBookmarkDialog,
     onCloseDialog,
+    onCloseBookmarkDialog,
     aiResponse,
     onSetAiResponse,
     onClearAiResponse,
+    refetchAllLeads,
+    bookmarks,
 }: RedditPostLeadCardProps) {
+    const [bookmarkTrigger, setBookmarkTrigger] = useState(false);
     const unixCreatedAt = new Date(leadDetails.createdAt).getTime();
     const howLongAgo = timeAgo(unixCreatedAt);
     const updateLeadStage = useUpdateLeadStage();
@@ -503,7 +622,7 @@ export function RedditPostLeadCard({
     // Determine if connected to Reddit
     const isConnectedToReddit = !isRedditUserDataLoading && !!redditUserData;
 
-    const { refetchAllLeads } = useLeads(selectedProduct);
+    const criteriaResults = leadDetails.criteriaResults as string[];
 
     function handleMoveToEngagement() {
         updateLeadStage.mutate(
@@ -666,218 +785,299 @@ export function RedditPostLeadCard({
     }
 
     return (
-        <div
-            className={clsx(
-                'w-auto flex flex-col bg-white text-black p-3 rounded-lg gap-y-1 border border-light',
-                className
-            )}
-        >
-            {/* Card Header */}
-            <div className="flex flex-row justify-between">
-                <div className="flex flex-col">
-                    <div className="text-secondaryColor text-primarySize font-semibold">
-                        {leadDetails.subreddit}
-                    </div>
-                    <div className="text-tertiaryColor text-tertiarySize font-medium">
-                        by: {leadDetails.author}
-                    </div>
-                </div>
-                <div className="flex flex-row items-center space-x-2">
-                    <div
-                        onMouseDown={
-                            leadDetails.stage === 'skipped'
-                                ? handleMoveToIdentification
-                                : handleMoveToSkipped
-                        }
-                        className="text-xs !text-tertiaryColor hover:underline cursor-pointer"
-                    >
-                        {leadDetails.stage === 'skipped' ? 'Undo' : 'Skip'}
-                    </div>
-                    <a href={leadDetails.url} target="_blank">
-                        <Button variant={'light'}>
-                            Open <BiLinkExternal size={18} />
-                        </Button>
-                    </a>
-                </div>
-            </div>
-
-            {/* Card Body */}
-            <div className="flex flex-col h-28">
-                <div className="text-lg/6 font-semibold line-clamp-2">
-                    {leadDetails.title}
-                </div>
-
-                <div className="text-tertiarySize text-tertiaryColor text-justify font-medium text-clip h-8">
-                    {leadDetails.body.substring(0, 200) + '...'}
-                </div>
-            </div>
-
-            <div className="flex flex-row justify-between items-center">
-                {/* Card Rating */}
-                <div className="items-center text-xs font-semibold text-tertiaryColor gap-x-1">
-                    <p>
-                        AI Lead Rating:{' '}
-                        <span className="font-bold text-sm">
-                            {leadDetails.rating}
-                        </span>
-                    </p>
-                </div>
-                {/* Reddit Post/Comment Details */}
-                <div className="flex flex-row h-10 gap-x-3 items-center">
-                    <div className="flex flex-row items-center justify-center gap-x-0.5">
-                        <BiUpvote color="#D93900" size={18} />{' '}
-                        <p className="text-tertiarySize text-tertiaryColor">
-                            {' '}
-                            2{' '}
-                        </p>
-                    </div>
-
-                    <div className="flex flex-row items-center justify-center gap-x-0.5">
-                        <BiCommentDetail color="#344054" size={18} />{' '}
-                        <p className="text-tertiarySize text-tertiaryColor">
-                            {' '}
-                            2{' '}
-                        </p>
-                    </div>
-                    <div className="flex flex-row items-center justify-center gap-x-1">
-                        <BiTimeFive color="#344054" size={18} />{' '}
-                        <p className="text-tertiarySize text-tertiaryColor">
-                            {' '}
-                            {howLongAgo}{' '}
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            {/* AI Response Section */}
-            {(leadDetails.stage === 'identification' ||
-                leadDetails.stage === 'skipped') && (
-                <div className="relative group">
+        <>
+            <div
+                onMouseEnter={() => {
+                    setBookmarkTrigger(true);
+                }}
+                onMouseLeave={() => {
+                    setBookmarkTrigger(false);
+                }}
+            >
+                <div
+                    className={clsx(
+                        'flex space-x-2 w-full justify-end pr-2 transition-all duration-300 ease-out',
+                        'relative', // Ensure positioning context
+                        bookmarkTrigger
+                            ? 'translate-y-0 opacity-100 z-10' // visible and in front
+                            : 'translate-y-5 pointer-events-none' // hidden and behind
+                    )}
+                    onMouseDown={onOpenBookmarkDialog}
+                >
                     <div
                         className={clsx(
-                            'space-y-2 mt-2 transition-all duration-200',
-                            !isConnectedToReddit &&
-                                'opacity-60 cursor-not-allowed'
+                            'flex flex-row items-center border-light border border-b-0 rounded-md rounded-b-none py-1 px-2 cursor-pointer',
+                            bookmarkTrigger
+                                ? 'translate-y-0  z-10' // visible and in front
+                                : 'border-0 pointer-events-none' // hidden and behind
                         )}
                     >
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium text-tertiaryColor">
-                                Initial Outreach Response:
-                            </span>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleGenerateResponse}
-                                disabled={
-                                    !isConnectedToReddit ||
-                                    generateAIResponse.isPending
-                                }
-                                className="h-7 px-2 text-xs"
-                            >
-                                {generateAIResponse.isPending ? (
-                                    'Generating...'
-                                ) : (
-                                    <>
-                                        <BiBot size={14} className="mr-1" />
-                                        Generate
-                                    </>
-                                )}
-                            </Button>
-                        </div>
-                        <textarea
-                            value={aiResponse}
-                            onChange={(e) => onSetAiResponse(e.target.value)}
-                            placeholder={
-                                isConnectedToReddit
-                                    ? 'Initial outreach response goes here...'
-                                    : 'Connect to Reddit to enable this feature...'
-                            }
-                            disabled={!isConnectedToReddit}
+                        <div
                             className={clsx(
-                                'w-full h-20 p-2 text-xs border rounded-md resize-none focus:ring-2 focus:border-transparent',
-                                isConnectedToReddit
-                                    ? 'border-gray-200 focus:ring-blue-500 bg-white'
-                                    : 'border-red-200 bg-red-50 text-gray-400 cursor-not-allowed'
+                                'text-secondarySize !text-primaryColor font-semibold mr-1',
+                                bookmarkTrigger
+                                    ? 'translate-y-0 opacity-100 z-10' // visible and in front
+                                    : 'opacity-0 -z-20 pointer-events-none' // hidden and behind
                             )}
+                        >
+                            {bookmarks.find(
+                                (bookmark) =>
+                                    bookmark.id === leadDetails.bookmarkID
+                            )?.title || <BiPlus color={'#576F72'} size={20} />}
+                        </div>
+                        {/* <BiPlus color={'#576F72'} size={20} /> */}
+                        <BiSolidBookmark
+                            className={clsx(
+                                'block z-50',
+                                bookmarkTrigger
+                                    ? 'opacity-100' // visible and in front
+                                    : 'z-50 pointer-events-none' // hidden and behind
+                            )}
+                            color={'#576F72'}
+                            size={20}
                         />
                     </div>
+                </div>
 
-                    {/* Tooltip for disabled state */}
-                    {!isConnectedToReddit && (
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-72 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
-                            <div className="bg-gray-800 text-white text-xs rounded-lg p-2 shadow-lg">
-                                <div className="font-medium mb-1">
-                                    🔗 Reddit Connection Required
-                                </div>
-                                <div className="text-gray-200">
-                                    Connect your Reddit account by clicking the
-                                    Reddit button in the navigation bar.
-                                </div>
-
-                                {/* Tooltip Arrow */}
-                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-800"></div>
+                <div
+                    className={clsx(
+                        'w-auto flex flex-col bg-white text-black p-3 rounded-lg gap-y-1 border border-light',
+                        className
+                    )}
+                >
+                    {/* Card Header */}
+                    <div className="flex flex-row justify-between">
+                        <div className="flex flex-col">
+                            <div className="text-secondaryColor text-primarySize font-semibold">
+                                {leadDetails.subreddit}
+                            </div>
+                            <div className="text-tertiaryColor text-tertiarySize font-medium">
+                                by: {leadDetails.author}
                             </div>
                         </div>
-                    )}
-                </div>
-            )}
-
-            <div className="flex flex-col space-y-2 ">
-                {/* Stage Transition Button */}
-                {nextStage &&
-                    (leadDetails.stage === 'identification' ||
-                        leadDetails.stage === 'skipped' ||
-                        leadDetails.stage === 'initial_outreach') && (
-                        <div className="mt-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={
-                                    leadDetails.stage === 'initial_outreach'
-                                        ? handleMoveToEngagement
-                                        : handlePostComment
+                        <div className="flex flex-row items-center space-x-2">
+                            <div
+                                onMouseDown={
+                                    leadDetails.stage === 'skipped'
+                                        ? handleMoveToIdentification
+                                        : handleMoveToSkipped
                                 }
-                                className="w-full text-xs"
-                                disabled={
-                                    postComment.isPending ||
-                                    ((leadDetails.stage === 'identification' ||
-                                        leadDetails.stage === 'skipped') &&
-                                        !isConnectedToReddit)
-                                }
+                                className="text-tertiarySize !text-tertiaryColor hover:underline cursor-pointer"
                             >
-                                {(leadDetails.stage === 'identification' ||
-                                    leadDetails.stage === 'skipped') &&
-                                !postComment.isPending
-                                    ? 'Post Comment'
-                                    : postComment.isPending
-                                      ? 'Sending...'
-                                      : buttonText}
-                                {!postComment.isPending && (
-                                    <BiRightArrowAlt
-                                        size={16}
-                                        className="ml-1"
-                                    />
+                                {leadDetails.stage === 'skipped'
+                                    ? 'Undo'
+                                    : 'Skip'}
+                            </div>
+                            <a href={leadDetails.url} target="_blank">
+                                <Button variant={'light'}>
+                                    Open <BiLinkExternal size={18} />
+                                </Button>
+                            </a>
+                        </div>
+                    </div>
+
+                    {/* Card Body */}
+                    <div className="flex flex-col h-28">
+                        <div className="text-lg/6 font-semibold line-clamp-2">
+                            {leadDetails.title}
+                        </div>
+
+                        <div className="text-tertiarySize text-tertiaryColor text-justify font-medium text-clip h-8">
+                            {leadDetails.body.substring(0, 200) + '...'}
+                        </div>
+                    </div>
+
+                    <div className="flex flex-row justify-between items-center">
+                        {/* Card Rating */}
+                        <div className="items-center text-xs font-semibold text-tertiaryColor gap-x-1">
+                            <p>
+                                AI Lead Rating:{' '}
+                                <span className="font-bold text-sm">
+                                    {leadDetails.rating}
+                                </span>
+                            </p>
+                        </div>
+                        {/* Reddit Post/Comment Details */}
+                        <div className="flex flex-row h-10 gap-x-3 items-center">
+                            <div className="flex flex-row items-center justify-center gap-x-0.5">
+                                <BiUpvote color="#D93900" size={18} />{' '}
+                                <p className="text-tertiarySize text-tertiaryColor">
+                                    {' '}
+                                    2{' '}
+                                </p>
+                            </div>
+
+                            <div className="flex flex-row items-center justify-center gap-x-0.5">
+                                <BiCommentDetail color="#344054" size={18} />{' '}
+                                <p className="text-tertiarySize text-tertiaryColor">
+                                    {' '}
+                                    2{' '}
+                                </p>
+                            </div>
+                            <div className="flex flex-row items-center justify-center gap-x-1">
+                                <BiTimeFive color="#344054" size={18} />{' '}
+                                <p className="text-tertiarySize text-tertiaryColor">
+                                    {' '}
+                                    {howLongAgo}{' '}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* AI Response Section */}
+                    {(leadDetails.stage === 'identification' ||
+                        leadDetails.stage === 'skipped') && (
+                        <div className="relative group">
+                            <div
+                                className={clsx(
+                                    'space-y-2 mt-2 transition-all duration-200',
+                                    !isConnectedToReddit &&
+                                        'opacity-60 cursor-not-allowed'
                                 )}
-                            </Button>
+                            >
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-medium text-tertiaryColor">
+                                        Initial Outreach Response:
+                                    </span>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleGenerateResponse}
+                                        disabled={
+                                            !isConnectedToReddit ||
+                                            generateAIResponse.isPending
+                                        }
+                                        className="h-7 px-2 text-xs"
+                                    >
+                                        {generateAIResponse.isPending ? (
+                                            'Generating...'
+                                        ) : (
+                                            <>
+                                                <BiBot
+                                                    size={14}
+                                                    className="mr-1"
+                                                />
+                                                Generate
+                                            </>
+                                        )}
+                                    </Button>
+                                </div>
+                                <textarea
+                                    value={aiResponse}
+                                    onChange={(e) =>
+                                        onSetAiResponse(e.target.value)
+                                    }
+                                    placeholder={
+                                        isConnectedToReddit
+                                            ? 'Initial outreach response goes here...'
+                                            : 'Connect to Reddit to enable this feature...'
+                                    }
+                                    disabled={!isConnectedToReddit}
+                                    className={clsx(
+                                        'w-full h-20 p-2 text-xs border rounded-md resize-none focus:ring-2 focus:border-transparent',
+                                        isConnectedToReddit
+                                            ? 'border-gray-200 focus:ring-blue-500 bg-white'
+                                            : 'border-red-200 bg-red-50 text-gray-400 cursor-not-allowed'
+                                    )}
+                                />
+                            </div>
+
+                            {/* Tooltip for disabled state */}
+                            {!isConnectedToReddit && (
+                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-72 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
+                                    <div className="bg-gray-800 text-white text-xs rounded-lg p-2 shadow-lg">
+                                        <div className="font-medium mb-1">
+                                            🔗 Reddit Connection Required
+                                        </div>
+                                        <div className="text-gray-200">
+                                            Connect your Reddit account by
+                                            clicking the Reddit button in the
+                                            navbar to use AI response features.
+                                        </div>
+
+                                        {/* Tooltip Arrow */}
+                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-800"></div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
-            </div>
 
-            <RedditLeadCardDialog
-                lead={leadDetails}
-                generateAIResponse={generateAIResponse}
-                postComment={postComment}
-                updateLeadStage={updateLeadStage}
-                selectedProduct={selectedProduct}
-                isOpen={isDialogOpen}
-                onOpenChange={(open: boolean) =>
-                    open ? onOpenDialog() : onCloseDialog()
-                }
-                aiResponse={aiResponse}
-                onSetAiResponse={onSetAiResponse}
-                onClearAiResponse={onClearAiResponse}
-            />
-        </div>
+                    <div className="flex flex-col space-y-2 ">
+                        {/* Stage Transition Button */}
+                        {nextStage &&
+                            (leadDetails.stage === 'identification' ||
+                                leadDetails.stage === 'skipped' ||
+                                leadDetails.stage === 'initial_outreach') && (
+                                <div className="mt-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={
+                                            leadDetails.stage ===
+                                            'initial_outreach'
+                                                ? handleMoveToEngagement
+                                                : handlePostComment
+                                        }
+                                        className="w-full text-xs"
+                                        disabled={
+                                            postComment.isPending ||
+                                            ((leadDetails.stage ===
+                                                'identification' ||
+                                                leadDetails.stage ===
+                                                    'skipped') &&
+                                                !isConnectedToReddit)
+                                        }
+                                    >
+                                        {(leadDetails.stage ===
+                                            'identification' ||
+                                            leadDetails.stage === 'skipped') &&
+                                        !postComment.isPending
+                                            ? 'Post Comment'
+                                            : postComment.isPending
+                                              ? 'Sending...'
+                                              : buttonText}
+                                        {!postComment.isPending && (
+                                            <BiRightArrowAlt
+                                                size={16}
+                                                className="ml-1"
+                                            />
+                                        )}
+                                    </Button>
+                                </div>
+                            )}
+                    </div>
+
+                    <RedditLeadCardDialog
+                        lead={leadDetails}
+                        generateAIResponse={generateAIResponse}
+                        postComment={postComment}
+                        updateLeadStage={updateLeadStage}
+                        selectedProduct={selectedProduct}
+                        isOpen={isDialogOpen}
+                        onOpenChange={(open: boolean) =>
+                            open ? onOpenDialog() : onCloseDialog()
+                        }
+                        refetchAllLeads={refetchAllLeads}
+                        aiResponse={aiResponse}
+                        onSetAiResponse={onSetAiResponse}
+                        onClearAiResponse={onClearAiResponse}
+                        criteriaResults={criteriaResults}
+                    />
+
+                    <RedditLeadBookmarkDialog
+                        lead={leadDetails}
+                        bookmarks={bookmarks}
+                        isOpen={isBookmarkDialogOpen}
+                        onOpenChange={(open: boolean) =>
+                            open
+                                ? onOpenBookmarkDialog()
+                                : onCloseBookmarkDialog()
+                        }
+                    />
+                </div>
+            </div>
+        </>
     );
 }
 
@@ -892,6 +1092,8 @@ interface RedditLeadCardDialogProps {
     aiResponse: string;
     onSetAiResponse: (response: string) => void;
     onClearAiResponse: () => void;
+    refetchAllLeads: () => void;
+    criteriaResults?: string[];
 }
 
 function RedditLeadCardDialog({
@@ -905,6 +1107,8 @@ function RedditLeadCardDialog({
     aiResponse,
     onSetAiResponse,
     onClearAiResponse,
+    refetchAllLeads,
+    criteriaResults,
 }: RedditLeadCardDialogProps) {
     const [showRedditDescription, setShowRedditDescription] =
         useState<boolean>(false);
@@ -917,8 +1121,6 @@ function RedditLeadCardDialog({
     const upvotes = lead.ups - lead.downs;
 
     const { redditUserData, isRedditUserDataLoading } = useRedditUser();
-
-    const { refetchAllLeads } = useLeads(selectedProduct);
 
     // If the body is less than 240 words, show the full description
     useEffect(() => {
@@ -1036,23 +1238,51 @@ function RedditLeadCardDialog({
                             {lead.author}
                         </p>
                     </div>
-                    <Badge
-                        variant="outline"
-                        className={clsx(
-                            'rounded-xl px-4 py-2 !text-base !font-semibold',
-                            {
-                                'bg-orange-100 text-orange-600 border-orange-200':
-                                    lead.rating < 3.3,
-                                'bg-yellow-100 text-yellow-600 border-yellow-200':
-                                    lead.rating < 6.6 && lead.rating >= 3.3,
-                                'bg-green-100 text-green-600 border-green-200':
-                                    lead.rating <= 10 && lead.rating >= 6.6,
-                            }
-                        )}
-                    >
-                        Rating: {lead.rating}/10
-                    </Badge>
+                    <div>
+                        <Badge
+                            variant="outline"
+                            className={clsx(
+                                'rounded-xl px-4 py-2 !text-base !font-semibold',
+                                {
+                                    'bg-orange-100 text-orange-600 border-orange-200':
+                                        lead.rating < 3.3,
+                                    'bg-yellow-100 text-yellow-600 border-yellow-200':
+                                        lead.rating < 6.6 && lead.rating >= 3.3,
+                                    'bg-green-100 text-green-600 border-green-200':
+                                        lead.rating <= 10 && lead.rating >= 6.6,
+                                }
+                            )}
+                        >
+                            Rating: {lead.rating}/10
+                        </Badge>
+                    </div>
                 </div>
+
+                {/* Criteria Results Section */}
+                {criteriaResults && criteriaResults.length > 0 && (
+                    <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <h4 className="text-sm font-semibold text-blue-800 mb-2">
+                            📊 Evaluation Results
+                        </h4>
+                        <p className="text-xs text-blue-600 mb-3">
+                            Based on the scoring criteria you previously
+                            established for this product:
+                        </p>
+                        <div className="space-y-2">
+                            {criteriaResults.map((result, index) => (
+                                <div
+                                    key={index}
+                                    className="flex items-start gap-2"
+                                >
+                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"></div>
+                                    <span className="text-sm text-blue-700">
+                                        {result}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 <div className="flex flex-col gap-y-4 flex-grow">
                     {/* Post Title - Only shown for PostLead */}
@@ -1281,6 +1511,83 @@ function RedditLeadCardDialog({
                             </a>
                         </div>
                     </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+interface RedditLeadBookmarkProps {
+    lead: CommentLead | PostLead;
+    isOpen: boolean;
+    bookmarks: Bookmark[];
+    onOpenChange: (open: boolean) => void;
+}
+
+function RedditLeadBookmarkDialog({
+    lead,
+    isOpen,
+    bookmarks,
+    onOpenChange,
+}: RedditLeadBookmarkProps) {
+    const [bookmarkDetails, setBookmarkDetails] = useState({});
+    const queryClient = useQueryClient();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { apiPost } = useFetch();
+    async function handleBookmarkSubmit(chosenBookmark: string) {
+        setIsSubmitting(true);
+        const bookmark = await apiPost('/api/leads/bookmark', {
+            leadID: lead.id,
+            bookmarkID: chosenBookmark,
+            isPost: isPostLead(lead),
+        });
+        toast({
+            title: 'Lead Added to Bookmark',
+            description: 'The Lead has been added to your Bookmark',
+            action: <BiCheckCircle color="#576F72" size={35} />,
+        });
+        onOpenChange(false);
+        setIsSubmitting(false);
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-xl p-6 flex flex-col text-primaryColor">
+                <DialogHeader>
+                    <div className="font-semibold flex flex-row items-center space-x-1">
+                        <BiBookmark size={27} />
+                        <div>Choose a Bookmark:</div>
+                    </div>
+                </DialogHeader>
+                <div className="flex flex-wrap gap-3">
+                    {!isSubmitting &&
+                        bookmarks.map((bookmark) => {
+                            return (
+                                <Badge
+                                    key={bookmark.id}
+                                    variant={
+                                        bookmark.id === lead.bookmarkID
+                                            ? 'openBookmark'
+                                            : 'closedBookmark'
+                                    }
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        handleBookmarkSubmit(bookmark.id);
+                                    }}
+                                >
+                                    <BiFolder size={23} />{' '}
+                                    <div>{bookmark.title}</div>
+                                </Badge>
+                            );
+                        })}
+                    {isSubmitting && (
+                        <div className="w-full flex justify-center">
+                            <PiSpinnerGapThin
+                                size={50}
+                                className="animate-spin"
+                            />
+                        </div>
+                    )}
                 </div>
             </DialogContent>
         </Dialog>

@@ -20,9 +20,9 @@
 	},
 	"hyperdrive": [
 		{
-			"binding": "HYPERDRIVE",
-			"id": "df7395f5b9094850812480b077322d7a",
-			"localConnectionString": "postgresql://digreddit_owner:npg_gqOho4IEL6Bk@ep-fragrant-credit-a57wi4p7-pooler.us-east-2.aws.neon.tech/digreddit?sslmode=require"
+	  "binding": "HYPERDRIVE",
+      "id": "fe2221a81f10487e8dc1f97ca2f7c1cc",
+			"localConnectionString": "postgresql://digredditpublic:dig2025redditsql.@db.digreddit.net/prod?sslmode=require"
 		}
 	]
 	/**

@@ -18,27 +18,30 @@ export default async function NavBar({ className }: NavBarProps) {
     return (
         <div
             className={clsx(
-                'w-full flex border border-light px-3 py-2 justify-center',
+                'w-full flex border border-light px-3 py-2',
                 className
             )}
         >
-            <div className="w-2/3 flex justify-between">
-                <div className="flex flex-row justify-center items-center gap-x-7">
-                    <p className="font-bold text-2xl text-primaryColor">
-                        <FullLogo />
-                    </p>
-                    <DashboardNavItems />
-                </div>
+            {/* Logo - Far Left */}
+            <div className="flex items-center">
+                <p className="font-bold text-2xl text-primaryColor">
+                    <FullLogo />
+                </p>
+            </div>
 
-                {/* Temporary Profile */}
+            {/* Navigation Items - Centered */}
+            <div className="flex-1 flex justify-center items-center">
+                <DashboardNavItems />
+            </div>
+
+            {/* User Profile - Far Right */}
+            <div className="flex flex-row items-center gap-x-2">
+                <RedditConnection />
                 <div className="flex flex-row items-center gap-x-2">
-                    <RedditConnection />
-                    <div className="flex flex-row items-center gap-x-2">
-                        <UserDropdown user={session.user} />
-                        <p className="text-primarySize text-secondaryColor font-semibold">
-                            {session.user?.name || ''}
-                        </p>
-                    </div>
+                    <UserDropdown user={session.user} />
+                    <p className="text-primarySize text-secondaryColor font-semibold">
+                        {session.user?.name || ''}
+                    </p>
                 </div>
             </div>
         </div>

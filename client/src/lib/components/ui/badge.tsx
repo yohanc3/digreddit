@@ -14,6 +14,10 @@ const badgeVariants = cva(
           "flex flex-row items-center justify-start bg-white gap-x-3 border-light h-24 w-1/3 pl-5",
         leadKeyword:
           "bg-white border-secondaryColor text-center px-4 py-2 rounded-xl",
+        openBookmark:
+          "flex flex-row !space-x-1 border-2 border-primaryColor bg-primaryColor text-white !text-primarySize !font-semibold px-2 py-1 cursor-pointer",
+        closedBookmark:
+          "flex flex-row !space-x-1 bg-none border border-light text-primaryColor !text-primarySize !font-semibold px-2 py-1 cursor-pointer",
         default:
           "border-transparent bg-primary text-primary-foreground shadow hover:bg-primary/80",
         secondary:

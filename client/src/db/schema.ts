@@ -19,13 +19,13 @@ export const leadStage = pgEnum('lead_stage', [
     'identification',
     'initial_outreach',
     'engagement',
-    'skipped'
+    'skipped',
 ]);
 export const stages = pgEnum('stages', [
     'identification',
     'initial_outreach',
     'engagement',
-    'skipped'
+    'skipped',
 ]);
 
 export const authenticator = pgTable(
@@ -60,6 +60,23 @@ export const products = pgTable('Products', {
     createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
     updatedAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
     keywords: jsonb().notNull(),
+    criteria: text()
+        .default(
+            ` 
+    - Topical Relevance (0–3 points)
+       - Does the lead discuss topics related to the product domain?
+
+    - Expressed Need or Interest (0–3 points)
+        - Does the user express a problem, need, or interest the product could solve?
+
+    - Fit as a Potential Buyer (0–2 points)
+        - Does the person seem like a potential customer for this product?
+
+     - Actionability (0–2 points)
+        - Could this lead be pursued by a sales or marketing team?
+    `
+        )
+        .notNull(),
     userId: uuid().notNull(),
 });
 
@@ -106,34 +123,6 @@ export const feedback = pgTable(
     ]
 );
 
-export const commentLeads = pgTable(
-    'CommentLeads',
-    {
-        id: text()
-            .default(sql`gen_random_uuid()`)
-            .primaryKey()
-            .notNull(),
-        subreddit: text().notNull(),
-        author: text().notNull(),
-        body: text().notNull(),
-        url: text().notNull(),
-        ups: smallint().notNull(),
-        downs: smallint().notNull(),
-        productID: uuid().notNull(),
-        createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
-        rating: doublePrecision().notNull(),
-        isInteracted: boolean().default(false),
-        stage: stages().default('identification').notNull(),
-    },
-    (table) => [
-        foreignKey({
-            columns: [table.productID],
-            foreignColumns: [products.id],
-            name: 'fk_product',
-        }),
-    ]
-);
-
 export const verificationToken = pgTable('VerificationToken', {
     identifier: text().notNull(),
     token: text().notNull(),
@@ -174,12 +163,46 @@ export const users = pgTable('Users', {
     redditRefreshToken: text(),
 });
 
+export const commentLeads = pgTable(
+    'CommentLeads',
+    {
+        id: text()
+            .default(sql`gen_random_uuid()`)
+            .notNull(),
+        subreddit: text().notNull(),
+        author: text().notNull(),
+        body: text().notNull(),
+        url: text().notNull(),
+        ups: smallint().notNull(),
+        downs: smallint().notNull(),
+        productID: uuid().notNull(),
+        createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+        rating: doublePrecision().notNull(),
+        isInteracted: boolean().default(false),
+        stage: stages().default('identification').notNull(),
+        uniqueID: uuid().defaultRandom().notNull().primaryKey(),
+        bookmarkID: uuid()
+            .default(sql`gen_random_uuid()`)
+            .notNull(),
+        criteriaResults: jsonb()
+            .default(sql`'[]'::jsonb`)
+            .notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.productID],
+            foreignColumns: [products.id],
+            name: 'fk_product',
+        }),
+        unique('unique_commentleads_uniqueid').on(table.uniqueID),
+    ]
+);
+
 export const postLeads = pgTable(
     'PostLeads',
     {
         id: text()
             .default(sql`gen_random_uuid()`)
-            .primaryKey()
             .notNull(),
         subreddit: text().notNull(),
         title: text().notNull(),
@@ -196,12 +219,68 @@ export const postLeads = pgTable(
         rating: doublePrecision().notNull(),
         isInteracted: boolean().default(false),
         stage: stages().default('identification').notNull(),
+        uniqueID: text()
+            .default(sql`gen_random_uuid()`)
+            .notNull()
+            .primaryKey(),
+        bookmarkID: uuid()
+            .default(sql`gen_random_uuid()`)
+            .notNull(),
+        criteriaResults: jsonb().default(sql`'[]'::jsonb`),
     },
     (table) => [
         foreignKey({
             columns: [table.productID],
             foreignColumns: [products.id],
             name: 'fk_product',
+        }),
+        unique('unique_postleads_uniqueid').on(table.uniqueID),
+    ]
+);
+
+export const bookmarks = pgTable(
+    'Bookmarks',
+    {
+        id: uuid()
+            .default(sql`gen_random_uuid()`)
+            .primaryKey()
+            .notNull(),
+        title: text().notNull(),
+        description: text().notNull(),
+        createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+        updatedAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+        userID: uuid().notNull(),
+        productID: uuid().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.productID],
+            foreignColumns: [products.id],
+            name: 'fk_product',
+        }).onDelete('cascade'),
+    ]
+);
+
+export const collections = pgTable(
+    'Collections',
+    {
+        id: uuid()
+            .default(sql`gen_random_uuid()`)
+            .primaryKey()
+            .notNull(),
+        title: text().notNull(),
+        description: text().notNull(),
+        subreddits: jsonb().notNull(),
+        createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+        updatedAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
+        userID: uuid().notNull(),
+        productID: uuid().notNull(),
+    },
+    (table) => [
+        foreignKey({
+            columns: [table.productID],
+            foreignColumns: [products.id],
+            name: 'fk_collection_product',
         }),
     ]
 );

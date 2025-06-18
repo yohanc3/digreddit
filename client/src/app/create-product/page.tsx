@@ -65,6 +65,21 @@ import {
 } from '@/lib/components/ui/dialog';
 
 import { prohibitedKeywords } from '@/lib/backend/constant/prohibitedKeywords';
+import CriteriaBuilder from '@/lib/components/ui/product/CriteriaBuilder';
+import { generateCriteriaXML } from '@/lib/frontend/utils/criteriaParser';
+
+interface CriteriaRange {
+    label: string;
+    points: string;
+    description: string;
+}
+
+interface CriteriaField {
+    id: string;
+    maxScore: number;
+    description: string;
+    ranges: CriteriaRange[];
+}
 
 export default function Dashboard() {
     const [formsInput, setFormsInput] = useState<ProductFormDataFields>({
@@ -91,6 +106,10 @@ export default function Dashboard() {
         ai: false,
     });
     const [openBetaLimitsDialog, setOpenBetaLimitsDialog] = useState(false);
+
+    // Lead Evaluation Criteria state
+    const [criteriaFields, setCriteriaFields] = useState<CriteriaField[]>([]);
+
     const { apiPost } = useFetch();
 
     function setProductFormError(field: ProductFormDataError) {
@@ -186,6 +205,9 @@ export default function Dashboard() {
         //Successful Submit Logic
         if (!hasErrors) {
             try {
+                // Generate criteria XML for submission
+                const criteriaXML = generateCriteriaXML(criteriaFields);
+
                 const result = await apiPost('api/products', {
                     description,
                     title,
@@ -193,6 +215,7 @@ export default function Dashboard() {
                     keywords,
                     mrr,
                     url,
+                    criteria: criteriaXML,
                 });
 
                 const createdAt = readableDateFormat(
@@ -611,6 +634,18 @@ export default function Dashboard() {
                         {/* Keywords Error */}
                         <MissingFieldError trigger={Boolean(error.keywords)} />
                     </div>
+
+                    {/* Lead Evaluation Criteria Section */}
+                    <CriteriaBuilder
+                        criteriaFields={criteriaFields}
+                        setCriteriaFields={setCriteriaFields}
+                        productID=""
+                        productDescription={formsInput.description}
+                        isCreationMode={true}
+                        isSubmitting={
+                            isSubmitting.form || isSubmitting.keywords
+                        }
+                    />
 
                     {/* Submit Product Button */}
                     <div className="flex justify-end mt-2">
