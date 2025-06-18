@@ -29,10 +29,11 @@ export type LeadStage =
 
 // Lead Filters Interface
 export interface LeadFilters {
-    minRating?: number;
+    maxRating?: number;
     sortingMethod?: 'newest' | 'oldest' | 'most-upvotes' | 'least-upvotes';
     showOnlyUninteracted?: boolean;
     stage?: LeadStage;
     bookmarkID?: string;
     collectionID?: string;
+    maxAgeDays?: number;
 }
