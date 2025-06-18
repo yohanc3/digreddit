@@ -23,15 +23,21 @@ interface CriteriaField {
 }
 
 interface AICriteriaDialogProps {
-    productID: string;
+    productID?: string;
     trigger: React.ReactNode;
     onCriteriaGenerated: (criteria: CriteriaField[]) => void;
+    productDescription?: string;
+    onCriteriaCallback?: (criteria: CriteriaField[]) => void;
+    isCreationMode?: boolean;
 }
 
 export default function AICriteriaDialog({
     productID,
     trigger,
     onCriteriaGenerated,
+    productDescription,
+    onCriteriaCallback,
+    isCreationMode = false,
 }: AICriteriaDialogProps) {
     const { apiPost } = useFetch();
 
@@ -113,6 +119,81 @@ export default function AICriteriaDialog({
         }
     }
 
+    async function handleGenerateForCreation() {
+        if (!productDescription?.trim()) return;
+
+        setIsGenerating(true);
+
+        toast({
+            title: 'Generating criteria...',
+            description:
+                'AI is creating evaluation criteria based on your product description.',
+            action: <BiBot color="#576F72" size={35} />,
+        });
+
+        try {
+            const { status, criteria, success } = await apiPost(
+                'api/product/criteria',
+                {
+                    description: productDescription.trim(),
+                    idealCustomer: idealCustomer.trim(),
+                    additionalInstructions: additionalInstructions.trim(),
+                }
+            );
+
+            if (success) {
+                // Convert AI response to frontend format
+                const aiCriteria = criteria.criteria.map(
+                    (criteria: any, index: number) => ({
+                        id: `ai-${index}-${Date.now()}`,
+                        maxScore: criteria.max,
+                        description: criteria.name,
+                        ranges: criteria.ranges.map((range: any) => ({
+                            label:
+                                range.pts === '0'
+                                    ? '0 points'
+                                    : range.pts.includes('-')
+                                      ? `${range.pts} points`
+                                      : range.pts === '1'
+                                        ? '1 point'
+                                        : `${range.pts} points`,
+                            points: range.pts,
+                            description: range.desc,
+                        })),
+                    })
+                );
+
+                // Use callback for creation mode
+                if (onCriteriaCallback) {
+                    onCriteriaCallback(aiCriteria);
+                }
+                setIsOpen(false);
+
+                // Clear form
+                setIdealCustomer('');
+                setAdditionalInstructions('');
+
+                toast({
+                    title: 'AI criteria generated!',
+                    description:
+                        'Review and customize the generated criteria as needed.',
+                    action: <BiCheckCircle color="#576F72" size={35} />,
+                });
+            } else {
+                throw new Error('Failed to generate criteria');
+            }
+        } catch (error) {
+            toast({
+                title: 'Failed to generate criteria',
+                description:
+                    'Please try again. If multiple attempts fail, create criteria manually or contact support.',
+                action: <BiErrorCircle color="#f87171" size={35} />,
+            });
+        } finally {
+            setIsGenerating(false);
+        }
+    }
+
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>{trigger}</DialogTrigger>
@@ -139,8 +220,9 @@ export default function AICriteriaDialog({
                                 🎯 Ideal vs Poor Fit Customers
                             </Label>
                             <p className="text-xs text-gray-500 mb-2">
-                                Describe your perfect customer and any red flags
-                                that indicate a poor fit
+                                Describe what makes someone a perfect lead based
+                                on a single comment or post, and list any red
+                                flags that would indicate a poor fit.
                             </p>
                             <Textarea
                                 value={idealCustomer}
@@ -148,7 +230,7 @@ export default function AICriteriaDialog({
                                     setIdealCustomer(e.target.value)
                                 }
                                 className="min-h-24 resize-y"
-                                placeholder="e.g., 'Perfect: Tech startups with 10-50 employees, have tried solutions before, need quick implementation. Red flags: Companies without budget approval, looking for free solutions, unrealistic timelines...'"
+                                placeholder="e.g., 'Perfect: Mentions a challenge or frustration with <xyz>, even if vaguely... Red flags: <xyz> is not a problem or a challenge'"
                             />
                             <p className="text-xs text-gray-400">
                                 {idealCustomer.length}/500 characters
@@ -170,7 +252,7 @@ export default function AICriteriaDialog({
                                     setAdditionalInstructions(e.target.value)
                                 }
                                 className="min-h-20 resize-y"
-                                placeholder="e.g., 'Focus more on urgency than budget size', 'Prioritize existing relationships', 'Geographic location matters'..."
+                                placeholder="e.g., Give a higher score to leads that mention urgency, and a lower score to leads that mention budget size..."
                             />
                             <p className="text-xs text-gray-400">
                                 {additionalInstructions.length}/300 characters
@@ -194,7 +276,11 @@ export default function AICriteriaDialog({
                                     ? 'Generating...'
                                     : 'Generate Criteria'
                             }
-                            onClick={handleGenerate}
+                            onClick={
+                                isCreationMode
+                                    ? handleGenerateForCreation
+                                    : handleGenerate
+                            }
                             className="px-6 rounded-md"
                         />
                     </div>
