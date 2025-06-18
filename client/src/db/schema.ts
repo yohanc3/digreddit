@@ -60,6 +60,23 @@ export const products = pgTable('Products', {
     createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
     updatedAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
     keywords: jsonb().notNull(),
+    criteria: text()
+        .default(
+            ` 
+    - Topical Relevance (0–3 points)
+       - Does the lead discuss topics related to the product domain?
+
+    - Expressed Need or Interest (0–3 points)
+        - Does the user express a problem, need, or interest the product could solve?
+
+    - Fit as a Potential Buyer (0–2 points)
+        - Does the person seem like a potential customer for this product?
+
+     - Actionability (0–2 points)
+        - Could this lead be pursued by a sales or marketing team?
+    `
+        )
+        .notNull(),
     userId: uuid().notNull(),
 });
 
@@ -167,6 +184,9 @@ export const commentLeads = pgTable(
         bookmarkID: uuid()
             .default(sql`gen_random_uuid()`)
             .notNull(),
+        criteriaResults: jsonb()
+            .default(sql`'[]'::jsonb`)
+            .notNull(),
     },
     (table) => [
         foreignKey({
@@ -206,6 +226,7 @@ export const postLeads = pgTable(
         bookmarkID: uuid()
             .default(sql`gen_random_uuid()`)
             .notNull(),
+        criteriaResults: jsonb().default(sql`'[]'::jsonb`),
     },
     (table) => [
         foreignKey({
@@ -236,7 +257,7 @@ export const bookmarks = pgTable(
             columns: [table.productID],
             foreignColumns: [products.id],
             name: 'fk_product',
-        }),
+        }).onDelete('cascade'),
     ]
 );
 

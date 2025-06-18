@@ -49,7 +49,7 @@ import { Badge } from '../ui/badge';
 interface DashboardHeaderProps {
     products: Products[];
     selectedProduct: Products | null;
-    onSelectedProductChange: (index: number) => void;
+    onSelectedProductChange: (productId: string) => void;
     selectedBookmark: string;
     setSelectedBoookMark: (val: string) => void;
     selectedCollection: string;
@@ -91,7 +91,6 @@ export function DashboardHeader({
 }: DashboardHeaderProps) {
     const router = useRouter();
     const queryClient = useQueryClient();
-    const search = useSearchParams();
     const { apiPost } = useFetch();
     const [confirmProductTitle, setConfirmProductTitle] = useState('');
     const [showLeadFilters, setShowLeadFilters] = useState(false);
@@ -135,35 +134,23 @@ export function DashboardHeader({
         }
     };
 
-    const selectedProductIndex = products.findIndex(
-        (p) => p.id === selectedProduct?.id
-    );
-
     return (
         <div>
             <header className="flex items-center justify-between px-14 py-4 border-b border-light bg-white shadow-sm">
                 <div className="flex items-center gap-x-3">
                     {/* Product Selector */}
                     <Select
-                        onValueChange={(value) => {
-                            const newIndex = parseInt(value, 10);
-                            const newProductId = products[newIndex].id;
-
-                            onSelectedProductChange(newIndex);
+                        onValueChange={(productId) => {
+                            onSelectedProductChange(productId);
                             setSelectedBoookMark('');
                             // Defer query invalidation to after state update
                             setTimeout(() => {
-                                // queryClient.removeQueries({ queryKey: ['allLeads', newProductId] });
                                 queryClient.invalidateQueries({
-                                    queryKey: ['allLeads', newProductId],
+                                    queryKey: ['allLeads', productId],
                                 });
                             }, 0);
                         }}
-                        value={
-                            selectedProductIndex !== -1
-                                ? String(selectedProductIndex)
-                                : undefined
-                        }
+                        value={selectedProduct?.id || ''}
                     >
                         <SelectTrigger className="w-auto min-w-56 h-8 text-sm border-gray-300 hover:border-primaryColor focus:border-primaryColor">
                             <SelectValue placeholder="Select a product...">
@@ -185,11 +172,8 @@ export function DashboardHeader({
                             </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                            {products.map((product, index) => (
-                                <SelectItem
-                                    key={product.id}
-                                    value={String(index)}
-                                >
+                            {products.map((product) => (
+                                <SelectItem key={product.id} value={product.id}>
                                     <div>
                                         <div className="font-medium text-primaryColor">
                                             {product.title}
