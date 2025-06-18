@@ -257,7 +257,7 @@ export const bookmarks = pgTable(
             columns: [table.productID],
             foreignColumns: [products.id],
             name: 'fk_product',
-        }),
+        }).onDelete('cascade'),
     ]
 );
 

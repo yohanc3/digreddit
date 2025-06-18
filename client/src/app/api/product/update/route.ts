@@ -16,8 +16,6 @@ export const POST = auth(async function POST(req: NextAuthRequest) {
 
     const { productID, title, description, keywords, criteria } = body;
 
-    console.log('criteria', criteria);
-
     try {
         if (
             !productID &&

@@ -61,7 +61,7 @@ export default function AICriteriaDialog({
 
         try {
             const { status, criteria, success } = await apiPost(
-                'api/product/criteria/generate',
+                'api/product/criteria/update',
                 {
                     productID,
                     idealCustomer: idealCustomer.trim(),
@@ -133,7 +133,7 @@ export default function AICriteriaDialog({
 
         try {
             const { status, criteria, success } = await apiPost(
-                'api/product/criteria',
+                'api/product/criteria/generate',
                 {
                     description: productDescription.trim(),
                     idealCustomer: idealCustomer.trim(),

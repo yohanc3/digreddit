@@ -1,12 +1,18 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../../../../../auth';
+import { auth } from '../../../../../../auth';
+import { productsQueries } from '@/db';
 import { NextAuthRequest } from 'next-auth';
 import { llamaAI, LLAMA_MODEL } from '@/lib/backend/ai/connection';
+import {
+    createCriteriaPrompt,
+    CRITERIA_SYSTEM_MESSAGE,
+    CRITERIA_AI_CONFIG,
+} from '@/lib/backend/constant/criteriaPrompts';
 
 /*
-    Generates AI-powered lead evaluation criteria for product creation
+    Generates AI-powered lead evaluation criteria based on existing product data
     
-    Body: { description: string, idealCustomer?: string, additionalInstructions?: string }
+    Body: { productID: string, idealCustomer?: string, additionalInstructions?: string }
     Returns: JSON criteria in the format expected by the frontend
 */
 export const POST = auth(async function POST(req: NextAuthRequest) {
@@ -15,16 +21,26 @@ export const POST = auth(async function POST(req: NextAuthRequest) {
 
     try {
         const body = await req.json();
-        const { description, idealCustomer, additionalInstructions } = body;
+        const { productID, idealCustomer, additionalInstructions } = body;
 
-        if (!description || !description.trim()) {
+        if (!productID) {
             return NextResponse.json(
-                { error: 'description is required' },
+                { error: 'productID is required' },
                 { status: 400 }
             );
         }
 
-        // Create AI prompt for generating criteria
+        // Get product from database
+        const product = await productsQueries.getProductByID(productID);
+
+        if (!product) {
+            return NextResponse.json(
+                { error: 'Product not found' },
+                { status: 404 }
+            );
+        }
+
+        // Create user preferences array
         const userPreferences = [];
         if (idealCustomer && idealCustomer.trim()) {
             userPreferences.push(`Customer Profile: ${idealCustomer.trim()}`);
@@ -35,48 +51,14 @@ export const POST = auth(async function POST(req: NextAuthRequest) {
             );
         }
 
-        const prompt = `You are an expert at creating lead evaluation criteria for business products. Based on the product description and user preferences provided, create a comprehensive lead evaluation system.
-
-Product Description: ${description.trim()}
-
-${
-    userPreferences.length > 0
-        ? `User Preferences:
-${userPreferences.join('\n')}
-
-`
-        : ''
-}Create lead evaluation criteria that will help score potential customers/leads for this product. The criteria should:
-1. Total exactly 10 points across all criteria
-2. Have 2-4 different criteria categories
-3. Use range-based scoring (e.g., "4-5 points", "2-3 points", etc.) for scores above 3
-4. Include clear, specific descriptions for each score level
-5. Focus on factors like: experience relevance, budget alignment, company size, need urgency, decision-making authority, etc.
-
-Return your response as a JSON object in this EXACT format:
-{
-  "criteria": [
-    {
-      "name": "Brief criteria name (2-4 words)",
-      "max": 6,
-      "ranges": [
-        {"pts": "6", "desc": "15-word description of what qualifies for maximum points"},
-        {"pts": "4-5", "desc": "15-word description of what qualifies for this range"},
-        {"pts": "2-3", "desc": "15-word description of what qualifies for this range"},
-        {"pts": "1", "desc": "15-word description of what qualifies for 1 point"},
-        {"pts": "0", "desc": "15-word description of what qualifies for 0 points"}
-      ]
-    }
-  ],
-  "total": 10
-}
-
-Make sure:
-- All "max" values sum to exactly 10
-- Each description is 15 words or less
-- Criteria names are brief but descriptive
-- Score ranges make logical sense (highest = best fit)
-- Return ONLY the JSON object, no other text`;
+        // Generate prompt using constants with both title and description
+        const prompt = createCriteriaPrompt(
+            {
+                title: product.title,
+                description: product.description,
+            },
+            userPreferences
+        );
 
         // Call Llama AI
         const response = await llamaAI.chat.completions.create({
@@ -84,16 +66,14 @@ Make sure:
             messages: [
                 {
                     role: 'system',
-                    content:
-                        'You are a business intelligence expert who creates precise lead scoring criteria. Always respond with valid JSON only.',
+                    content: CRITERIA_SYSTEM_MESSAGE,
                 },
                 {
                     role: 'user',
                     content: prompt,
                 },
             ],
-            temperature: 0.7,
-            max_tokens: 2000,
+            ...CRITERIA_AI_CONFIG,
         });
 
         const aiResponse = response.choices[0]?.message?.content;
@@ -110,7 +90,6 @@ Make sure:
         try {
             // Clean the response in case there's extra text
             const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-
             const jsonString = jsonMatch ? jsonMatch[0] : aiResponse;
             criteriaData = JSON.parse(jsonString);
 
@@ -142,7 +121,6 @@ Make sure:
             );
         }
 
-        console.log('Criteria data:', JSON.stringify(criteriaData, null, 2));
         return NextResponse.json(
             {
                 success: true,
