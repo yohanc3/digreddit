@@ -4,6 +4,7 @@ import { CommentLead, PostLead, Products } from '@/types/backend/db';
 import { LeadOptions } from '@/lib/components/dashboard/DashboardHandler';
 import { useDebounce } from 'use-debounce';
 import { useSearchParams } from 'next/navigation';
+import { getBrowserRedditAccessToken } from '../utils/getRedditOauthToken';
 
 export function useLeads(
     selectedProduct: Products | null,
@@ -21,6 +22,7 @@ export function useLeads(
 } {
     // Debounce the options to prevent excessive API calls
     const [debouncedOptions] = useDebounce(options, 1500);
+    const accessToken = getBrowserRedditAccessToken();
     const { apiPost } = useFetch();
     const search = useSearchParams();
 
@@ -60,6 +62,7 @@ export function useLeads(
                     productID: selectedProduct.id,
                     pagesOffset: page.toString(),
                     filters,
+                    accessToken,
                 });
 
                 const data = result.allLeads as
