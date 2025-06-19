@@ -17,18 +17,38 @@ export const POST = auth(async function POST(req: NextAuthRequest) {
 
     const body = await req.json();
 
-    const { productID, pagesOffset = 0, filters } = body;
+    const { productID, pagesOffset = 0, filters, accessToken } = body;
 
+    let redditUserName = null;
+
+    const redditUser = await fetch('https://oauth.reddit.com/api/v1/me', {
+        method: 'GET',
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+        },
+    });
+
+    if (redditUser.ok) {
+        const redditUserResponse = await redditUser.json();
+        redditUserName = redditUserResponse.name || null;
+    }
+    
     try {
         const allLeads = await leadsQueries.getAllLeadsByProductID(
             productID,
             pagesOffset,
-            filters
+            {
+                ...filters,
+                redditUsername: redditUserName,
+            }
         );
 
         const totalCount = await leadsQueries.getTotalLeadsCountByProductID(
             productID,
-            filters
+            {
+                ...filters,
+                redditUsername: redditUserName,
+            }
         );
 
         return NextResponse.json({ allLeads, totalCount }, { status: 200 });
