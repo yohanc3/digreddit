@@ -48,6 +48,9 @@ import { MissingFieldError } from '../error/form';
 import { useProductBookmarks } from '@/lib/frontend/hooks/useProductBookmarks';
 import { useProductCollections } from '@/lib/frontend/hooks/useProductCollections';
 import CollectionCreationDialog from '../ui/collection/collectionCreationDialog';
+import { DeleteLeadsDialog } from './DeleteLeadsDialog';
+import { DeleteAllLeadsDialog } from './DeleteAllLeadsDialog';
+import { Trash } from 'lucide-react';
 
 const sortingMethods = [
     {
@@ -150,6 +153,9 @@ export default function DashboardHandler({
     const [openCollectionCreationDialog, setOpenCollectionCreationDialog] =
         useState<boolean>(false);
 
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
+
     const [aiResponses, setAiResponses] = useState<Record<string, string>>({});
 
     const { leads, totalCount, isLoading, refetchAllLeads } = useLeads(
@@ -197,15 +203,18 @@ export default function DashboardHandler({
         });
     }
 
-    function onSelectedProductChange(index: number) {
-        setSelectedProduct(fetchedProducts[index]);
-        router.push(`/dashboard/?product=${fetchedProducts[index].id}`);
-        setStagePagination({
-            identification: 0,
-            initial_outreach: 0,
-            engagement: 0,
-            skipped: 0,
-        });
+    function onSelectedProductChange(productId: string) {
+        const product = fetchedProducts.find((p) => p.id === productId);
+        if (product) {
+            setSelectedProduct(product);
+            router.push(`/dashboard/?product=${productId}`);
+            setStagePagination({
+                identification: 0,
+                initial_outreach: 0,
+                engagement: 0,
+                skipped: 0,
+            });
+        }
     }
 
     function handlePageChange(page: number) {
@@ -299,9 +308,29 @@ export default function DashboardHandler({
             />
 
             <main className="flex-grow">
-                <div className="flex justify-between items-center px-14 py-4">
+                <div className="flex items-center justify-between gap-x-4 px-14 py-4">
                     <div className="font-semibold text-primarySize text-secondaryColor">
                         Lead List at {getStageDisplayName(currentStage)} stage:
+                    </div>
+                    <div className="flex flex-row items-center space-x-2">
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            className="h-8 px-3 text-xs bg-red-500 hover:bg-red-600"
+                            onClick={() => setIsDeleteDialogOpen(true)}
+                        >
+                            <Trash size={14} className="mr-1.5" />
+                            Delete Leads
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            className="h-8 px-3 text-xs bg-red-600 hover:bg-red-700"
+                            onClick={() => setIsDeleteAllDialogOpen(true)}
+                        >
+                            <Trash size={14} className="mr-1.5" />
+                            Delete All Leads
+                        </Button>
                     </div>
                 </div>
                 <div className="w-full py-4 px-12 pt-1 justify-center grid grid-cols-3 gap-4 min-h-96">
@@ -325,7 +354,7 @@ export default function DashboardHandler({
                             return isPostLead(lead) ? (
                                 <RedditPostLeadCard
                                     leadDetails={lead as PostLead}
-                                    key={lead.id}
+                                    key={lead.uniqueID}
                                     selectedProduct={selectedProduct}
                                     isDialogOpen={openDialogLeadId === lead.id}
                                     isBookmarkDialogOpen={
@@ -354,7 +383,7 @@ export default function DashboardHandler({
                             ) : (
                                 <RedditCommentLeadCard
                                     leadDetails={lead as CommentLead}
-                                    key={lead.id}
+                                    key={lead.uniqueID}
                                     selectedProduct={selectedProduct}
                                     isDialogOpen={openDialogLeadId === lead.id}
                                     isBookmarkDialogOpen={
@@ -561,6 +590,23 @@ export default function DashboardHandler({
                         onOpenChange={(open: boolean) =>
                             setOpenCollectionCreationDialog(open)
                         }
+                    />
+                </>
+            )}
+
+            {selectedProduct && (
+                <>
+                    <DeleteLeadsDialog
+                        isOpen={isDeleteDialogOpen}
+                        onOpenChange={setIsDeleteDialogOpen}
+                        productID={selectedProduct.id}
+                        onDeleteSuccess={refetchAllLeads}
+                    />
+                    <DeleteAllLeadsDialog
+                        isOpen={isDeleteAllDialogOpen}
+                        onOpenChange={setIsDeleteAllDialogOpen}
+                        productID={selectedProduct.id}
+                        onDeleteSuccess={refetchAllLeads}
                     />
                 </>
             )}
