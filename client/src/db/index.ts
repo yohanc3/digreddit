@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import * as schema from './schema';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { count, eq, asc, desc, gte, and, inArray } from 'drizzle-orm';
+import { count, eq, asc, desc, gte, and, inArray, ne } from 'drizzle-orm';
 import {
     bookmarks,
     collections,
@@ -92,7 +92,6 @@ export const leadsQueries = {
     ) => {
         const limit = Math.floor(PAGINATION_LIMIT / 2); // 15 for each type
         const offset = pagesOffset * limit;
-
         // Get collection subreddits if collectionID is provided
         let collectionSubreddits: string[] = [];
         if (filters?.collectionID) {
@@ -133,6 +132,10 @@ export const leadsQueries = {
 
             if (filters?.collectionID && collectionSubreddits.length > 0) {
                 conditions.push(inArray(table.subreddit, collectionSubreddits));
+            }
+
+            if (filters?.redditUsername) {
+                conditions.push(ne(table.author, filters.redditUsername));
             }
 
             return and(...conditions);
@@ -243,6 +246,10 @@ export const leadsQueries = {
 
             if (filters?.collectionID && collectionSubreddits.length > 0) {
                 conditions.push(inArray(table.subreddit, collectionSubreddits));
+            }
+
+            if (filters?.redditUsername) {
+                conditions.push(ne(table.author, filters.redditUsername));
             }
 
             return and(...conditions);

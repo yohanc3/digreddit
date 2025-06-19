@@ -35,4 +35,5 @@ export interface LeadFilters {
     stage?: LeadStage;
     bookmarkID?: string;
     collectionID?: string;
+    redditUsername?: string | null;
 }
