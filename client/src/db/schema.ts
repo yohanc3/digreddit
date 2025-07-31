@@ -63,17 +63,33 @@ export const products = pgTable('Products', {
     criteria: text()
         .default(
             ` 
-    - Topical Relevance (0–3 points)
-       - Does the lead discuss topics related to the product domain?
+   Community Relevance (0–2)
+• Is the lead from a subreddit or post clearly related to the product’s niche or audience?
+→ 2: Highly relevant niche (e.g. SaaS, solopreneurs, automation tools)
+→ 1: Loosely relevant
+→ 0: Irrelevant
 
-    - Expressed Need or Interest (0–3 points)
-        - Does the user express a problem, need, or interest the product could solve?
+User Intent or Pain Signal (0–2)
+• Does the lead express a need, problem, or desire you can solve (e.g. “looking for,” “need help with,” “any recommendations”)?
+→ 2: Clear, actionable intent or pain point
+→ 1: Vague interest
+→ 0: No discernible intent
 
-    - Fit as a Potential Buyer (0–2 points)
-        - Does the person seem like a potential customer for this product?
+Lead Magnet Fit / Openness (0–2)
+• Is the user open to solutions, advice, free tools, resources, or trials? (e.g. “Would love a demo,” “Send me something,” “Trying to learn more…”)
+→ 2: Explicit openness
+→ 1: Implied openness
+→ 0: No openness or resistant
 
-     - Actionability (0–2 points)
-        - Could this lead be pursued by a sales or marketing team?
+Profile Credibility (0–2)
+• Does the user appear to be a real Redditor (not spam or throwaway)? Check for:
+
+Normal-looking username
+
+Any mention of context (e.g. personal project, startup, etc.)
+→ 2: Clearly real, relevant profile
+→ 1: Unclear
+→ 0: Looks fake/spam/throwaway
     `
         )
         .notNull(),
