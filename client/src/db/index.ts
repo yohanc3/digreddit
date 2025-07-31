@@ -117,8 +117,8 @@ export const leadsQueries = {
         ) => {
             const conditions = [eq(table.productID, productID)];
 
-            if (filters?.maxRating) {
-                conditions.push(gte(table.rating, filters.maxRating));
+            if (filters?.minRating) {
+                conditions.push(gte(table.rating, filters.minRating));
             }
 
             if (filters?.showOnlyUninteracted) {
