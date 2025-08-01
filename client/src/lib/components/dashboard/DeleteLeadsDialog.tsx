@@ -114,7 +114,7 @@ export function DeleteLeadsDialog({
                     <div className="">
                         <div className="flex items-center justify-between">
                             <Label
-                                htmlFor="maxRating"
+                                htmlFor="minRating"
                                 className="text-sm font-medium text-gray-700"
                             >
                                 Maximum Rating
@@ -124,7 +124,7 @@ export function DeleteLeadsDialog({
                                     onValueChange={(value: string) =>
                                         setFilters((f) => ({
                                             ...f,
-                                            maxRating: parseInt(value),
+                                            minRating: parseInt(value),
                                         }))
                                     }
                                 >
