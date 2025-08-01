@@ -122,8 +122,8 @@ function buildWhereConditions(
     const conditions = [eq(table.productID, productID)];
 
     // Filter by maximum rating
-    if (filters?.maxRating) {
-        conditions.push(lte(table.rating, filters.maxRating));
+    if (filters?.minRating) {
+        conditions.push(lte(table.rating, filters.minRating));
     }
 
     // Filter by interaction status
