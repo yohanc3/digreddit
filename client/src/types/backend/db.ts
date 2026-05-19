@@ -36,4 +36,5 @@ export interface LeadFilters {
     bookmarkID?: string;
     collectionID?: string;
     maxAgeDays?: number;
+    redditUsername?: string | null;
 }
