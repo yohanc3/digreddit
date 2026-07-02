@@ -6,6 +6,12 @@ DigReddit is a Reddit buying-intent pipeline that watches public Reddit activity
 
 At a high level, DigReddit turns Reddit posts and comments into ranked product leads. Users define products, keywords, and lead criteria in the dashboard; the backend streams Reddit content, matches it with Aho-Corasick, sends likely matches to the lead evaluator, and the evaluator writes qualified post/comment leads back to Postgres.
 
+## Architecture Diagram
+
+![DigReddit Architecture](docs/digreddit-architecture.png)
+
+The diagram reads like a left-to-right pipeline with one shared database in the middle.
+
 ## How To Use
 
 Run each asset from its own directory with npm:
@@ -152,15 +158,3 @@ npm run deploy
 - Deploy `lead_evaluator/` with Wrangler to Cloudflare Workers and configure Hyperdrive for Postgres access.
 - Run scraper processes separately for posts and comments if both streams should be monitored at the same time.
 - Rotate keys immediately if any `.env` value is ever committed or exposed.
-
-## Architecture Diagram
-
-![DigReddit Architecture](docs/digreddit-architecture.png)
-
-The diagram reads like a left-to-right pipeline with one shared database in the middle.
-
-- The top-left box is the dashboard and auth entry point.
-- The bottom-left green lane is Reddit intake: Reddit API, scraper, Adonis intake, and Aho-Corasick keyword matching.
-- The center purple box is Postgres, which stores products and leads.
-- The top-right gold box is the Cloudflare lead evaluator, which scores matched content with the Llama API and writes leads back to the database.
-- The arrows show the flow from user sign-in and product setup to keyword filtering, semantic scoring, and lead storage.
