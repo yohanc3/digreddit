@@ -89,13 +89,3 @@ HYPERDRIVE=Cloudflare Hyperdrive binding
 ```
 
 `GEMINI_API_KEY` remains in the config surface, but the current scoring path uses the Llama-compatible OpenAI client.
-
-## Development Commands
-
-```bash
-cd client && npm install && npm run dev
-cd server && npm install && npm run dev
-cd lead_evaluator && npm install && npm run dev
-```
-
-Deploy `client/` to a Next.js host, `server/` to a long-lived Node.js runtime, and `lead_evaluator/` to Cloudflare Workers with Hyperdrive configured.
