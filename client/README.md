@@ -2,7 +2,7 @@
 
 ## What It Is
 
-The client is the DigReddit web dashboard. It lets authenticated users create products, define keywords and lead criteria, review Reddit leads, filter the lead queue, and organize work with bookmarks and collections.
+The client is the DigReddit web dashboard. It lets authenticated users create products, define keywords and lead criteria, review Reddit leads, and organize work with bookmarks and collections.
 
 ## How To Use
 
@@ -17,41 +17,15 @@ Open `http://localhost:3000`, then sign in and create a product before expecting
 
 ## How It Is Built
 
-The client is a Next.js 14 app-router application with React, Tailwind CSS, Radix UI primitives, TanStack Query, NextAuth, and Drizzle ORM. It talks directly to Postgres through server-side database helpers and exposes lightweight app routes for product creation and lead retrieval.
+The client is a Next.js 14 app-router application with React, Tailwind CSS, Radix UI primitives, TanStack Query, NextAuth, and Drizzle ORM. It stores and reads data from Postgres through typed helpers, and exposes app routes for product, lead, Reddit, and feedback workflows.
 
 ## Architecture
 
-### App Shell
-
-- `src/app/layout.tsx` defines the global app shell and providers.
-- `src/app/page.tsx` is the public landing/sign-in entry point.
-- `src/app/dashboard/page.tsx` is the main lead review surface.
-- `src/app/create-product/page.tsx` and `src/app/your-products/page.tsx` manage product setup.
-- `src/app/bookmarks/page.tsx` and `src/app/collections/page.tsx` support saved lead workflows.
-
-### Authentication
-
-Authentication is configured in `auth.ts` with NextAuth, Google OAuth, and the Drizzle adapter. The sign-in callback currently gates access through a beta-user email list in `src/lib/backend/constant/betaUsers.ts`.
-
-### Data Access
-
-The database schema lives in `src/db/schema.ts`, and query helpers live in `src/db/index.ts`. Drizzle is used for typed Postgres access, with core entities including `Products`, `PostLeads`, `CommentLeads`, `Bookmarks`, `Collections`, `Users`, and auth tables.
-
-### API Routes
-
-- `POST /api/products` creates a product for the authenticated user.
-- `GET /api/products` returns the authenticated user's products.
-- `POST /api/leads` returns paginated and filtered leads for a product.
-- `/api/product/*` routes update/delete products, generate/update criteria, and manage product bookmarks/collections.
-- `/api/leads/*` routes update stages, delete leads, bookmark leads, and generate outreach responses.
-- `/api/reddit/*` routes handle Reddit OAuth, user lookup, and comment actions.
-- `/api/feedback/create`, `/api/beta-users/create`, and `/api/user/collections` support feedback, waitlist/beta capture, and user collection lookup.
-
-The server-side API routes mostly wrap `productsQueries` and `leadsQueries` from `src/db/index.ts`.
-
-### Frontend State
-
-The frontend uses TanStack Query and custom hooks under `src/lib/frontend/hooks/` to fetch products, leads, bookmarks, collections, Reddit connection state, and user data. Shared UI components live under `src/lib/components/`.
+- `src/app/layout.tsx` and `src/app/page.tsx` define the shell and sign-in entry point.
+- `src/app/dashboard/page.tsx`, `src/app/create-product/page.tsx`, `src/app/your-products/page.tsx`, `src/app/bookmarks/page.tsx`, and `src/app/collections/page.tsx` cover the main user flows.
+- `auth.ts` configures NextAuth with Google OAuth and a beta-user gate.
+- `src/db/schema.ts` and `src/db/index.ts` define the schema and typed queries for products, leads, collections, bookmarks, and auth tables.
+- `src/lib/frontend/hooks/` and `src/lib/components/` hold the reusable query hooks and UI pieces.
 
 ## Environment Variables
 
@@ -91,11 +65,10 @@ npm run lint         # Type-check and run Next lint
 
 ## Database
 
-Drizzle config is in `drizzle.config.ts`, and generated migrations live under `drizzle/`. The dashboard reads and writes the same Postgres database used by the scraper/server and Cloudflare Worker, so product keywords created here directly drive the backend matching pipeline.
+Drizzle config is in `drizzle.config.ts`, and generated migrations live under `drizzle/`. The dashboard shares the same Postgres database as the scraper/server and Cloudflare Worker, so product keywords created here drive the backend matching pipeline.
 
 ## Operational Notes
 
 - Create at least one product with keywords before running the scraper pipeline.
-- Lead filters are applied across both post and comment lead tables.
-- The dashboard expects qualified leads to already exist in Postgres; it does not scrape Reddit itself.
+- The dashboard itself does not scrape Reddit.
 - Keep `.env` local and use deployment-provider secret storage for production.

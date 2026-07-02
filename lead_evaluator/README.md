@@ -2,7 +2,7 @@
 
 ## What It Is
 
-The lead evaluator is a Cloudflare Worker that performs semantic qualification after the server has found a keyword match. It scores Reddit posts/comments against product-specific criteria using a Llama-compatible API and writes qualified leads into Postgres.
+The lead evaluator is a Cloudflare Worker that performs semantic qualification after the server finds a keyword match. It scores Reddit posts/comments against product-specific criteria using a Llama-compatible API and writes qualified leads into Postgres.
 
 ## How To Use
 
@@ -17,7 +17,7 @@ Deploy with `npm run deploy` after configuring Cloudflare secrets and the Hyperd
 
 ## How It Is Built
 
-The Worker exposes a single authenticated `POST` endpoint. It validates the request, loads matching products through Cloudflare Hyperdrive/Postgres, sends the content and criteria to the Llama model, and inserts rows into either `PostLeads` or `CommentLeads` when the score is high enough.
+The Worker exposes a single authenticated `POST` endpoint. It validates the request, loads matching products through Cloudflare Hyperdrive/Postgres, scores the content with the Llama model, and inserts rows into `PostLeads` or `CommentLeads` when the score is high enough.
 
 ## Architecture
 
@@ -47,11 +47,11 @@ The `Authorization` header must equal `SECURITY_KEY`.
 
 ### Product Lookup
 
-`getProducts()` queries the `Products` table for rows whose `keywords` JSON array contains any keyword from the request. Each matching product contributes an ID, description, and criteria block to the model prompt.
+`getProducts()` queries the `Products` table for rows whose `keywords` JSON array contains any keyword from the request. Each matching product contributes an ID, description, and criteria block to the prompt.
 
 ### Semantic Scoring
 
-`calculateSimilarity()` builds a prompt for `Llama-4-Scout-17B-16E-Instruct-FP8` through the OpenAI-compatible Llama API. The model is instructed to return JSON containing product IDs, scores, and per-criterion reasoning.
+`calculateSimilarity()` builds a prompt for `Llama-4-Scout-17B-16E-Instruct-FP8` through the OpenAI-compatible Llama API. The model returns JSON with product IDs, scores, and per-criterion reasoning.
 
 ### Lead Writes
 

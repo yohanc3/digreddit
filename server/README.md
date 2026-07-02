@@ -18,7 +18,7 @@ Set `REDDIT_WORKER_THING_TYPE=posts` or `REDDIT_WORKER_THING_TYPE=comments` depe
 
 ## How It Is Built
 
-The server is an AdonisJS 6 app backed by Postgres through Lucid and a dynamic Aho-Corasick matcher. The scraper polls Reddit in ID batches, sanitizes API responses, posts them to `/webhook/intake`, and the Adonis controller forwards keyword-matched content to the Cloudflare lead evaluator.
+The server is an AdonisJS 6 app backed by Postgres through Lucid and a dynamic Aho-Corasick matcher. The scraper polls Reddit in ID batches, sanitizes API responses, posts them to `/webhook/intake`, and the controller forwards keyword-matched content to the Cloudflare lead evaluator.
 
 ## Architecture
 
@@ -37,17 +37,7 @@ This keeps the expensive semantic scoring stage behind a cheap lexical filter.
 
 ### Reddit Scraper Worker
 
-The scraper entry point is `scraper_worker/scraper.js`. It:
-
-- obtains a Reddit OAuth token,
-- finds an initial post/comment ID,
-- builds batches of up to 100 sequential Reddit IDs,
-- fetches the batch with `/api/info.json`,
-- sanitizes Reddit payloads into the internal post/comment shape,
-- sends the batch to the local Adonis intake endpoint,
-- logs throughput and latency.
-
-The worker can operate in either post mode or comment mode using `REDDIT_WORKER_THING_TYPE`.
+The scraper entry point is `scraper_worker/scraper.js`. It obtains a Reddit OAuth token, builds batches of up to 100 sequential Reddit IDs, fetches the batch with `/api/info.json`, sanitizes the payloads, and sends them to the local Adonis intake endpoint. `REDDIT_WORKER_THING_TYPE` switches the worker between post and comment mode.
 
 ### Lead Evaluator Handoff
 
@@ -86,7 +76,7 @@ REDDIT_API_KEY=
 REDDIT_WORKER_THING_TYPE=posts
 ```
 
-`REDDIT_API_KEY` is populated/refreshed by the OAuth helper at runtime, but it still exists in the process environment while the scraper is running.
+`REDDIT_API_KEY` is refreshed by the OAuth helper at runtime, but it still exists in the process environment while the scraper is running.
 
 ## Commands
 
@@ -113,4 +103,4 @@ npm run typecheck  # Run TypeScript without emit
 - The scraper sends batches to `http://localhost:${PORT}/webhook/intake`, so the Adonis server must be running locally for the worker process.
 - Reddit rate limiting is handled by delaying when a `429` response is returned.
 - The keyword matcher is populated from the `Products` table, so an empty product table means no content will be forwarded to the Worker.
-- Do not commit `.env`, build artifacts containing env files, or generated secret-bearing config.
+- Do not commit `.env` or generated secret-bearing config.

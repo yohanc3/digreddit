@@ -1,10 +1,6 @@
-# DigReddit
-
-DigReddit is a Reddit buying-intent pipeline that watches public Reddit activity, filters posts and comments by product keywords, evaluates matched content with an LLM, and stores qualified leads for a web dashboard. The repo is split into three deployable assets: a Next.js dashboard, an AdonisJS intake/scraper service, and a Cloudflare Worker that scores and persists leads.
-
 ## What It Is
 
-At a high level, DigReddit turns Reddit posts and comments into ranked product leads. Users define products, keywords, and lead criteria in the dashboard; the backend streams Reddit content, matches it with Aho-Corasick, sends likely matches to the lead evaluator, and the evaluator writes qualified post/comment leads back to Postgres.
+DigReddit turns Reddit posts and comments into ranked product leads. Users define products, keywords, and lead criteria in the dashboard, then the backend filters content, scores likely matches, and stores qualified leads in Postgres.
 
 ## Architecture Diagram
 
@@ -26,48 +22,16 @@ For the local pipeline, start the Adonis server first, run the Cloudflare Worker
 
 ## How It Is Built
 
-DigReddit is a three-part system built around a shared Postgres database. The Next.js app owns the user-facing product and lead dashboard, the AdonisJS service owns Reddit ingestion and keyword matching, and the Cloudflare Worker owns semantic lead qualification and database writes.
-
-### Tech Assets
-
-| Asset | Path | Runtime | Responsibility |
-| --- | --- | --- | --- |
-| Dashboard | `client/` | Next.js, React, Drizzle, NextAuth | Product setup, lead dashboard, filters, bookmarks, collections, and user-facing APIs. |
-| Intake and scraper | `server/` | AdonisJS, Node.js, Lucid, Aho-Corasick | Reddit polling, OAuth token refresh, keyword matching, and forwarding matches for semantic evaluation. |
-| Lead evaluator | `lead_evaluator/` | Cloudflare Workers, Wrangler, Llama API, Hyperdrive/Postgres | Authenticated lead scoring, product lookup, LLM criteria evaluation, and lead inserts. |
+DigReddit is a three-part system around a shared Postgres database: the Next.js app owns the dashboard, the AdonisJS service owns Reddit ingestion and keyword matching, and the Cloudflare Worker owns semantic scoring and lead writes.
 
 ## How The Pieces Tie Together
 
-1. A user signs into the dashboard and creates a product with description, industry, keywords, and scoring criteria.
-2. Product data is stored in Postgres in the `Products` table.
-3. The server builds an in-memory Aho-Corasick matcher from all product keywords.
-4. The Reddit scraper polls Reddit posts or comments, sanitizes each batch, and posts it to the Adonis intake endpoint.
-5. The intake endpoint matches each content item against known product keywords.
-6. Matched content is forwarded to the Cloudflare Worker with the matching keywords and an authorization key.
-7. The Worker loads matching products from Postgres, asks the Llama-compatible API to score the content against each product's criteria, and stores leads with score >= 5.
-8. The dashboard reads `PostLeads` and `CommentLeads` from Postgres and lets users filter, sort, bookmark, and move leads through stages.
-
-## Data Flow
-
-The pipeline is optimized as a staged funnel:
-
-| Stage | Input | Output | Purpose |
-| --- | --- | --- | --- |
-| Product setup | Product description, criteria, keywords | `Products` rows | Defines what a lead should look like. |
-| Reddit polling | Reddit post/comment IDs | Sanitized content batches | Converts Reddit API payloads into internal content records. |
-| Keyword filtering | Sanitized content + product keywords | Matched content + keywords | Cheaply removes irrelevant content before calling an LLM. |
-| Semantic evaluation | Matched content + product criteria | Lead scores and criteria results | Decides whether the content shows buying intent. |
-| Lead storage | Qualified scores | `PostLeads` / `CommentLeads` rows | Makes leads available to the dashboard. |
-| Dashboard | Stored leads | User workflow | Lets users review, filter, save, and act on leads. |
-
-## Repository Layout
-
-```text
-.
-├── client/          # Next.js dashboard and app APIs
-├── server/          # AdonisJS HTTP service plus Reddit scraper worker
-└── lead_evaluator/  # Cloudflare Worker for semantic lead qualification
-```
+1. A user creates a product in the dashboard.
+2. Product keywords land in Postgres and feed the Aho-Corasick matcher.
+3. The scraper batches Reddit posts/comments into the Adonis intake endpoint.
+4. The intake layer forwards keyword matches to the Cloudflare Worker.
+5. The Worker scores the content with the Llama API and writes qualified leads back to Postgres.
+6. The dashboard reads `PostLeads` and `CommentLeads` for review and follow-up.
 
 ## Environment Variables
 
@@ -111,7 +75,7 @@ REDDIT_API_KEY=
 REDDIT_WORKER_THING_TYPE=posts
 ```
 
-`REDDIT_WORKER_THING_TYPE` controls whether the scraper follows posts (`posts`) or comments (`comments`).
+`REDDIT_WORKER_THING_TYPE` controls whether the scraper follows posts or comments.
 
 ### Lead Evaluator
 
@@ -124,37 +88,14 @@ GEMINI_API_KEY=
 HYPERDRIVE=Cloudflare Hyperdrive binding
 ```
 
-`GEMINI_API_KEY` is still present in the type/config surface, but the current scoring path uses the Llama-compatible OpenAI client.
+`GEMINI_API_KEY` remains in the config surface, but the current scoring path uses the Llama-compatible OpenAI client.
 
 ## Development Commands
 
 ```bash
-# Dashboard
-cd client
-npm install
-npm run dev
-npm run lint
-npm run build
-
-# Server
-cd server
-npm install
-npm run dev
-npm run typecheck
-npm run test
-
-# Lead evaluator
-cd lead_evaluator
-npm install
-npm run dev
-npm test
-npm run deploy
+cd client && npm install && npm run dev
+cd server && npm install && npm run dev
+cd lead_evaluator && npm install && npm run dev
 ```
 
-## Deployment Notes
-
-- Deploy `client/` to a Next.js-compatible host such as Vercel.
-- Deploy `server/` anywhere that can run a long-lived Node.js/AdonisJS process and reach Postgres.
-- Deploy `lead_evaluator/` with Wrangler to Cloudflare Workers and configure Hyperdrive for Postgres access.
-- Run scraper processes separately for posts and comments if both streams should be monitored at the same time.
-- Rotate keys immediately if any `.env` value is ever committed or exposed.
+Deploy `client/` to a Next.js host, `server/` to a long-lived Node.js runtime, and `lead_evaluator/` to Cloudflare Workers with Hyperdrive configured.
